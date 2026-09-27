@@ -176,7 +176,8 @@ l_style <- function(object, ...) {
 }
 
 theme_keys <- function(type) {
-  switch(type,
+  switch(
+    type,
     title = "plot.title",
     subtitle = "plot.subtitle",
     caption = "plot.caption",
@@ -234,7 +235,8 @@ style_source <- function(source, type, style) {
   }
   rectangle <- list()
   for (property in intersect(names(style), c("color", "fill", "line_type"))) {
-    key <- switch(property,
+    key <- switch(
+      property,
       color = "colour",
       fill = "fill",
       line_type = "linetype"

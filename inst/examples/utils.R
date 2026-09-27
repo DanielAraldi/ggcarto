@@ -231,23 +231,10 @@ map_north_arrow <- function(extent) {
       sf::st_coordinates(center)
   )
   angle <- atan2(direction[[2]], direction[[1]]) * 180 / pi - 90
-  arrow <- lplot::l_template(
-    grid::segmentsGrob(
-      x0 = 0.5,
-      x1 = 0.5,
-      y0 = 0.14,
-      y1 = 0.72,
-      arrow = grid::arrow(length = lplot::l_unit(3, "mm"), type = "closed"),
-      gp = grid::gpar(col = "#203C43", fill = "#203C43", lwd = 1.5)
-    ),
-    lplot::l_text(
-      "N",
-      x = 0.5,
-      y = 0.92,
-      fontsize = 11,
-      fontface = "bold"
-    ),
-    vp = grid::viewport(angle = angle)
+  arrow <- lplot::l_north_arrow(
+    design = "minimal",
+    angle = angle,
+    label_gp = list(col = "black")
   )
   lplot::l_get_element(
     arrow,

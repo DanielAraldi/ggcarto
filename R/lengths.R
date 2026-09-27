@@ -249,7 +249,8 @@ resolve_length <- function(value, context, axis = "x", intrinsic = NA_real_) {
       context = context,
       axis = axis
     )
-    return(switch(value$kind,
+    return(switch(
+      value$kind,
       min = min(resolved),
       max = max(resolved),
       clamp = {
@@ -260,7 +261,8 @@ resolve_length <- function(value, context, axis = "x", intrinsic = NA_real_) {
       }
     ))
   }
-  multiplier <- switch(value$unit,
+  multiplier <- switch(
+    value$unit,
     px = 1,
     "%" = (if (axis == "x") context$width else context$height) / 100,
     pt = 96 / 72,

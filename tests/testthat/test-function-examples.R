@@ -44,7 +44,8 @@ test_that("every exported function has a focused example with lplot helpers", {
           "l_style",
           "l_template",
           "l_text",
-          "l_viewport"
+          "l_viewport",
+          "l_north_arrow"
         )
     ) {
       expect_true("l_render" %in% symbols, info = basename(path))
@@ -86,6 +87,13 @@ test_that("constructor examples draw lplot grobs independently", {
   expect_identical(template$childrenOrder, c("background", "title"))
   expect_identical(template$children$title$label, "Area de estudo")
   expect_true(all(c("background", "title") %in% example$drawn_grobs))
+
+  expect_no_warning(example <- run_function_example("l_north_arrow"))
+  expect_s3_class(example$result, "gTree")
+  expect_equal(example$result$children$symbol$vp$angle, 12)
+  expect_true(all(
+    c("central-petal", "west-petal", "label") %in% example$drawn_grobs
+  ))
 })
 
 test_that("style and registry examples need no extracted elements", {

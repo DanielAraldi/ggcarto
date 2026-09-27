@@ -1,7 +1,9 @@
 result <- lplot::l_template(
   lplot::l_rect(
-    width = 0.6, height = 0.3,
-    fill = "#EEF3CF", col = "#194E70",
+    width = 0.6,
+    height = 0.3,
+    fill = "#EEF3CF",
+    col = "#194E70",
     name = "background"
   ),
   lplot::l_text("Area de estudo", name = "title"),
