@@ -143,12 +143,14 @@
 <path d='M 470.23 352.82 L 437.99 319.96 L 440.57 318.61 L 441.45 316.01 L 443.21 314.26 L 443.53 312.25 L 445.59 311.22 L 447.48 306.58 L 449.87 306.19 L 454.08 304.00 L 456.24 305.66 L 458.11 306.02 L 469.09 305.08 L 469.76 306.39 L 471.42 306.37 L 486.79 313.63 L 495.14 314.26 L 500.30 311.42 L 505.46 315.42 L 506.22 315.68 L 508.50 314.36 L 500.45 328.01 L 491.82 329.26 L 492.79 330.70 L 487.87 335.23 L 482.69 333.37 L 480.04 333.72 L 478.74 335.64 L 477.30 342.60 L 475.43 345.23 L 472.17 347.13 L 471.84 350.11 L 470.23 352.82 Z' style='fill-rule: evenodd; fill: #D8EACB; stroke-width: 0.64; stroke: #FFFFFF; stroke-linecap: butt;' />
 <path d='M 523.54 330.21 L 523.10 325.31 L 522.37 325.22 L 521.75 323.53 L 520.43 322.97 L 520.79 321.59 L 519.90 321.41 L 519.54 318.85 L 518.41 317.36 L 521.41 316.30 L 520.79 314.24 L 521.95 312.99 L 524.21 313.86 L 524.67 314.74 L 526.35 313.16 L 528.94 313.99 L 533.49 311.73 L 535.00 314.35 L 539.55 319.32 L 530.94 329.81 L 528.76 341.25 L 526.28 341.94 L 523.54 330.21 Z' style='fill-rule: evenodd; fill: #CAE4C9; stroke-width: 0.64; stroke: #FFFFFF; stroke-linecap: butt;' />
 <path d='M 470.23 352.82 L 471.84 350.11 L 472.17 347.13 L 475.43 345.23 L 477.30 342.60 L 478.74 335.64 L 480.04 333.72 L 482.69 333.37 L 487.87 335.23 L 492.79 330.70 L 491.82 329.26 L 500.45 328.01 L 508.50 314.36 L 510.38 314.17 L 518.41 317.36 L 519.54 318.85 L 519.90 321.41 L 520.79 321.59 L 520.43 322.97 L 521.75 323.53 L 522.37 325.22 L 523.10 325.31 L 523.54 330.21 L 523.90 348.39 L 518.10 355.68 L 476.11 358.96 L 470.23 352.82 Z' style='fill-rule: evenodd; fill: #E0EDCD; stroke-width: 0.64; stroke: #FFFFFF; stroke-linecap: butt;' />
+<line x1='21.00' y1='356.78' x2='187.66' y2='356.78' style='stroke-width: 0.75; stroke: #203C43;' />
+<line x1='21.00' y1='359.48' x2='21.00' y2='354.08' style='stroke-width: 0.75; stroke: #203C43;' />
+<line x1='104.33' y1='359.48' x2='104.33' y2='356.78' style='stroke-width: 0.75; stroke: #203C43;' />
+<line x1='187.66' y1='359.48' x2='187.66' y2='354.08' style='stroke-width: 0.75; stroke: #203C43;' />
+<text x='21.00' y='348.48' style='font-size: 7.00px;fill: #203C43; font-family: "Arial";' textLength='3.89px' lengthAdjust='spacingAndGlyphs'>0</text>
+<text x='187.66' y='348.48' text-anchor='end' style='font-size: 7.00px;fill: #203C43; font-family: "Arial";' textLength='22.94px' lengthAdjust='spacingAndGlyphs'>200 km</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3NTAuMDB8MC4wMHw0ODcuNTA=)'>
-<rect x='21.00' y='353.52' width='83.33' height='5.62' style='stroke-width: 0.75; stroke: #203C43; fill: #203C43;' />
-<rect x='104.33' y='353.52' width='83.33' height='5.62' style='stroke-width: 0.75; stroke: #203C43; fill: #FFFFFF;' />
-<text x='21.00' y='347.94' style='font-size: 8.00px; font-family: "Arial";' textLength='4.45px' lengthAdjust='spacingAndGlyphs'>0</text>
-<text x='187.66' y='347.94' text-anchor='end' style='font-size: 8.00px; font-family: "Arial";' textLength='26.25px' lengthAdjust='spacingAndGlyphs'>200 km</text>
 <text x='315.47' y='429.09' style='font-size: 9.00px; font-family: "Arial";' textLength='52.00px' lengthAdjust='spacingAndGlyphs'>Nascimentos</text>
 <image width='119.06' height='7.09' x='315.47' y='435.02' preserveAspectRatio='none' xlink:href='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAABCAYAAABkOJMpAAAArUlEQVQ4jZ1SMRLDMAhT/v+4/CRLdytDMAYs0l4nKwIh4fi4PicJgAQIAKBjPw0DzLzXHxB712lTZX1Wa53FN3vtuZaXyt3mi16+/7tXzbfPbTTNvULlJgW2M2AILu3jWM/Dr9p23hf/PzIpblQP4TuER+VGUx+VI6zX3md4HHQcfub8rI81YHr/rmWak7VM/Qsz+EYtBTflKNnTbMV1uzX7MtVffAs3Jd1dxUw3AjfS5+a+gWEAAAAASUVORK5CYII='/>
 <polyline points='315.67,438.65 315.67,442.10 ' style='stroke-width: 0.38; stroke: #FFFFFF;' />

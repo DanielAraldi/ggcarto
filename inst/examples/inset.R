@@ -12,10 +12,9 @@ map_inset_scene <- function() {
   plot <- map_source(counties, focus, title = "Regiao central e leste")
   frame <- map_frame(
     plot,
-    focus,
     distance_m = 50000,
     overlays = list(
-      map_locator(counties, focus),
+      map_locator(counties, plot),
       lplot::l_place(map_north_arrow(focus), right = 12, top = 12, z_index = 30)
     )
   )
