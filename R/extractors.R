@@ -117,9 +117,9 @@ native_adapter <- function(type) {
 #' `x_axis`, `y_axis`, `x_axis_title`, `y_axis_title`, `panel`, `strip`,
 #' `plot_background` and `panel_background`.
 #'
-#' Direct grobs additionally support `north_arrow`, `scale_bar`, `map_frame`,
-#' `credits`, `annotation`, `inset` and `custom`. These names classify supplied
-#' grobs; they do not construct geographic arrows, scales or map insets.
+#' Direct grobs additionally support `north_arrow`, `north_rose`, `scale_bar`,
+#' `map_frame`, `credits`, `annotation`, `inset` and `custom`. These names classify
+#' supplied grobs; they do not construct geographic symbols, scales or insets.
 #' Native adapters also accept direct grobs without extracting subcomponents.
 #'
 #' Use [l_register_element()] to add or replace an adapter, then pass the
@@ -147,6 +147,7 @@ l_registry <- function() {
   )
   for (type in c(
     "north_arrow",
+    "north_rose",
     "scale_bar",
     "map_frame",
     "credits",
@@ -295,8 +296,8 @@ l_register_element <- function(
 #'
 #' Extraction is separate from removal. To avoid drawing a title or legend
 #' twice, use [l_without()] on the base plot when composing extracted elements.
-#' Direct grobs are accepted as supplied; choosing `"north_arrow"` or
-#' `"scale_bar"` does not perform geographic calculations.
+#' Direct grobs are accepted as supplied; choosing `"north_arrow"`,
+#' `"north_rose"` or `"scale_bar"` does not perform geographic calculations.
 #'
 #' @section Conditions:
 #' Missing native components raise `lplot_missing_element`; unknown types

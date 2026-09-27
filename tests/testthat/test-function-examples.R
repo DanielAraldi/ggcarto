@@ -1,6 +1,11 @@
 run_function_example <- function(name) {
   environment <- new.env(parent = baseenv())
-  path <- system.file("examples", "functions", paste0(name, ".R"), package = "lplot")
+  path <- system.file(
+    "examples",
+    "functions",
+    paste0(name, ".R"),
+    package = "lplot"
+  )
   grDevices::pdf(NULL, width = 8, height = 6)
   on.exit(grDevices::dev.off(), add = TRUE)
   capture.output(sys.source(path, envir = environment))
@@ -27,10 +32,21 @@ test_that("every exported function has a focused example with lplot helpers", {
       any(symbols %in% c("textGrob", "rectGrob", "grid.draw", "grid.newpage")),
       info = basename(path)
     )
-    if (function_name %in% c(
-      "l_as_grob", "l_get_element", "l_join", "l_place", "l_rect",
-      "l_render", "l_style", "l_template", "l_text", "l_viewport"
-    )) {
+    if (
+      function_name %in%
+        c(
+          "l_as_grob",
+          "l_get_element",
+          "l_join",
+          "l_place",
+          "l_rect",
+          "l_render",
+          "l_style",
+          "l_template",
+          "l_text",
+          "l_viewport"
+        )
+    ) {
       expect_true("l_render" %in% symbols, info = basename(path))
     }
   }
@@ -83,6 +99,14 @@ test_that("style and registry examples need no extracted elements", {
   expect_s3_class(registry, "l_registry")
   expect_true(all(c("title", "legend", "panel") %in% names(registry)))
   expect_true(is.function(registry$title$extract))
+})
+
+test_that("the compass rose example draws all twelve presets independently", {
+  expect_no_warning(example <- run_function_example("l_north_rose"))
+  expect_s3_class(example$result, "gTree")
+  expect_length(example$designs, 12)
+  expect_true(all(example$designs %in% example$drawn_grobs))
+  expect_true(all(c("body", "labels") %in% example$drawn_grobs))
 })
 
 test_that("extraction and removal examples preserve their source plots", {
@@ -149,7 +173,10 @@ test_that("drawing examples return the documented grob and layout objects", {
 
   expect_no_warning(rendered <- run_function_example("l_render")$result)
   expect_s3_class(rendered, "l_layout")
-  expect_equal(rendered$root$box[c("width", "height")], c(width = 768, height = 576))
+  expect_equal(
+    rendered$root$box[c("width", "height")],
+    c(width = 768, height = 576)
+  )
 })
 
 test_that("measurement examples report sizes without shared scene setup", {
