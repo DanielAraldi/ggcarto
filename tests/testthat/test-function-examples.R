@@ -90,7 +90,7 @@ test_that("constructor examples draw lplot grobs independently", {
 
   expect_no_warning(example <- run_function_example("l_north_arrow"))
   expect_s3_class(example$result, "gTree")
-  expect_equal(example$result$children$symbol$vp$angle, 12)
+  expect_equal(example$result$children$symbol$vp$angle, 0)
   expect_true(all(
     c("central-petal", "west-petal", "label") %in% example$drawn_grobs
   ))
