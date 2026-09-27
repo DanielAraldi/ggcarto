@@ -21,9 +21,9 @@ Native ggplot types are \code{title}, \code{subtitle}, \code{caption}, \code{tag
 \code{x_axis}, \code{y_axis}, \code{x_axis_title}, \code{y_axis_title}, \code{panel}, \code{strip},
 \code{plot_background} and \code{panel_background}.
 
-Direct grobs additionally support \code{north_arrow}, \code{scale_bar}, \code{map_frame},
-\code{credits}, \code{annotation}, \code{inset} and \code{custom}. These names classify supplied
-grobs; they do not construct geographic arrows, scales or map insets.
+Direct grobs additionally support \code{north_arrow}, \code{north_rose}, \code{scale_bar},
+\code{map_frame}, \code{credits}, \code{annotation}, \code{inset} and \code{custom}. These names classify
+supplied grobs; they do not construct geographic symbols, scales or insets.
 Native adapters also accept direct grobs without extracting subcomponents.
 
 Use \code{\link[=l_register_element]{l_register_element()}} to add or replace an adapter, then pass the

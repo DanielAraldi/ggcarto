@@ -89,7 +89,7 @@ the `minimal` preset. No `sf` dependency is required by `l_north_arrow()`.
 
 ## Independent Function Examples
 
-There is one standalone script for each of the 20 exported functions in
+There is one standalone script for each exported function in
 [inst/examples/functions/](inst/examples/functions/). Each focuses on its named
 function, using `l_text()` and `l_rect()` to prepare content, `l_unit()` for native
 grid dimensions and `l_render()` to draw where applicable. Every script supplies its own inputs; no shared
@@ -122,6 +122,7 @@ script stores its main return value in `result`, even when a subsequent
 | `l_text()`             | [inst/examples/functions/l_text.R](inst/examples/functions/l_text.R)                         | Draw text with explicit typography.                              |
 | `l_rect()`             | [inst/examples/functions/l_rect.R](inst/examples/functions/l_rect.R)                         | Draw a filled rectangle with an outline.                         |
 | `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.           |
+| `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw one customized compass rose, centered in the viewport.      |
 | `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.             |
 | `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                     |
 | `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                           |
@@ -148,7 +149,7 @@ The export example requires the optional **svglite** package
 run, writes an SVG there and prints its absolute path. Change `dir` to retain
 the file outside R's temporary directory. Existing files are not overwritten.
 
-To test all 20 examples in isolated environments from the project root:
+To test all function examples in isolated environments from the project root:
 
 ```sh
 NOT_CRAN=true Rscript -e 'testthat::test_local(filter = "function-examples", reporter = "summary", stop_on_failure = TRUE)'
@@ -342,6 +343,65 @@ bottom-left; `l_unit()` and `grid::unit()` objects are also supported. These are
 pixel coordinates or percentage strings. Use `l_place()` for outer placement
 and explicit template dimensions, or `l_get_element()` for semantic metadata
 and responsive styles.
+
+## Compass Roses
+
+`l_north_rose()` creates a native grid `gTree` with one of twelve designs:
+
+| `design`           | Appearance                                                           |
+| ------------------ | -------------------------------------------------------------------- |
+| `classic`          | Classical four-point rose: north, east, south and west.              |
+| `eight_point`      | Eight split tips, including the intercardinal directions.            |
+| `sixteen_point`    | Sixteen tips with three levels of directional emphasis.              |
+| `thirty_two_point` | Traditional 32-point rose with four levels of detail.                |
+| `stellar`          | Long, narrow star tips; `points = 8`, `16` (default) or `32`.        |
+| `concentric`       | Three concentric rings, divisions and eight directional tips.        |
+| `compass`          | Compass dial with ticks, a two-ended needle and a central pivot.     |
+| `nautical`         | Portolan-inspired rhumb lines, rings and sixteen tips.               |
+| `minimal`          | Fine cardinal rays, a small north tip and a center circle.           |
+| `geometric`        | Detached diamonds and a central geometric motif.                     |
+| `ornamental`       | Decorative rings, beads, petals, star and central jewel.             |
+| `asymmetric`       | Broad cardinal tips, smaller diagonal diamonds and emphasized north. |
+
+```r
+rose <- l_north_rose("eight_point",
+  fill = "#197C80", fill_secondary = "white", angle = 15,
+  labels = c("N", "NE", "L", "SE", "S", "SO", "O", "NO")
+)
+element <- l_get_element(rose, "north_rose", width = 120, height = 120)
+scene <- l_viewport(list(l_place(element, right = 12, top = 12)),
+  width = 240, height = 180, background = "white"
+)
+l_render(scene)
+```
+
+Use `col`, `fill`, `fill_secondary`, `lwd`, `fontsize`, `fontface`, `fontfamily`,
+`gp` and `label_gp` to customize the symbol. `labels = FALSE` hides labels;
+character vectors of length 4, 8, 16 or 32 place translated labels clockwise
+from north. `angle` rotates the whole rose counterclockwise. It does not
+calculate geographic north or magnetic declination.
+
+The symbol stays square inside rectangular boxes. Always provide explicit
+layout dimensions: generic gTrees do not have automatic content bounds. Font
+size is fixed in points; use larger boxes or smaller text for dense labels.
+For export, wrap the grob with `l_place()` as well:
+
+```r
+l_save(l_place(rose, width = "100%", height = "100%"),
+  type = "svg", dir = "exports", filename = "compass-rose",
+  width = 240, height = 240
+)
+source(system.file("examples", "functions", "l_north_rose.R", package = "lplot"))
+```
+
+SVG export requires optional `svglite`. The example draws one customized
+eight-point rose in a centered 160 by 160 box. Tests cover every design, exact point
+counts, labels, styling, rotation, validation, extraction, layout, export,
+nonblank and distinct raster output, square proportions and visual snapshots.
+
+```sh
+NOT_CRAN=true Rscript -e 'testthat::test_local(filter = "north-rose|function-examples|elements", reporter = "summary", stop_on_failure = TRUE)'
+```
 
 ## Native Grid Units
 

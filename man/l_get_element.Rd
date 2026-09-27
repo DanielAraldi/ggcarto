@@ -78,8 +78,8 @@ context to apply responsive typography while preserving inherited styling.
 
 Extraction is separate from removal. To avoid drawing a title or legend
 twice, use \code{\link[=l_without]{l_without()}} on the base plot when composing extracted elements.
-Direct grobs are accepted as supplied; choosing \code{"north_arrow"} or
-\code{"scale_bar"} does not perform geographic calculations.
+Direct grobs are accepted as supplied; choosing \code{"north_arrow"},
+\code{"north_rose"} or \code{"scale_bar"} does not perform geographic calculations.
 }
 \section{Conditions}{
 

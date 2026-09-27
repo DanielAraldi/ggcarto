@@ -90,7 +90,7 @@ test_that("constructor examples draw lplot grobs independently", {
 
   expect_no_warning(example <- run_function_example("l_north_arrow"))
   expect_s3_class(example$result, "gTree")
-  expect_equal(example$result$children$symbol$vp$angle, 12)
+  expect_equal(example$result$children$symbol$vp$angle, 0)
   expect_true(all(
     c("central-petal", "west-petal", "label") %in% example$drawn_grobs
   ))
@@ -107,6 +107,18 @@ test_that("style and registry examples need no extracted elements", {
   expect_s3_class(registry, "l_registry")
   expect_true(all(c("title", "legend", "panel") %in% names(registry)))
   expect_true(is.function(registry$title$extract))
+})
+
+test_that("the compass rose example draws one customized rose independently", {
+  expect_no_warning(example <- run_function_example("l_north_rose"))
+  expect_s3_class(example$result, "gTree")
+  expect_identical(example$result$name, "custom_rose")
+  expect_equal(example$result$children$rose$vp$angle, 0)
+  body <- example$result$children$rose$children$body
+  expect_length(body$children, 16)
+  expect_equal(body$children[[1]]$gp$fill, "#197C80")
+  expect_equal(body$children[[2]]$gp$fill, "#F4CD68")
+  expect_true(all(c("custom_rose", "body", "labels") %in% example$drawn_grobs))
 })
 
 test_that("extraction and removal examples preserve their source plots", {
