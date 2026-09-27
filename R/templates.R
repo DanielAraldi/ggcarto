@@ -11,7 +11,8 @@ template_gpar <- function(gp = NULL, overrides = list()) {
             any(!nzchar(names(parameters))) ||
             anyDuplicated(names(parameters))))
     ) {
-      l_abort("Graphical parameters must be a gpar or a uniquely named list.",
+      l_abort(
+        "Graphical parameters must be a gpar or a uniquely named list.",
         property = "gp"
       )
     }
@@ -152,7 +153,9 @@ l_template <- function(
   }
   children <- c(list(...), children)
   if (!all(vapply(children, grid::is.grob, logical(1)))) {
-    l_abort("Template children must be grobs.", "unsupported_source",
+    l_abort(
+      "Template children must be grobs.",
+      "unsupported_source",
       property = "children"
     )
   }
@@ -240,9 +243,17 @@ l_rect <- function(
   ...
 ) {
   grid::rectGrob(
-    x = x, y = y, width = width, height = height,
-    just = just, hjust = hjust, vjust = vjust, default.units = default.units,
-    name = name, gp = template_gpar(gp, list(...)), vp = vp
+    x = x,
+    y = y,
+    width = width,
+    height = height,
+    just = just,
+    hjust = hjust,
+    vjust = vjust,
+    default.units = default.units,
+    name = name,
+    gp = template_gpar(gp, list(...)),
+    vp = vp
   )
 }
 
@@ -314,8 +325,17 @@ l_text <- function(
   ...
 ) {
   grid::textGrob(
-    label = label, x = x, y = y, just = just, hjust = hjust, vjust = vjust,
-    rot = rot, check.overlap = check.overlap, default.units = default.units,
-    name = name, gp = template_gpar(gp, list(...)), vp = vp
+    label = label,
+    x = x,
+    y = y,
+    just = just,
+    hjust = hjust,
+    vjust = vjust,
+    rot = rot,
+    check.overlap = check.overlap,
+    default.units = default.units,
+    name = name,
+    gp = template_gpar(gp, list(...)),
+    vp = vp
   )
 }

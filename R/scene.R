@@ -29,7 +29,8 @@ normalize_edges <- function(value = 0) {
   if (!count %in% 1:4) {
     l_abort("Edges need one to four values, or named sides.")
   }
-  index <- switch(as.character(count),
+  index <- switch(
+    as.character(count),
     "1" = rep(1L, 4L),
     "2" = c(1L, 2L, 1L, 2L),
     "3" = c(1L, 2L, 3L, 2L),

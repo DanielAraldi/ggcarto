@@ -2,8 +2,13 @@ load_map_examples <- function() {
   environment <- new.env(parent = globalenv())
   root <- system.file("examples", package = "lplot")
   for (file in c(
-    "simple.R", "template.R", "sf.R", "complex.R",
-    "scale.R", "inset.R", "join.R"
+    "simple.R",
+    "template.R",
+    "sf.R",
+    "complex.R",
+    "scale.R",
+    "inset.R",
+    "join.R"
   )) {
     sys.source(file.path(root, file), envir = environment)
   }
@@ -13,10 +18,16 @@ load_map_examples <- function() {
 test_that("simple maps work without utilities and extract only title and legend", {
   skip_if_not_installed("sf")
   examples <- new.env(parent = baseenv())
-  sys.source(system.file("examples", "simple.R", package = "lplot"), envir = examples)
+  sys.source(
+    system.file("examples", "simple.R", package = "lplot"),
+    envir = examples
+  )
   expect_identical(ls(examples), "map_simple_scene")
   expect_s3_class(examples$map_simple_scene(), "l_viewport")
-  counties <- sf::st_read(system.file("shape/nc.shp", package = "sf"), quiet = TRUE)
+  counties <- sf::st_read(
+    system.file("shape/nc.shp", package = "sf"),
+    quiet = TRUE
+  )
   counties$custom <- counties$BIR74 * 2
   scene <- examples$map_simple_scene(counties, "custom", legend_title = "Total")
   expect_length(scene$children, 3)
@@ -75,8 +86,10 @@ test_that("map templates reuse geometry and accept content and colour overrides"
   skip_if_not_installed("sf")
   examples <- load_map_examples()
   scene <- examples$map_template_scene(
-    field = "BIR79", title = "Nascimentos | 1979",
-    accent = "#A63748", background = "#FAF1F3"
+    field = "BIR79",
+    title = "Nascimentos | 1979",
+    accent = "#A63748",
+    background = "#FAF1F3"
   )
   templates <- lapply(scene$children[c(1, 4, 5)], function(child) child$content)
   for (template in templates) {
@@ -118,16 +131,29 @@ test_that("complex maps align geographic overlays and regional indicators", {
   expect_equal(frame$children[[2]]$metadata$distance_m, 50000)
   expect_true(is.finite(frame$children[[4]]$metadata$angle))
   counties <- examples$map_counties()
-  selected <- lengths(sf::st_intersects(counties, sf::st_as_sfc(scene$metadata$focus))) > 0
+  selected <- lengths(sf::st_intersects(
+    counties,
+    sf::st_as_sfc(scene$metadata$focus)
+  )) >
+    0
   expect_identical(scene$metadata$counties, counties$NAME[selected])
   indicators <- scene$children[[3]]$children
   expect_identical(
     indicators[[1]]$content$children$title$label,
-    format(sum(counties$BIR74[selected]), big.mark = ".", decimal.mark = ",", scientific = FALSE, trim = TRUE)
+    format(
+      sum(counties$BIR74[selected]),
+      big.mark = ".",
+      decimal.mark = ",",
+      scientific = FALSE,
+      trim = TRUE
+    )
   )
   ranking <- indicators[[3]]$content$data
   expect_length(ranking$BIR74, 5)
-  expect_equal(ranking$BIR74, head(sort(counties$BIR74[selected], decreasing = TRUE), 5))
+  expect_equal(
+    ranking$BIR74,
+    head(sort(counties$BIR74[selected], decreasing = TRUE), 5)
+  )
 })
 
 test_that("new map compositions render without overlaps in their layout bands", {
@@ -163,7 +189,8 @@ test_that("new map compositions render without overlaps in their layout bands", 
             scale <- frame$children[[2]]
             expect_equal(
               scale$box[["width"]] / frame$box[["width"]],
-              scale$node$metadata$distance_m / scale$node$metadata$extent_width_m
+              scale$node$metadata$distance_m /
+                scale$node$metadata$extent_width_m
             )
           } else {
             expect_lte(
@@ -281,6 +308,10 @@ test_that("locator highlights the exact projected extent and north is georeferen
   expect_true(is.finite(arrow$metadata$angle))
   expect_lt(abs(arrow$metadata$angle), 5)
   expect_equal(arrow$type, "north_arrow")
+  symbol <- arrow$content$children$symbol
+  expect_equal(symbol$vp$angle, arrow$metadata$angle)
+  expect_s3_class(symbol$children$body$children$shaft, "segments")
+  expect_equal(symbol$children$label$gp$col, "black")
 })
 
 test_that("joined maps use the same spatial and colour scales without flattening", {
@@ -307,7 +338,12 @@ test_that("the four progressive map examples have stable visual output", {
   skip_if_not_installed("vdiffr")
   skip_if_not_installed("svglite")
   examples <- load_map_examples()
-  for (name in c("map_simple_scene", "map_template_scene", "map_sf_scene", "map_complex_scene")) {
+  for (name in c(
+    "map_simple_scene",
+    "map_template_scene",
+    "map_sf_scene",
+    "map_complex_scene"
+  )) {
     size <- if (name == "map_complex_scene") c(1200, 800) else c(900, 600)
     writer <- function(plot, file, title) {
       svglite::svglite(file, width = size[[1]] / 96, height = size[[2]] / 96)
