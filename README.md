@@ -52,9 +52,44 @@ l_save(scene, type = "png", dir = "exports", filename = "terrain",
 
 Install the optional `ragg` dependency before using this PNG export.
 
+## Customizable North Arrows
+
+`l_north_arrow()` builds a native grid grob with twelve designs. Customize
+colours, primary/secondary fills, line width, label position and typography,
+rotation, or replace the symbol body with your own grid grobs.
+
+```r
+north <- l_north_arrow(
+  design = "classic", fill = "#197C80", fill_secondary = "white",
+  col = "#203C43", lwd = 1.2, fontsize = 11, angle = 12
+)
+l_render(l_place(north, right = 16, top = 16, width = 40, height = 68))
+```
+
+| Design         | Symbol                                             |
+| -------------- | -------------------------------------------------- |
+| `classic`      | Classic cartographic split diamond (default)       |
+| `ornate`       | Traditional ornamented compass                     |
+| `minimal`      | Modern minimalist shaft and configurable arrowhead |
+| `fleur_de_lis` | Fleur-de-lis with curved side petals               |
+| `bold`         | Bold geometric arrow                               |
+| `fine_line`    | Technical open-tip arrow with reference ticks      |
+| `circle`       | Split arrow with a circle                          |
+| `double`       | Two opposing tips                                  |
+| `triangle`     | Split triangle                                     |
+| `cross`        | Four-point cross                                   |
+| `pennant`      | Right triangular flag on a mast, without arrowhead |
+| `art_deco`     | Stepped art deco arrow                             |
+
+`angle = 0` points up; positive angles rotate counterclockwise. This is a
+graphical constructor, not a CRS calculator. For true north, supply an angle
+computed for the map projection and reference location. The existing
+`map_north_arrow()` example helper retains that calculation and now draws with
+the `minimal` preset. No `sf` dependency is required by `l_north_arrow()`.
+
 ## Independent Function Examples
 
-There is one standalone script for each of the 19 exported functions in
+There is one standalone script for each of the 20 exported functions in
 [inst/examples/functions/](inst/examples/functions/). Each focuses on its named
 function, using `l_text()` and `l_rect()` to prepare content, `l_unit()` for native
 grid dimensions and `l_render()` to draw where applicable. Every script supplies its own inputs; no shared
@@ -87,6 +122,7 @@ script stores its main return value in `result`, even when a subsequent
 | `l_text()`             | [inst/examples/functions/l_text.R](inst/examples/functions/l_text.R)                         | Draw text with explicit typography.                              |
 | `l_rect()`             | [inst/examples/functions/l_rect.R](inst/examples/functions/l_rect.R)                         | Draw a filled rectangle with an outline.                         |
 | `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.           |
+| `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.             |
 | `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                     |
 | `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                           |
 | `l_register_element()` | [inst/examples/functions/l_register_element.R](inst/examples/functions/l_register_element.R) | Register a character-to-text adapter in an independent registry. |
@@ -112,7 +148,7 @@ The export example requires the optional **svglite** package
 run, writes an SVG there and prints its absolute path. Change `dir` to retain
 the file outside R's temporary directory. Existing files are not overwritten.
 
-To test all 19 examples in isolated environments from the project root:
+To test all 20 examples in isolated environments from the project root:
 
 ```sh
 NOT_CRAN=true Rscript -e 'testthat::test_local(filter = "function-examples", reporter = "summary", stop_on_failure = TRUE)'
@@ -244,7 +280,8 @@ The main panels are extracted with `l_get_element(..., "panel")`; original title
 and legend positions are therefore not duplicated. `map_sheet()` places extracted
 titles, subtitles and legends, while `map_frame()` keeps the panel's aspect ratio.
 Scale bars and north arrows use `l_template()`, `l_rect()` and `l_text()` to build
-native grid grobs passed through `l_get_element()`.
+native grid grobs passed through `l_get_element()`. The shared north arrow helper
+uses `l_north_arrow("minimal", angle = angle)` for its graphical composition.
 These shared helpers live in `inst/examples/utils.R`; sourcing an example file only
 defines functions and does not open a graphics device or automatically draw all
 examples.
@@ -348,11 +385,6 @@ lplot layout length. Use `l_length()` or layout strings for `l_place()` and
 `"vw"`, `"auto"` or `"clamp(...)"`. Invalid input produces grid errors.
 The `"null"` unit has its relative-sizing meaning in `grid::grid.layout()`, not
 in the lplot layout engine. Native `npc` coordinates retain a bottom-left origin.
-
-See `?l_unit` and `?grid::unit` for help and the full native unit vocabulary,
-[docs/02-API.md](docs/02-API.md) for the contract, and
-[inst/examples/functions/l_unit.R](inst/examples/functions/l_unit.R) for an
-independently executable example.
 
 ## Save Images
 

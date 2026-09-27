@@ -12,10 +12,13 @@ map_simple_scene <- function(
   plot <- ggplot2::ggplot(counties) +
     ggplot2::geom_sf(
       ggplot2::aes(fill = value),
-      colour = "white", linewidth = 0.3
+      colour = "white",
+      linewidth = 0.3
     ) +
     ggplot2::scale_fill_gradient(
-      low = "#EEF3CF", high = "#194E70", name = legend_title
+      low = "#EEF3CF",
+      high = "#194E70",
+      name = legend_title
     ) +
     ggplot2::coord_sf(datum = NA) +
     ggplot2::labs(title = title) +
