@@ -1,0 +1,24 @@
+if (!requireNamespace("sf", quietly = TRUE)) {
+  stop("Install the optional sf package to run this cartographic example.")
+}
+
+counties <- sf::st_transform(
+  sf::st_read(
+    system.file("shape/nc.shp", package = "sf"),
+    quiet = TRUE
+  ),
+  32119
+)
+plot <- ggplot2::ggplot(counties) +
+  ggplot2::geom_sf(fill = "#95CEC0", colour = "white", linewidth = 0.3) +
+  ggplot2::coord_sf(expand = FALSE, datum = NA) +
+  ggplot2::theme_void()
+
+result <- lplot::l_frame(
+  plot,
+  padding = 16,
+  background = "white",
+  border = list(color = "#203C43", width = 1)
+)
+
+lplot::l_render(result)

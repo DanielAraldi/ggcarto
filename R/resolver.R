@@ -351,6 +351,9 @@ resolve_position <- function(node, dimensions, context, margin, area) {
 }
 
 resolve_node <- function(node, context, safe_area) {
+  if (inherits(node, "l_scale_bar")) {
+    node <- bind_scale_bar(node, context)
+  }
   margin <- resolve_edges(node$margin, context, node, "margin")
   padding <- resolve_edges(node$padding, context, node, "padding")
   border <- resolve_border(node$border, context, node)
@@ -378,7 +381,8 @@ resolve_node <- function(node, context, safe_area) {
     content = content,
     children = list(),
     scale = 1,
-    collision_candidates = list()
+    collision_candidates = list(),
+    scale_bar = node$scale_info
   )
 }
 
@@ -440,6 +444,7 @@ validate_resolved <- function(resolved, context) {
 }
 
 resolve_children <- function(parent, context) {
+  context$map_panel <- parent$node$map_panel
   safe_area <- resolve_edges(
     parent$node$safe_area,
     context,

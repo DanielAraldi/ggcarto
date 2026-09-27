@@ -126,10 +126,14 @@ test_that("complex maps align geographic overlays and regional indicators", {
   examples <- load_map_examples()
   scene <- examples$map_complex_scene()
   frame <- scene$children[[2]]$children[[1]]$children[[1]]
-  expect_identical(frame$metadata$extent, scene$metadata$focus)
-  expect_identical(frame$children[[3]]$metadata$focus, scene$metadata$focus)
-  expect_equal(frame$children[[2]]$metadata$distance_m, 50000)
-  expect_true(is.finite(frame$children[[4]]$metadata$angle))
+  expect_s3_class(frame, "l_frame")
+  expect_equal(frame$map_context$extent, scene$metadata$focus)
+  overlays <- frame$children[[1]]$children
+  expect_s3_class(overlays[[3]], "l_inset")
+  expect_equal(overlays[[3]]$reference_context$extent, scene$metadata$focus)
+  expect_equal(sf::st_bbox(overlays[[3]]$footprint), scene$metadata$focus)
+  expect_s3_class(overlays[[2]], "l_scale_bar")
+  expect_true(is.finite(overlays[[4]]$metadata$angle))
   counties <- examples$map_counties()
   selected <- lengths(sf::st_intersects(
     counties,
@@ -186,11 +190,12 @@ test_that("new map compositions render without overlaps in their layout bands", 
               children[[4]]$box[["y"]]
             )
             frame <- children[[2]]$children[[1]]$children[[1]]
-            scale <- frame$children[[2]]
+            panel <- frame$children[[1]]
+            scale <- panel$children[[2]]
+            expect_equal(scale$scale_bar$distance_m, 50000)
             expect_equal(
-              scale$box[["width"]] / frame$box[["width"]],
-              scale$node$metadata$distance_m /
-                scale$node$metadata$extent_width_m
+              scale$box[["width"]] / panel$box[["width"]],
+              scale$scale_bar$distance_m / scale$scale_bar$extent_width_m
             )
           } else {
             expect_lte(
@@ -228,16 +233,23 @@ test_that("map examples resolve and render with a metrically aligned scale", {
       }
       for (sheet in sheets) {
         frame <- sheet$children[[3]]$children[[1]]
-        scale <- frame$children[[2]]
-        extent <- frame$node$metadata$extent
+        expect_s3_class(frame$node, "l_frame")
+        panel <- frame$children[[1]]
+        scale <- panel$children[[2]]
+        expect_s3_class(scale$node, "l_scale_bar")
+        expect_equal(
+          scale$scale_bar$distance_m,
+          if (name == "map_inset_scene") 50000 else 200000
+        )
+        extent <- frame$node$map_context$extent
         ratio <- as.numeric(
           (extent[["xmax"]] - extent[["xmin"]]) /
             (extent[["ymax"]] - extent[["ymin"]])
         )
-        expect_equal(frame$box[["width"]] / frame$box[["height"]], ratio)
+        expect_equal(panel$box[["width"]] / panel$box[["height"]], ratio)
         expect_equal(
-          scale$box[["width"]] / frame$box[["width"]],
-          scale$node$metadata$distance_m / scale$node$metadata$extent_width_m
+          scale$box[["width"]] / panel$box[["width"]],
+          scale$scale_bar$distance_m / scale$scale_bar$extent_width_m
         )
       }
     }
@@ -286,15 +298,17 @@ test_that("locator highlights the exact projected extent and north is georeferen
   examples <- load_map_examples()
   scene <- examples$map_inset_scene()
   frame <- scene$children[[3]]$children[[1]]
-  extent <- frame$metadata$extent
-  locator <- frame$children[[3]]
-  arrow <- frame$children[[4]]
-  expect_identical(locator$metadata$focus, extent)
-  highlight <- locator$children[[1]]$source$layers[[2]]$data
-  expect_equal(sf::st_bbox(highlight), extent)
+  extent <- frame$map_context$extent
+  panel <- frame$children[[1]]
+  locator <- panel$children[[3]]
+  arrow <- panel$children[[4]]
+  expect_s3_class(locator, "l_inset")
+  expect_equal(locator$reference_context$extent, extent)
+  expect_equal(sf::st_bbox(locator$footprint), extent)
+  expect_length(locator$map_plot$layers, 1)
   expect_equal(locator$left, l_length(10))
   expect_equal(locator$top, l_length(10))
-  panel_source <- frame$children[[1]]$source
+  panel_source <- frame$map_plot
   ranges <- ggplot2::ggplot_build(panel_source)$layout$panel_params[[1]]
   expect_equal(
     as.numeric(ranges$x_range),
@@ -321,9 +335,9 @@ test_that("joined maps use the same spatial and colour scales without flattening
   frames <- lapply(scene$children, function(sheet) {
     sheet$children[[3]]$children[[1]]
   })
-  expect_identical(frames[[1]]$metadata$extent, frames[[2]]$metadata$extent)
+  expect_identical(frames[[1]]$map_context, frames[[2]]$map_context)
   limits <- lapply(frames, function(frame) {
-    frame$children[[1]]$source$scales$get_scales("fill")$limits
+    frame$map_plot$scales$get_scales("fill")$limits
   })
   expect_identical(limits[[1]], limits[[2]])
   expect_equal(limits[[1]][[1]], 0)

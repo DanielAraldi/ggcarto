@@ -24,6 +24,9 @@ test_that("every exported function has a focused example with lplot helpers", {
     symbols <- all.names(parse(path), functions = TRUE, unique = TRUE)
     expect_true(function_name %in% symbols, info = basename(path))
     helpers <- c("l_text", "l_rect", "l_place", "l_render", "l_unit")
+    if (function_name %in% c("l_scale_bar", "l_inset")) {
+      helpers <- c(helpers, "l_frame")
+    }
     expect_true(
       all(intersect(symbols, public_functions) %in% c(function_name, helpers)),
       info = basename(path)
@@ -45,7 +48,10 @@ test_that("every exported function has a focused example with lplot helpers", {
           "l_template",
           "l_text",
           "l_viewport",
-          "l_north_arrow"
+          "l_north_arrow",
+          "l_frame",
+          "l_scale_bar",
+          "l_inset"
         )
     ) {
       expect_true("l_render" %in% symbols, info = basename(path))
@@ -94,6 +100,20 @@ test_that("constructor examples draw lplot grobs independently", {
   expect_true(all(
     c("central-petal", "west-petal", "label") %in% example$drawn_grobs
   ))
+})
+
+test_that("cartographic function examples draw independently with bundled sf data", {
+  skip_if_not_installed("sf")
+  expect_no_warning(frame <- run_function_example("l_frame"))
+  expect_s3_class(frame$result, "l_frame")
+  expect_equal(frame$result$map_context$crs$epsg, 32119)
+  expect_true(any(grepl("pathgrob|polygon", frame$drawn_grobs)))
+  expect_no_warning(scale <- run_function_example("l_scale_bar"))
+  expect_s3_class(scale$result, "l_scale_bar")
+  expect_true(all(c("scale-bar", "scale-label-3") %in% scale$drawn_grobs))
+  expect_no_warning(inset <- run_function_example("l_inset"))
+  expect_s3_class(inset$result, "l_inset")
+  expect_true("inset-footprint" %in% inset$drawn_grobs)
 })
 
 test_that("style and registry examples need no extracted elements", {

@@ -87,13 +87,60 @@ computed for the map projection and reference location. The existing
 `map_north_arrow()` example helper retains that calculation and now draws with
 the `minimal` preset. No `sf` dependency is required by `l_north_arrow()`.
 
+## Cartographic Frames, Scales and Insets
+
+`l_frame()` extracts a single `coord_sf()` panel, retains its displayed extent
+and CRS, and fits it without stretching. Titles, legends and external axes
+remain separate elements. Overlays use the fitted map as their layout context,
+not the surrounding page. Outer padding and borders do not alter map scale.
+
+`l_scale_bar()` belongs directly in a frame's `overlays`. It recalculates its
+width on every draw, with explicit or automatic distance, `m`/`km`/`ft`/`mi`
+labels, alternating bars or ticks, and configurable subdivisions. It measures
+**projected distance**, not geodesic ground distance. Metres, kilometres,
+international feet and US survey feet are supported as projection units;
+angular and unsupported units are rejected. Arbitrary width overrides and
+collision shrinking are rejected so the distance label cannot become misleading.
+
+`l_inset()` creates an independent secondary frame. In `mode = "locator"`, it
+highlights the main extent inside the secondary map; in `mode = "detail"`, it
+highlights the secondary extent on the main frame when added to its overlays.
+Footprints are densified before CRS transformation. The explicit `reference`
+must match the main frame, and each map owns its own scale.
+
+These functions require optional **sf** for cartographic composition. The
+generic layout engine does not require any geographic package.
+
+```r
+counties <- sf::st_transform(sf::st_read(
+  system.file("shape/nc.shp", package = "sf"), quiet = TRUE
+), 32119)
+overview <- ggplot2::ggplot(counties) +
+  ggplot2::geom_sf(fill = "#95CEC0", colour = "white", linewidth = 0.3) +
+  ggplot2::coord_sf(expand = FALSE, datum = NA) + ggplot2::theme_void()
+main <- overview
+main$coordinates <- ggplot2::coord_sf(
+  crs = 32119, xlim = c(580000, 820000), ylim = c(130000, 290000),
+  expand = FALSE, datum = NA
+)
+locator <- l_inset(overview, reference = main, background = "white")
+scene <- l_frame(main, overlays = list(
+  l_place(locator, right = 10, top = 10),
+  l_scale_bar(50, "km", segments = 2, left = 12, bottom = 8)
+), padding = 16, background = "white")
+l_render(scene)
+```
+
 ## Independent Function Examples
 
 There is one standalone script for each exported function in
 [inst/examples/functions/](inst/examples/functions/). Each focuses on its named
 function, using `l_text()` and `l_rect()` to prepare content, `l_unit()` for native
-grid dimensions and `l_render()` to draw where applicable. Every script supplies its own inputs; no shared
-utilities, other example scripts, sf installation or downloads are required.
+grid dimensions and `l_render()` to draw where applicable. Every script supplies
+its own inputs without shared utilities, other example scripts or downloads.
+The `l_frame`, `l_scale_bar` and `l_inset` examples require optional `sf` and use
+its bundled county data. Scale and inset examples use `l_frame()` as their map
+context. All other function examples run without sf.
 
 From the project root, load the development package and choose a script:
 
@@ -124,6 +171,9 @@ script stores its main return value in `result`, even when a subsequent
 | `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.           |
 | `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw one customized compass rose, centered in the viewport.      |
 | `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.             |
+| `l_frame()`            | [inst/examples/functions/l_frame.R](inst/examples/functions/l_frame.R)                       | Fit a geographic panel while preserving its CRS and proportions. |
+| `l_scale_bar()`        | [inst/examples/functions/l_scale_bar.R](inst/examples/functions/l_scale_bar.R)               | Draw a map-bound 200 km scale with subdivisions.                 |
+| `l_inset()`            | [inst/examples/functions/l_inset.R](inst/examples/functions/l_inset.R)                       | Add a locator highlighting the main map's displayed extent.      |
 | `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                     |
 | `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                           |
 | `l_register_element()` | [inst/examples/functions/l_register_element.R](inst/examples/functions/l_register_element.R) | Register a character-to-text adapter in an independent registry. |
@@ -277,15 +327,21 @@ Run the three rendering commands individually to inspect each plot:
    `l_join()`. They display the `BIR74` and `BIR79` birth-count attributes from
    `sf::nc`, using identical extents and colour limits for comparison.
 
-The main panels are extracted with `l_get_element(..., "panel")`; original title
-and legend positions are therefore not duplicated. `map_sheet()` places extracted
-titles, subtitles and legends, while `map_frame()` keeps the panel's aspect ratio.
-Scale bars and north arrows use `l_template()`, `l_rect()` and `l_text()` to build
-native grid grobs passed through `l_get_element()`. The shared north arrow helper
-uses `l_north_arrow("minimal", angle = angle)` for its graphical composition.
+The four cartographic scenes (`scale`, `inset`, `join` and `complex`) use the
+public map constructors through shared composition helpers. `map_frame()` calls
+`l_frame()` and adds `l_scale_bar()` with endpoint labels and an intermediate
+tick, keeping scales legible on compact joined maps. Extent and proportions come
+from the actual plot; no separate frame extent or manual scale-width calculation
+is maintained. `map_locator()` uses `l_inset(mode = "locator")` with the main plot
+as its explicit reference, so the highlighted footprint stays geographically linked.
+
+`map_sheet()` still places separately extracted titles, subtitles and legends.
+The shared north arrow helper retains its geographic angle calculation and uses
+`l_north_arrow("minimal", angle = angle)` for its graphical composition.
 These shared helpers live in `inst/examples/utils.R`; sourcing an example file only
 defines functions and does not open a graphics device or automatically draw all
-examples.
+examples. The minimal `simple` example and the generic terrain composition remain
+unchanged; `template` and `sf` continue building on the minimal example.
 
 Coordinates use EPSG:32119 (NAD83 / North Carolina), in metres. Scale-bar width is
 the requested projected distance divided by the displayed extent width, not a

@@ -7,5 +7,5 @@ map_scale_scene <- function() {
   counties <- map_counties()
   extent <- map_extent(counties)
   plot <- map_source(counties, extent)
-  map_sheet(plot, map_frame(plot, extent))
+  map_sheet(plot, map_frame(plot))
 }

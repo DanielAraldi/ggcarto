@@ -99,78 +99,26 @@ map_source <- function(
     )
 }
 
-map_scale_bar <- function(distance_m, extent) {
-  width_m <- as.numeric(extent[["xmax"]] - extent[["xmin"]])
-  scale <- lplot::l_template(
-    lplot::l_rect(
-      x = 0.25,
-      y = 0.3,
-      width = 0.5,
-      height = 0.25,
-      fill = "#203C43",
-      col = "#203C43"
-    ),
-    lplot::l_rect(
-      x = 0.75,
-      y = 0.3,
-      width = 0.5,
-      height = 0.25,
-      fill = "white",
-      col = "#203C43"
-    ),
-    lplot::l_text(
-      "0",
-      x = 0,
-      y = 0.8,
-      just = "left",
-      fontsize = 8
-    ),
-    lplot::l_text(
-      paste(distance_m / 1000, "km"),
-      x = 1,
-      y = 0.8,
-      just = "right",
-      fontsize = 8
-    )
-  )
-  lplot::l_get_element(
-    scale,
-    "scale_bar",
-    width = lplot::l_length(100 * distance_m / width_m, "%"),
-    height = 30,
-    metadata = list(distance_m = distance_m, extent_width_m = width_m)
-  )
-}
-
-map_frame <- function(plot, extent, distance_m = 200000, overlays = list()) {
-  ratio <- as.numeric(
-    (extent[["xmax"]] - extent[["xmin"]]) /
-      (extent[["ymax"]] - extent[["ymin"]])
-  )
-  panel <- lplot::l_get_element(plot, "panel")
-  frame <- lplot::l_viewport(
-    c(
+map_frame <- function(plot, distance_m = 200000, overlays = list()) {
+  lplot::l_frame(
+    plot,
+    overlays = c(
       list(
-        lplot::l_place(panel, width = "100%", height = "100%"),
-        lplot::l_place(
-          map_scale_bar(distance_m, extent),
+        lplot::l_scale_bar(
+          distance_m / 1000,
+          "km",
+          segments = 1,
+          subdivisions = 2,
+          design = "ticks",
+          fontsize = 7,
+          height = 30,
           left = 12,
           bottom = 8,
           z_index = 10
         )
       ),
       overlays
-    ),
-    metadata = list(extent = extent)
-  )
-  lplot::l_place(
-    frame,
-    x = "50%",
-    y = "50%",
-    anchor = "center",
-    width = "100%",
-    max_height = "100%",
-    aspect_ratio = ratio
+    )
   )
 }
 
@@ -245,17 +193,10 @@ map_north_arrow <- function(extent) {
   )
 }
 
-map_locator <- function(counties, focus) {
+map_locator <- function(counties, reference) {
   extent <- map_extent(counties)
-  highlight <- sf::st_as_sfc(focus)
   plot <- ggplot2::ggplot(counties) +
     ggplot2::geom_sf(fill = "#D7E2E3", colour = "white", linewidth = 0.15) +
-    ggplot2::geom_sf(
-      data = highlight,
-      fill = "#D84B3933",
-      colour = "#C63F30",
-      linewidth = 0.8
-    ) +
     ggplot2::coord_sf(
       crs = sf::st_crs(counties),
       datum = NA,
@@ -272,21 +213,17 @@ map_locator <- function(counties, focus) {
         linewidth = 0.4
       )
     )
-  ratio <- as.numeric(
-    (extent[["xmax"]] - extent[["xmin"]]) /
-      (extent[["ymax"]] - extent[["ymin"]])
-  )
-  panel <- lplot::l_get_element(plot, "panel")
   lplot::l_place(
-    lplot::l_viewport(
-      list(panel),
+    lplot::l_inset(
+      plot,
+      reference = reference,
+      mode = "locator",
+      width = "34%",
       background = "white",
-      metadata = list(focus = focus, extent = extent)
+      highlight_lwd = 2
     ),
     left = 10,
     top = 10,
-    width = "34%",
-    aspect_ratio = ratio,
     z_index = 30
   )
 }

@@ -18,8 +18,8 @@ map_join_scene <- function() {
     field = "BIR79",
     title = "Nascimentos | BIR79"
   )
-  first_scene <- map_sheet(first, map_frame(first, extent))
-  second_scene <- map_sheet(second, map_frame(second, extent))
+  first_scene <- map_sheet(first, map_frame(first))
+  second_scene <- map_sheet(second, map_frame(second))
   lplot::l_join(
     list(
       lplot::l_place(
