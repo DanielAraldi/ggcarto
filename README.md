@@ -122,7 +122,7 @@ script stores its main return value in `result`, even when a subsequent
 | `l_text()`             | [inst/examples/functions/l_text.R](inst/examples/functions/l_text.R)                         | Draw text with explicit typography.                              |
 | `l_rect()`             | [inst/examples/functions/l_rect.R](inst/examples/functions/l_rect.R)                         | Draw a filled rectangle with an outline.                         |
 | `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.           |
-| `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw a gallery of twelve customizable compass roses.             |
+| `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw one customized compass rose, centered in the viewport.      |
 | `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.             |
 | `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                     |
 | `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                           |
@@ -394,8 +394,8 @@ l_save(l_place(rose, width = "100%", height = "100%"),
 source(system.file("examples", "functions", "l_north_rose.R", package = "lplot"))
 ```
 
-SVG export requires optional `svglite`. The example draws all twelve presets on
-the current device; an approximately 800 by 600 area works well. Tests cover every design, exact point
+SVG export requires optional `svglite`. The example draws one customized
+eight-point rose in a centered 160 by 160 box. Tests cover every design, exact point
 counts, labels, styling, rotation, validation, extraction, layout, export,
 nonblank and distinct raster output, square proportions and visual snapshots.
 

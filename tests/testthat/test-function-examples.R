@@ -109,12 +109,16 @@ test_that("style and registry examples need no extracted elements", {
   expect_true(is.function(registry$title$extract))
 })
 
-test_that("the compass rose example draws all twelve presets independently", {
+test_that("the compass rose example draws one customized rose independently", {
   expect_no_warning(example <- run_function_example("l_north_rose"))
   expect_s3_class(example$result, "gTree")
-  expect_length(example$designs, 12)
-  expect_true(all(example$designs %in% example$drawn_grobs))
-  expect_true(all(c("body", "labels") %in% example$drawn_grobs))
+  expect_identical(example$result$name, "custom_rose")
+  expect_equal(example$result$children$rose$vp$angle, 0)
+  body <- example$result$children$rose$children$body
+  expect_length(body$children, 16)
+  expect_equal(body$children[[1]]$gp$fill, "#197C80")
+  expect_equal(body$children[[2]]$gp$fill, "#F4CD68")
+  expect_true(all(c("custom_rose", "body", "labels") %in% example$drawn_grobs))
 })
 
 test_that("extraction and removal examples preserve their source plots", {
