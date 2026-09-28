@@ -231,12 +231,12 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #'
 #' This is graphical content, not a geographic calculation. It does not inspect
 #' a map, calculate true north or apply magnetic declination. Supply an angle
-#' computed for the map projection and reference location when required.
+#' computed by [l_north_angle()] for the map and reference location when required.
 #' No spatial packages are needed to construct or render the rose.
 #'
 #' @returns A native grid `gTree`, usable with [grid::grid.draw()], [l_template()],
 #'   [l_place()], [l_get_element()] and [l_save()].
-#' @seealso [l_template()], [l_unit()], [l_place()], [l_get_element()]
+#' @seealso [l_north_angle()], [l_template()], [l_unit()], [l_place()], [l_get_element()]
 #' @examples
 #' rose <- l_north_rose("eight_point", fill = "#197C80")
 #' scene <- l_viewport(list(

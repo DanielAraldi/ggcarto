@@ -90,7 +90,7 @@ sizes. Leave enough space for long labels or rotation; the constructor does
 not measure bounds, shrink content or override parent clipping.
 
 This function does not infer a CRS or calculate true or magnetic north.
-Supply \code{angle} computed for your map projection and reference location when
+Supply \code{angle} from \code{\link[=l_north_angle]{l_north_angle()}} for your map and reference location when
 geographic orientation is needed. Additional rotation in \code{vp} is cumulative.
 Custom children should point up before rotation and use the same local
 coordinate system. They can contain arbitrary grid geometry, including
@@ -113,5 +113,5 @@ custom <- l_north_arrow(children = list(grid::polygonGrob(
 grid::is.grob(custom)
 }
 \seealso{
-\code{\link[=l_template]{l_template()}}, \code{\link[=l_text]{l_text()}}, \code{\link[=l_unit]{l_unit()}}, \code{\link[grid:arrow]{grid::arrow()}}
+\code{\link[=l_north_angle]{l_north_angle()}}, \code{\link[=l_template]{l_template()}}, \code{\link[=l_text]{l_text()}}, \code{\link[=l_unit]{l_unit()}}, \code{\link[grid:arrow]{grid::arrow()}}
 }

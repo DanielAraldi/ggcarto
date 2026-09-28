@@ -173,12 +173,7 @@ map_north_arrow <- function(extent) {
     crs = sf::st_crs(extent)
   )
   lonlat <- sf::st_coordinates(sf::st_transform(center, 4326))[1, ]
-  north <- sf::st_sfc(sf::st_point(unname(lonlat + c(0, 0.05))), crs = 4326)
-  direction <- as.numeric(
-    sf::st_coordinates(sf::st_transform(north, sf::st_crs(extent))) -
-      sf::st_coordinates(center)
-  )
-  angle <- atan2(direction[[2]], direction[[1]]) * 180 / pi - 90
+  angle <- lplot::l_north_angle(extent)
   arrow <- lplot::l_north_arrow(
     design = "minimal",
     angle = angle,

@@ -99,7 +99,7 @@ the center. Leave additional room for long labels and rotation.
 
 This is graphical content, not a geographic calculation. It does not inspect
 a map, calculate true north or apply magnetic declination. Supply an angle
-computed for the map projection and reference location when required.
+computed by \code{\link[=l_north_angle]{l_north_angle()}} for the map and reference location when required.
 No spatial packages are needed to construct or render the rose.
 }
 \examples{
@@ -112,5 +112,5 @@ l_north_rose("stellar", points = 32, labels = FALSE)
 l_north_rose("classic", labels = c("N", "L", "S", "O"), angle = 15)
 }
 \seealso{
-\code{\link[=l_template]{l_template()}}, \code{\link[=l_unit]{l_unit()}}, \code{\link[=l_place]{l_place()}}, \code{\link[=l_get_element]{l_get_element()}}
+\code{\link[=l_north_angle]{l_north_angle()}}, \code{\link[=l_template]{l_template()}}, \code{\link[=l_unit]{l_unit()}}, \code{\link[=l_place]{l_place()}}, \code{\link[=l_get_element]{l_get_element()}}
 }
