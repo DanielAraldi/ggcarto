@@ -5,12 +5,35 @@ with logical constraints, and render nested compositions using native `grid`.
 There is no patchwork or browser dependency.
 Use `l_save()` to export scenes or plots to PNG, JPG/JPEG, SVG and WebP.
 
+## Project Overview
+
+lplot handles **composition**, while ggplot2 handles the plotted data. Create or
+extract graphical elements, describe their positions in a scene, then let lplot
+resolve the layout for the current drawing area. The same scene can be rendered
+at different sizes without rebuilding its placement rules.
+
+- **Version and license:** 0.1.0, GPL-3.
+- **Requirements:** R >= 4.1.0, ggplot2 >= 3.5.0, gtable and R's built-in grid.
+- **Optional features:** sf for cartographic frames, scales, insets and true-north
+  calculations; ragg for PNG/JPEG, svglite for SVG, and ragg plus webp for WebP.
+  Graphical north arrows and compass roses do not require sf.
+- **Source and examples:** implementation in [R/](R/), generated help in
+  [man/](man/), runnable scripts in [inst/examples/](inst/examples/) and tests in
+  [tests/testthat/](tests/testthat/).
+
+Start with [Install and Try](#install-and-try) and [Core Workflow](#core-workflow).
+The [function reference](#independent-function-examples) covers all 25 exported
+functions with their main inputs, return values and standalone examples.
+See [Layout Contract](#layout-contract) for positioning rules,
+[Save Images](#save-images) for export, and
+[Deliberate Boundaries](#deliberate-boundaries) for limitations.
+
 ## Install and Try
 
 From the package directory:
 
 ```sh
-Rscript -e 'install.packages(c("ggplot2", "gtable", "testthat", "vdiffr", "svglite"))'
+Rscript -e 'install.packages(c("ggplot2", "gtable"))'
 R CMD INSTALL .
 ```
 
@@ -51,6 +74,46 @@ l_save(scene, type = "png", dir = "exports", filename = "terrain",
 ```
 
 Install the optional `ragg` dependency before using this PNG export.
+
+## Core Workflow
+
+1. **Prepare content:** use a ggplot, extract part of it with `l_get_element()`,
+   or build native grobs with `l_text()`, `l_rect()` and `l_template()`.
+2. **Describe placement:** `l_place()` sets constraints; `l_viewport()` groups
+   children; `l_join()` combines scenes while keeping child-local coordinates.
+3. **Inspect or draw:** `l_measure()` reports one object's size, `l_resolve()`
+   reports a complete layout, and `l_render()` draws it. Use `l_save()` to export.
+
+This example needs only lplot and can be run independently:
+
+```r
+library(lplot)
+
+label <- l_style(l_text("Survey area"),
+  color = "#164E45", font_size = l_clamp("10pt", "2vmin", "16pt")
+)
+tile <- l_viewport(list(
+  l_place(label, left = l_length("5%"), top = 12)
+), width = 200, height = 80, background = "#E8F3EF")
+scene <- l_join(list(tile, tile), flow = "row", gap = "4mm",
+  width = 440, height = 100, padding = 8
+)
+
+l_measure(label, viewport = list(width = 440, height = 100))
+layout <- l_resolve(scene, width = 440, height = 100)
+layout$root$children[[2]]$box
+l_render(scene, width = 440, height = 100)
+
+grob <- l_as_grob(scene)
+grid::grid.newpage()
+grid::grid.draw(grob)
+```
+
+`l_length("5%")` stores a relative length; `l_clamp()` bounds a preferred length
+between a minimum and maximum. Both are evaluated in the layout context.
+`l_style()` returns a styled node without modifying the original content.
+`l_as_grob()` bridges a scene to native grid drawing and resolves it again at
+draw time; it is not a frozen image. Construction and inspection do not draw.
 
 ## Customizable North Arrows
 
@@ -190,33 +253,38 @@ current device; inspection examples print their results to the console. Each
 script stores its main return value in `result`, even when a subsequent
 `l_render()` call draws it. Run the scripts separately, in any order.
 
-| Function               | Script                                                                                       | Demonstration                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `l_unit()`             | [inst/examples/functions/l_unit.R](inst/examples/functions/l_unit.R)                         | Declare and print a native grid unit in millimetres.                |
-| `l_length()`           | [inst/examples/functions/l_length.R](inst/examples/functions/l_length.R)                     | Declare and print a percentage length.                              |
-| `l_clamp()`            | [inst/examples/functions/l_clamp.R](inst/examples/functions/l_clamp.R)                       | Declare minimum, preferred and maximum lengths.                     |
-| `l_text()`             | [inst/examples/functions/l_text.R](inst/examples/functions/l_text.R)                         | Draw text with explicit typography.                                 |
-| `l_rect()`             | [inst/examples/functions/l_rect.R](inst/examples/functions/l_rect.R)                         | Draw a filled rectangle with an outline.                            |
-| `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.              |
-| `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw one customized compass rose, centered in the viewport.         |
-| `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.                |
-| `l_north_angle()`      | [inst/examples/functions/l_north_angle.R](inst/examples/functions/l_north_angle.R)           | Calculate true north and apply the same angle to an arrow and rose. |
-| `l_frame()`            | [inst/examples/functions/l_frame.R](inst/examples/functions/l_frame.R)                       | Fit a geographic panel while preserving its CRS and proportions.    |
-| `l_scale_bar()`        | [inst/examples/functions/l_scale_bar.R](inst/examples/functions/l_scale_bar.R)               | Draw a map-bound 200 km scale with subdivisions.                    |
-| `l_inset()`            | [inst/examples/functions/l_inset.R](inst/examples/functions/l_inset.R)                       | Add a locator highlighting the main map's displayed extent.         |
-| `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                        |
-| `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                              |
-| `l_register_element()` | [inst/examples/functions/l_register_element.R](inst/examples/functions/l_register_element.R) | Register a character-to-text adapter in an independent registry.    |
-| `l_get_element()`      | [inst/examples/functions/l_get_element.R](inst/examples/functions/l_get_element.R)           | Extract and draw only a ggplot legend.                              |
-| `l_without()`          | [inst/examples/functions/l_without.R](inst/examples/functions/l_without.R)                   | Draw a copy of a ggplot without its title and legend.               |
-| `l_place()`            | [inst/examples/functions/l_place.R](inst/examples/functions/l_place.R)                       | Position and size a rectangle using percentages.                    |
-| `l_viewport()`         | [inst/examples/functions/l_viewport.R](inst/examples/functions/l_viewport.R)                 | Arrange text grobs in a padded local context.                       |
-| `l_join()`             | [inst/examples/functions/l_join.R](inst/examples/functions/l_join.R)                         | Join two rectangles with horizontal spacing.                        |
-| `l_as_grob()`          | [inst/examples/functions/l_as_grob.R](inst/examples/functions/l_as_grob.R)                   | Create and draw a deferred grid-compatible wrapper.                 |
-| `l_render()`           | [inst/examples/functions/l_render.R](inst/examples/functions/l_render.R)                     | Draw a text grob and retain the returned layout.                    |
-| `l_measure()`          | [inst/examples/functions/l_measure.R](inst/examples/functions/l_measure.R)                   | Print the constrained and intrinsic dimensions of text.             |
-| `l_resolve()`          | [inst/examples/functions/l_resolve.R](inst/examples/functions/l_resolve.R)                   | Inspect the root and child boxes in logical pixels.                 |
-| `l_save()`             | [inst/examples/functions/l_save.R](inst/examples/functions/l_save.R)                         | Export a text grob and print the output path.                       |
+The table summarizes the main arguments, not every option. Click a function name
+to open its runnable script; use `?l_place` (or another function name) in R for
+complete parameters, defaults and examples. A **grob** is a native grid graphics
+object; a **node** adds lplot layout rules; a **layout** contains resolved boxes.
+
+| Function / Example                                                   | Main Arguments                                                                             | Returns                                                                  |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [l_unit()](inst/examples/functions/l_unit.R)                         | `x`, grid `units`, optional `data`                                                         | Native grid `unit`; see [Native Grid Units](#native-grid-units).         |
+| [l_length()](inst/examples/functions/l_length.R)                     | `value`, `unit = "px"` for numbers                                                         | Unresolved `l_length`, such as `"25%"` or `"2cm"`.                       |
+| [l_clamp()](inst/examples/functions/l_clamp.R)                       | `minimum`, `preferred`, `maximum`                                                          | Bounded `l_length` expression.                                           |
+| [l_text()](inst/examples/functions/l_text.R)                         | `label`, `x`, `y`, `gp`, typography in `...`                                               | Native text grob.                                                        |
+| [l_rect()](inst/examples/functions/l_rect.R)                         | `x`, `y`, `width`, `height`, `gp`, fill/outline in `...`                                   | Native rectangle grob.                                                   |
+| [l_template()](inst/examples/functions/l_template.R)                 | Grobs in `...` or `children`, shared `gp`, `vp`                                            | Native `gTree` grouping reusable content.                                |
+| [l_north_rose()](inst/examples/functions/l_north_rose.R)             | `design`, `angle`, `points`, `labels`, colours and typography                              | Compass-rose `gTree`; `points` applies to `stellar`.                     |
+| [l_north_arrow()](inst/examples/functions/l_north_arrow.R)           | `design`, `angle`, `label`, colours, optional `children`                                   | North-arrow `gTree`.                                                     |
+| [l_north_angle()](inst/examples/functions/l_north_angle.R)           | `map`, optional `at`, `step = 0.0001`                                                      | Local true-north angle in degrees; requires sf.                          |
+| [l_frame()](inst/examples/functions/l_frame.R)                       | coord_sf `plot`, `overlays`, `width`, `height`                                             | `l_frame` node retaining extent and CRS; requires sf.                    |
+| [l_scale_bar()](inst/examples/functions/l_scale_bar.R)               | `distance = NULL` for automatic distance, `unit`, `segments`, `subdivisions`, `design`     | `l_scale_bar` node for frame overlays; requires sf when resolved.        |
+| [l_inset()](inst/examples/functions/l_inset.R)                       | `plot`, main-map `reference`, `mode`, highlight style, `overlays`                          | `l_inset` frame in `"locator"` or `"detail"` mode; requires sf.          |
+| [l_style()](inst/examples/functions/l_style.R)                       | `object`, named style overrides in `...`                                                   | Styled node; source unchanged.                                           |
+| [l_registry()](inst/examples/functions/l_registry.R)                 | No arguments                                                                               | `l_registry` containing built-in extraction adapters.                    |
+| [l_register_element()](inst/examples/functions/l_register_element.R) | `type`, `extract`, optional `can_extract`, `measure`, `style`, `registry`                  | Updated registry; retain and pass it explicitly.                         |
+| [l_get_element()](inst/examples/functions/l_get_element.R)           | `plot`, `type`, dimensions, `style`, `which`, `missing`, `registry`                        | `l_element`, or `NULL` with `missing = "null"` when absent.              |
+| [l_without()](inst/examples/functions/l_without.R)                   | ggplot `plot`, component names in `type`                                                   | Copy of the ggplot with those components hidden.                         |
+| [l_place()](inst/examples/functions/l_place.R)                       | `object`, coordinates or insets, dimensions, `anchor`, `z_index`                           | Positioned/constrained node.                                             |
+| [l_viewport()](inst/examples/functions/l_viewport.R)                 | `plots`, dimensions, `padding`, `margin`, `background`, layout properties                  | Viewport/scene node containing children.                                 |
+| [l_join()](inst/examples/functions/l_join.R)                         | `plots`, dimensions, `position`, `gap`, `flow` through `...`                               | Parent viewport; choose `flow = "row"` for side-by-side placement.       |
+| [l_as_grob()](inst/examples/functions/l_as_grob.R)                   | `object`, `dpi`, `debug`                                                                   | Deferred `l_scene_grob` for grid interoperability.                       |
+| [l_render()](inst/examples/functions/l_render.R)                     | `object`, optional `width`/`height`, `dpi`, `newpage`, `debug`                             | Initial `l_layout`, invisibly; also draws the scene.                     |
+| [l_measure()](inst/examples/functions/l_measure.R)                   | `object`, `viewport = list(width = 800, height = 600)`, `dpi`                              | List with `width`, `height`, `intrinsic` and `units = "px"`; no drawing. |
+| [l_resolve()](inst/examples/functions/l_resolve.R)                   | `object`, optional `width`/`height`, `dpi`                                                 | `l_layout` with resolved boxes and diagnostics; no drawing.              |
+| [l_save()](inst/examples/functions/l_save.R)                         | `plot`, `type`, `dir`, `filename`, dimensions, `dpi`, `background`, `quality`, `overwrite` | Absolute output path, invisibly; writes an image.                        |
 
 The `l_as_grob()` and `l_template()` examples use `l_place()` to give graphical
 trees an explicit rendering area rather than relying on automatic intrinsic
@@ -622,15 +690,23 @@ not silently ignored. Whole plots/viewports accept presentation properties only:
 background, border, margin and padding. Borders accept a color or a list containing
 `color`, `width` and `line_type`.
 
+`l_text("Label", fontsize = 12)` uses grid's points, whereas
+`l_style(object, font_size = 12)` uses logical pixels. Use `font_size = "12pt"`
+for an explicit point size, or a `clamp()` length for responsive typography.
+
 Custom registries are explicit, immutable values, not global registrations:
 
 ```r
+registry <- l_registry()
+names(registry)
 registry <- l_register_element(
   "badge", can_extract = is.character,
-  extract = function(plot) grid::textGrob(plot),
-  measure = function(element, context) c(width = 80, height = 24)
+  extract = function(plot, ...) l_text(plot),
+  measure = function(element, context) c(width = 80, height = 24),
+  registry = registry
 )
 badge <- l_get_element("Survey area", "badge", registry = registry)
+l_render(badge)
 ```
 
 Callbacks are `extract(plot, ...)`, `can_extract(plot, ...)`,
@@ -662,7 +738,7 @@ anchors, IDs, coordinates, z-order and collision candidates.
 
 ## Maintaining API Documentation
 
-All 19 exported functions and four registered S3 methods have English roxygen2
+All 25 exported functions and four registered S3 methods have English roxygen2
 documentation next to their definitions in [R/](R/). Each help topic includes
 parameters, return values, usage details, related functions and runnable examples.
 
@@ -680,6 +756,10 @@ Check the generated examples with `R CMD check` before publishing. Passing
 documentation checks does not replace the remaining CRAN submission requirements.
 
 ## Validation
+
+Install `testthat` and `pkgload` to run tests from source. Visual checks also
+need `vdiffr` and `svglite`; feature-specific tests use the optional dependencies
+listed above. Tests requiring unavailable optional packages are skipped.
 
 ```sh
 Rscript -e 'testthat::test_local(reporter = "summary")'
@@ -715,7 +795,10 @@ one resolution. Optimize further only against measured workloads.
 ## Deliberate Boundaries
 
 This release does not implement breakpoint/media-query syntax, automatic text wrapping,
-a browser CSS engine, or geographic calculations for scale bars/north arrows.
-Supply those symbols as grobs or extraction adapters. Content that cannot fit produces
-diagnostics rather than silent clipping.
+a browser CSS engine, geodesic scale bars or magnetic declination. `l_scale_bar()`
+measures projected distance, and `l_north_angle()` calculates local true north;
+`l_north_arrow()` and `l_north_rose()` draw symbols using the supplied angle.
+Custom symbols can still be supplied as grobs or extraction adapters.
+Content that cannot fit produces diagnostics; clipping is controlled by overflow
+settings, and cartographic frames clip overlays to their fitted map panel.
 Package maintainer metadata currently uses a placeholder address; replace it before publication.
