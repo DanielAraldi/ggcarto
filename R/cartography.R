@@ -1,7 +1,7 @@
 require_cartography <- function() {
   if (!requireNamespace("sf", quietly = TRUE)) {
     l_abort(
-      "Cartographic frames require the optional sf package.",
+      "Cartographic functions require the optional sf package.",
       "missing_dependency"
     )
   }

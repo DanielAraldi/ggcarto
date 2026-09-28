@@ -43,7 +43,7 @@
 #' not measure bounds, shrink content or override parent clipping.
 #'
 #' This function does not infer a CRS or calculate true or magnetic north.
-#' Supply `angle` computed for your map projection and reference location when
+#' Supply `angle` from [l_north_angle()] for your map and reference location when
 #' geographic orientation is needed. Additional rotation in `vp` is cumulative.
 #' Custom children should point up before rotation and use the same local
 #' coordinate system. They can contain arbitrary grid geometry, including
@@ -52,7 +52,7 @@
 #'
 #' @returns A native grid `gTree`, suitable for [grid::grid.draw()],
 #'   [l_template()], [l_get_element()], [l_place()] and [l_save()].
-#' @seealso [l_template()], [l_text()], [l_unit()], [grid::arrow()]
+#' @seealso [l_north_angle()], [l_template()], [l_text()], [l_unit()], [grid::arrow()]
 #' @examples
 #' north <- l_north_arrow("classic", fill = "#197C80", angle = 12)
 #' scene <- l_viewport(list(

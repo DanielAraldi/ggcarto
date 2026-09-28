@@ -83,9 +83,36 @@ l_render(l_place(north, right = 16, top = 16, width = 40, height = 68))
 
 `angle = 0` points up; positive angles rotate counterclockwise. This is a
 graphical constructor, not a CRS calculator. For true north, supply an angle
-computed for the map projection and reference location. The existing
-`map_north_arrow()` example helper retains that calculation and now draws with
-the `minimal` preset. No `sf` dependency is required by `l_north_arrow()`.
+computed by `l_north_angle()` for the map projection and reference location.
+The `map_north_arrow()` example helper uses this calculation and draws with the
+`minimal` preset. No `sf` dependency is required by `l_north_arrow()` itself.
+
+## Geographic North Orientation
+
+`l_north_angle(map, at = NULL, step = 0.0001)` calculates local true north and
+returns one angle in degrees for either `l_north_arrow()` or `l_north_rose()`.
+Zero points up; positive values rotate counterclockwise. It requires optional
+`sf`, not a new dependency. It does not calculate magnetic declination.
+
+`map` accepts a coord_sf plot, an `l_frame()`/`l_inset()`, a bounding box with
+CRS, or an explicit CRS. Without `at`, a map or bbox uses its displayed extent
+center; a CRS alone requires a location. Numeric `at` is always longitude and
+latitude in WGS84 degrees. A single sf POINT can instead supply its own CRS.
+
+```r
+angle <- l_north_angle(3413, at = c(0, 75))
+arrow <- l_north_arrow("minimal", angle = angle)
+rose <- l_north_rose("eight_point", angle = angle)
+l_render(l_viewport(list(
+  l_place(arrow, left = 20, top = 20, width = 80, height = 100),
+  l_place(rose, left = 140, top = 20, width = 120, height = 120)
+)))
+```
+
+This example returns 45 degrees on the northern polar stereographic map.
+The angle is local, not valid everywhere on a large map, and must be recomputed
+after changing the projection or reference. Unknown CRSs, poles and invalid
+projection locations are rejected.
 
 ## Cartographic Frames, Scales and Insets
 
@@ -139,8 +166,10 @@ function, using `l_text()` and `l_rect()` to prepare content, `l_unit()` for nat
 grid dimensions and `l_render()` to draw where applicable. Every script supplies
 its own inputs without shared utilities, other example scripts or downloads.
 The `l_frame`, `l_scale_bar` and `l_inset` examples require optional `sf` and use
-its bundled county data. Scale and inset examples use `l_frame()` as their map
-context. All other function examples run without sf.
+its bundled county data. The `l_north_angle` example also requires sf and maps
+Wake County, North Carolina, from those data. Scale, inset and north-angle examples use `l_frame()` as
+their map context; the north-angle example also draws both north constructors.
+All other function examples run without sf.
 
 From the project root, load the development package and choose a script:
 
@@ -161,32 +190,33 @@ current device; inspection examples print their results to the console. Each
 script stores its main return value in `result`, even when a subsequent
 `l_render()` call draws it. Run the scripts separately, in any order.
 
-| Function               | Script                                                                                       | Demonstration                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `l_unit()`             | [inst/examples/functions/l_unit.R](inst/examples/functions/l_unit.R)                         | Declare and print a native grid unit in millimetres.             |
-| `l_length()`           | [inst/examples/functions/l_length.R](inst/examples/functions/l_length.R)                     | Declare and print a percentage length.                           |
-| `l_clamp()`            | [inst/examples/functions/l_clamp.R](inst/examples/functions/l_clamp.R)                       | Declare minimum, preferred and maximum lengths.                  |
-| `l_text()`             | [inst/examples/functions/l_text.R](inst/examples/functions/l_text.R)                         | Draw text with explicit typography.                              |
-| `l_rect()`             | [inst/examples/functions/l_rect.R](inst/examples/functions/l_rect.R)                         | Draw a filled rectangle with an outline.                         |
-| `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.           |
-| `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw one customized compass rose, centered in the viewport.      |
-| `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.             |
-| `l_frame()`            | [inst/examples/functions/l_frame.R](inst/examples/functions/l_frame.R)                       | Fit a geographic panel while preserving its CRS and proportions. |
-| `l_scale_bar()`        | [inst/examples/functions/l_scale_bar.R](inst/examples/functions/l_scale_bar.R)               | Draw a map-bound 200 km scale with subdivisions.                 |
-| `l_inset()`            | [inst/examples/functions/l_inset.R](inst/examples/functions/l_inset.R)                       | Add a locator highlighting the main map's displayed extent.      |
-| `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                     |
-| `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                           |
-| `l_register_element()` | [inst/examples/functions/l_register_element.R](inst/examples/functions/l_register_element.R) | Register a character-to-text adapter in an independent registry. |
-| `l_get_element()`      | [inst/examples/functions/l_get_element.R](inst/examples/functions/l_get_element.R)           | Extract and draw only a ggplot legend.                           |
-| `l_without()`          | [inst/examples/functions/l_without.R](inst/examples/functions/l_without.R)                   | Draw a copy of a ggplot without its title and legend.            |
-| `l_place()`            | [inst/examples/functions/l_place.R](inst/examples/functions/l_place.R)                       | Position and size a rectangle using percentages.                 |
-| `l_viewport()`         | [inst/examples/functions/l_viewport.R](inst/examples/functions/l_viewport.R)                 | Arrange text grobs in a padded local context.                    |
-| `l_join()`             | [inst/examples/functions/l_join.R](inst/examples/functions/l_join.R)                         | Join two rectangles with horizontal spacing.                     |
-| `l_as_grob()`          | [inst/examples/functions/l_as_grob.R](inst/examples/functions/l_as_grob.R)                   | Create and draw a deferred grid-compatible wrapper.              |
-| `l_render()`           | [inst/examples/functions/l_render.R](inst/examples/functions/l_render.R)                     | Draw a text grob and retain the returned layout.                 |
-| `l_measure()`          | [inst/examples/functions/l_measure.R](inst/examples/functions/l_measure.R)                   | Print the constrained and intrinsic dimensions of text.          |
-| `l_resolve()`          | [inst/examples/functions/l_resolve.R](inst/examples/functions/l_resolve.R)                   | Inspect the root and child boxes in logical pixels.              |
-| `l_save()`             | [inst/examples/functions/l_save.R](inst/examples/functions/l_save.R)                         | Export a text grob and print the output path.                    |
+| Function               | Script                                                                                       | Demonstration                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `l_unit()`             | [inst/examples/functions/l_unit.R](inst/examples/functions/l_unit.R)                         | Declare and print a native grid unit in millimetres.                |
+| `l_length()`           | [inst/examples/functions/l_length.R](inst/examples/functions/l_length.R)                     | Declare and print a percentage length.                              |
+| `l_clamp()`            | [inst/examples/functions/l_clamp.R](inst/examples/functions/l_clamp.R)                       | Declare minimum, preferred and maximum lengths.                     |
+| `l_text()`             | [inst/examples/functions/l_text.R](inst/examples/functions/l_text.R)                         | Draw text with explicit typography.                                 |
+| `l_rect()`             | [inst/examples/functions/l_rect.R](inst/examples/functions/l_rect.R)                         | Draw a filled rectangle with an outline.                            |
+| `l_template()`         | [inst/examples/functions/l_template.R](inst/examples/functions/l_template.R)                 | Combine a rectangle and text into one reusable object.              |
+| `l_north_rose()`       | [inst/examples/functions/l_north_rose.R](inst/examples/functions/l_north_rose.R)             | Draw one customized compass rose, centered in the viewport.         |
+| `l_north_arrow()`      | [inst/examples/functions/l_north_arrow.R](inst/examples/functions/l_north_arrow.R)           | Draw a customized, rotated fleur-de-lis north arrow.                |
+| `l_north_angle()`      | [inst/examples/functions/l_north_angle.R](inst/examples/functions/l_north_angle.R)           | Calculate true north and apply the same angle to an arrow and rose. |
+| `l_frame()`            | [inst/examples/functions/l_frame.R](inst/examples/functions/l_frame.R)                       | Fit a geographic panel while preserving its CRS and proportions.    |
+| `l_scale_bar()`        | [inst/examples/functions/l_scale_bar.R](inst/examples/functions/l_scale_bar.R)               | Draw a map-bound 200 km scale with subdivisions.                    |
+| `l_inset()`            | [inst/examples/functions/l_inset.R](inst/examples/functions/l_inset.R)                       | Add a locator highlighting the main map's displayed extent.         |
+| `l_style()`            | [inst/examples/functions/l_style.R](inst/examples/functions/l_style.R)                       | Style a copy of a text grob.                                        |
+| `l_registry()`         | [inst/examples/functions/l_registry.R](inst/examples/functions/l_registry.R)                 | List the built-in extraction adapters.                              |
+| `l_register_element()` | [inst/examples/functions/l_register_element.R](inst/examples/functions/l_register_element.R) | Register a character-to-text adapter in an independent registry.    |
+| `l_get_element()`      | [inst/examples/functions/l_get_element.R](inst/examples/functions/l_get_element.R)           | Extract and draw only a ggplot legend.                              |
+| `l_without()`          | [inst/examples/functions/l_without.R](inst/examples/functions/l_without.R)                   | Draw a copy of a ggplot without its title and legend.               |
+| `l_place()`            | [inst/examples/functions/l_place.R](inst/examples/functions/l_place.R)                       | Position and size a rectangle using percentages.                    |
+| `l_viewport()`         | [inst/examples/functions/l_viewport.R](inst/examples/functions/l_viewport.R)                 | Arrange text grobs in a padded local context.                       |
+| `l_join()`             | [inst/examples/functions/l_join.R](inst/examples/functions/l_join.R)                         | Join two rectangles with horizontal spacing.                        |
+| `l_as_grob()`          | [inst/examples/functions/l_as_grob.R](inst/examples/functions/l_as_grob.R)                   | Create and draw a deferred grid-compatible wrapper.                 |
+| `l_render()`           | [inst/examples/functions/l_render.R](inst/examples/functions/l_render.R)                     | Draw a text grob and retain the returned layout.                    |
+| `l_measure()`          | [inst/examples/functions/l_measure.R](inst/examples/functions/l_measure.R)                   | Print the constrained and intrinsic dimensions of text.             |
+| `l_resolve()`          | [inst/examples/functions/l_resolve.R](inst/examples/functions/l_resolve.R)                   | Inspect the root and child boxes in logical pixels.                 |
+| `l_save()`             | [inst/examples/functions/l_save.R](inst/examples/functions/l_save.R)                         | Export a text grob and print the output path.                       |
 
 The `l_as_grob()` and `l_template()` examples use `l_place()` to give graphical
 trees an explicit rendering area rather than relying on automatic intrinsic
@@ -336,7 +366,7 @@ is maintained. `map_locator()` uses `l_inset(mode = "locator")` with the main pl
 as its explicit reference, so the highlighted footprint stays geographically linked.
 
 `map_sheet()` still places separately extracted titles, subtitles and legends.
-The shared north arrow helper retains its geographic angle calculation and uses
+The shared north arrow helper calculates orientation with `l_north_angle()` and uses
 `l_north_arrow("minimal", angle = angle)` for its graphical composition.
 These shared helpers live in `inst/examples/utils.R`; sourcing an example file only
 defines functions and does not open a graphics device or automatically draw all

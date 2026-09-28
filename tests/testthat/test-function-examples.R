@@ -27,6 +27,9 @@ test_that("every exported function has a focused example with lplot helpers", {
     if (function_name %in% c("l_scale_bar", "l_inset")) {
       helpers <- c(helpers, "l_frame")
     }
+    if (function_name == "l_north_angle") {
+      helpers <- c(helpers, "l_frame", "l_north_arrow", "l_north_rose")
+    }
     expect_true(
       all(intersect(symbols, public_functions) %in% c(function_name, helpers)),
       info = basename(path)
@@ -49,6 +52,7 @@ test_that("every exported function has a focused example with lplot helpers", {
           "l_text",
           "l_viewport",
           "l_north_arrow",
+          "l_north_angle",
           "l_frame",
           "l_scale_bar",
           "l_inset"
@@ -114,6 +118,22 @@ test_that("cartographic function examples draw independently with bundled sf dat
   expect_no_warning(inset <- run_function_example("l_inset"))
   expect_s3_class(inset$result, "l_inset")
   expect_true("inset-footprint" %in% inset$drawn_grobs)
+})
+
+test_that("the north angle example rotates both symbols using one computed angle", {
+  skip_if_not_installed("sf")
+  expect_no_warning(example <- run_function_example("l_north_angle"))
+  expect_identical(example$area$NAME, "Wake")
+  expect_equal(sf::st_crs(example$area)$epsg, 32119)
+  expect_gt(nrow(sf::st_coordinates(example$area)), 5)
+  expect_equal(example$result, l_north_angle(example$scene))
+  expect_true(is.finite(example$result))
+  expect_lt(abs(example$result), 5)
+  expect_equal(example$arrow$children$symbol$vp$angle, example$result)
+  expect_equal(example$rose$children$rose$vp$angle, example$result)
+  expect_true(all(
+    c("true-north-arrow", "true-north-rose") %in% example$drawn_grobs
+  ))
 })
 
 test_that("style and registry examples need no extracted elements", {
