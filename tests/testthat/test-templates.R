@@ -186,6 +186,10 @@ test_that("primitives retain native geometry, vectorization and text controls", 
 })
 
 test_that("graphical shortcuts override gp without mutating it", {
+  validated <- grid::gpar(fontface = c(first = "italic", second = "bold"))
+  original_validated <- validated
+  expect_identical(template_gpar(overrides = validated), validated)
+  expect_identical(validated, original_validated)
   theme <- grid::gpar(col = "red", fontface = "bold", fontsize = 9)
   original <- theme
   label <- l_text("Note", gp = theme, col = "blue", fontface = "italic")
