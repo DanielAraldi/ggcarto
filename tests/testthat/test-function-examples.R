@@ -255,8 +255,7 @@ test_that("the export example writes an SVG to a fresh temporary directory", {
   expect_true(file.exists(example$result))
   expect_identical(
     normalizePath(dirname(example$result), winslash = "/"),
-    normalizePath(example$directory),
-    winslash = "/"
+    normalizePath(example$directory, winslash = "/"),
   )
   expect_identical(basename(example$result), "title.svg")
   text <- paste(readLines(example$result, warn = FALSE), collapse = "\n")
