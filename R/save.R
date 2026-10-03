@@ -93,6 +93,25 @@ l_save <- function(
   overwrite = FALSE
 ) {
   node <- as_l_node(plot)
+  type <- export_type(type)
+  filename <- export_filename(type, dir, filename)
+  settings <- export_settings(
+    type, width, height, dpi, background, quality, overwrite
+  )
+  require_export_codecs(type)
+  destination <- export_destination(dir, filename, overwrite)
+  temporary <- tempfile(
+    pattern = ".lplot-",
+    tmpdir = dirname(destination),
+    fileext = paste0(".", type)
+  )
+  on.exit(unlink(temporary), add = TRUE)
+  render_export(node, temporary, settings)
+  publish_export(temporary, destination)
+  invisible(destination)
+}
+
+export_type <- function(type) {
   if (!is.character(type) || length(type) != 1L || is.na(type)) {
     l_abort("type must be jpg, jpeg, png, svg or webp.", property = "type")
   }
@@ -100,6 +119,10 @@ l_save <- function(
   if (!type %in% c("jpg", "jpeg", "png", "svg", "webp")) {
     l_abort("type must be jpg, jpeg, png, svg or webp.", property = "type")
   }
+  type
+}
+
+export_filename <- function(type, dir, filename) {
   for (property in c("dir", "filename")) {
     value <- if (property == "dir") dir else filename
     if (
@@ -124,13 +147,28 @@ l_save <- function(
   aliases <- if (type %in% c("jpg", "jpeg")) c("jpg", "jpeg") else type
   if (nzchar(extension) && !extension %in% aliases) {
     l_abort(
-      "filename extension does not match type; omit it or use the selected format.",
+      paste0(
+        "filename extension does not match type; ",
+        "omit it or use the selected format."
+      ),
       property = "filename"
     )
   }
   if (!nzchar(extension)) {
     filename <- paste0(filename, ".", type)
   }
+  filename
+}
+
+export_settings <- function(
+  type,
+  width,
+  height,
+  dpi,
+  background,
+  quality,
+  overwrite
+) {
   width <- scalar_number(width, "width", TRUE)
   height <- scalar_number(height, "height", TRUE)
   dpi <- scalar_number(dpi, "dpi", TRUE)
@@ -167,7 +205,10 @@ l_save <- function(
         pixel_width * pixel_height > 1e8)
   ) {
     l_abort(
-      "Raster dimensions must produce at least one pixel per axis and at most 100 million pixels.",
+      paste0(
+        "Raster dimensions must produce at least one pixel per axis ",
+        "and at most 100 million pixels."
+      ),
       property = "width/height"
     )
   }
@@ -177,6 +218,19 @@ l_save <- function(
       property = "width/height"
     )
   }
+  list(
+    type = type,
+    width = width,
+    height = height,
+    dpi = dpi,
+    background = background,
+    quality = quality,
+    pixel_width = pixel_width,
+    pixel_height = pixel_height
+  )
+}
+
+require_export_codecs <- function(type) {
   packages <- if (type == "svg") {
     "svglite"
   } else if (type == "webp") {
@@ -200,6 +254,10 @@ l_save <- function(
       )
     }
   }
+  invisible(NULL)
+}
+
+export_destination <- function(dir, filename, overwrite) {
   dir <- path.expand(dir)
   if (
     !dir.exists(dir) && !dir.create(dir, recursive = TRUE, showWarnings = FALSE)
@@ -212,16 +270,18 @@ l_save <- function(
   )
   if (dir.exists(destination) || (file.exists(destination) && !overwrite)) {
     l_abort(
-      "Destination already exists; choose another name or set overwrite = TRUE.",
+      paste0(
+        "Destination already exists; ",
+        "choose another name or set overwrite = TRUE."
+      ),
       "file_exists",
       property = "filename"
     )
   }
-  temporary <- tempfile(
-    pattern = ".lplot-",
-    tmpdir = dirname(destination),
-    fileext = paste0(".", type)
-  )
+  destination
+}
+
+render_export <- function(node, temporary, settings) {
   caller <- grDevices::dev.cur()
   device <- NULL
   on.exit(
@@ -236,53 +296,65 @@ l_save <- function(
       ) {
         grDevices::dev.set(caller)
       }
-      unlink(temporary)
     },
     add = TRUE
   )
   capture <- NULL
+  type <- settings$type
   if (type == "svg") {
     svglite::svglite(
       temporary,
-      width = width / 96,
-      height = height / 96,
-      bg = background
+      width = settings$width / 96,
+      height = settings$height / 96,
+      bg = settings$background
     )
   } else if (type == "png") {
     ragg::agg_png(
       temporary,
-      width = pixel_width,
-      height = pixel_height,
-      res = dpi,
-      background = background
+      width = settings$pixel_width,
+      height = settings$pixel_height,
+      res = settings$dpi,
+      background = settings$background
     )
   } else if (type %in% c("jpg", "jpeg")) {
     ragg::agg_jpeg(
       temporary,
-      width = pixel_width,
-      height = pixel_height,
-      res = dpi,
-      background = background,
-      quality = quality
+      width = settings$pixel_width,
+      height = settings$pixel_height,
+      res = settings$dpi,
+      background = settings$background,
+      quality = settings$quality
     )
   } else {
     capture <- ragg::agg_capture(
-      width = pixel_width,
-      height = pixel_height,
-      res = dpi,
-      background = background
+      width = settings$pixel_width,
+      height = settings$pixel_height,
+      res = settings$dpi,
+      background = settings$background
     )
   }
   device <- grDevices::dev.cur()
-  l_render(node, width = width, height = height, dpi = dpi)
+  l_render(
+    node,
+    width = settings$width,
+    height = settings$height,
+    dpi = settings$dpi
+  )
   bitmap <- if (!is.null(capture)) capture() else NULL
   grDevices::dev.off(device)
   device <- NULL
   if (!is.null(bitmap)) {
     colors <- grDevices::col2rgb(as.vector(t(bitmap)), alpha = TRUE)
-    pixels <- array(as.raw(colors), dim = c(4L, pixel_width, pixel_height))
-    webp::write_webp(pixels, target = temporary, quality = quality)
+    pixels <- array(
+      as.raw(colors),
+      dim = c(4L, settings$pixel_width, settings$pixel_height)
+    )
+    webp::write_webp(pixels, target = temporary, quality = settings$quality)
   }
+  invisible(NULL)
+}
+
+publish_export <- function(temporary, destination) {
   if (
     !file.exists(temporary) ||
       file.info(temporary)$size == 0 ||
