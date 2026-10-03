@@ -122,6 +122,79 @@ test_that("custom registries are explicit and independent", {
   )
 })
 
+test_that("style aliases and opacity preserve the original graphical content", {
+  original <- l_text("Styled label", col = "red", fontface = "bold")
+  unchanged <- original
+  node <- l_style(original)
+  expect_identical(l_style(node), node)
+  styled <- l_style(
+    node,
+    colour = "blue",
+    alpha = 0.8,
+    opacity = 0.25,
+    font_face = "italic",
+    line_height = 1.6
+  )
+  content <- prepared(styled)
+  expect_identical(content$gp$col, "blue")
+  expect_equal(content$gp$alpha, 0.25)
+  expect_equal(unname(content$gp$font), 3L)
+  expect_equal(content$gp$lineheight, 1.6)
+  expect_null(styled$style$colour)
+  expect_identical(original, unchanged)
+  expect_identical(node$content, original)
+})
+
+test_that("styles reject ambiguous names and invalid opacity or lengths", {
+  label <- l_text("Label")
+  expect_error(l_style(label, "blue"), class = "lplot_error")
+  expect_error(
+    l_style(label, color = "red", color = "blue"),
+    class = "lplot_error"
+  )
+  expect_error(
+    l_style(label, color = "red", colour = "blue"),
+    class = "lplot_error"
+  )
+  for (property in c("alpha", "opacity")) {
+    for (value in c(-0.1, 1.1, Inf, NA_real_)) {
+      expect_error(
+        do.call(l_style, c(list(label), stats::setNames(list(value), property))),
+        class = "lplot_error"
+      )
+    }
+  }
+  expect_error(l_style(label, font_size = "auto"), class = "lplot_error")
+  styled <- l_style(label, font_size = "min(-1px, 10px)")
+  condition <- tryCatch(l_measure(styled), lplot_error = identity)
+  expect_s3_class(condition, "lplot_error")
+  expect_identical(condition$property, "font_size")
+  legend <- l_get_element(example_plot(), "legend")
+  expect_error(
+    l_style(legend, legend.direction = "diagonal"),
+    class = "lplot_error"
+  )
+})
+
+test_that("custom style callbacks receive overrides without changing the registry", {
+  registry <- l_register_element(
+    "custom_label",
+    extract = function(source) l_text(source),
+    style = function(element, style, context) {
+      l_text(element$source, fontsize = style$label_size, col = style$color)
+    }
+  )
+  original <- registry
+  element <- l_get_element("Badge", "custom_label", registry = registry)
+  styled <- l_style(element, label_size = 18, color = "blue")
+  content <- prepared(styled)
+  expect_identical(content$label, "Badge")
+  expect_equal(content$gp$fontsize, 18)
+  expect_identical(content$gp$col, "blue")
+  expect_identical(registry, original)
+  expect_identical(element$style, list())
+})
+
 test_that("legend spacer tracks do not stretch its intrinsic dimensions", {
   legend <- l_get_element(example_plot(), "legend")
   small <- l_measure(legend, list(width = 400, height = 300))

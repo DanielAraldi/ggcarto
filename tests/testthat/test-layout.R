@@ -167,6 +167,75 @@ test_that("intrinsic measurement is contextual and uses custom measurers", {
   expect_identical(grDevices::dev.list(), devices)
 })
 
+test_that("custom measurers normalize dimensions and reject invalid results", {
+  caller <- grDevices::dev.cur()
+  devices <- grDevices::dev.list()
+  for (dimensions in list(
+    c(40, 20),
+    c(height = 20, width = 40),
+    list(height = 20, width = 40)
+  )) {
+    registry <- l_register_element(
+      "measured",
+      extract = function(source) l_rect(),
+      measure = function(element, context) dimensions
+    )
+    element <- l_get_element(NULL, "measured", registry = registry)
+    measured <- l_measure(element, list(width = 200, height = 100))
+    expect_equal(measured$width, 40)
+    expect_equal(measured$height, 20)
+  }
+  for (dimensions in list(
+    c(-1, 20),
+    c(40, Inf),
+    c(NA_real_, 20),
+    list(width = 40),
+    numeric()
+  )) {
+    registry <- l_register_element(
+      "measured",
+      extract = function(source) l_rect(),
+      measure = function(element, context) dimensions
+    )
+    element <- l_get_element(NULL, "measured", registry = registry)
+    expect_error(l_measure(element), class = "lplot_invalid_measurement")
+  }
+  expect_identical(grDevices::dev.cur(), caller)
+  expect_identical(grDevices::dev.list(), devices)
+})
+
+test_that("border diagnostics retain the node and offending property", {
+  for (border in list(2, list(unknown = "red"), list(width = -1))) {
+    node <- l_place(l_rect(), id = "border-case", border = border)
+    condition <- tryCatch(box_in(node), lplot_error = identity)
+    expect_s3_class(condition, "lplot_error")
+    expect_identical(condition$node, "border-case")
+    expect_identical(condition$property, "border")
+  }
+  node <- l_place(l_rect(), width = 40, height = 20, border = "red")
+  layout <- l_resolve(l_viewport(list(node)), 200, 100)
+  expect_equal(layout$root$children[[1]]$border$width, 1)
+  expect_identical(layout$root$children[[1]]$border$color, "red")
+})
+
+test_that("aspect ratios derive automatic widths and reject incompatible limits", {
+  node <- l_place(l_rect(), height = 40, aspect_ratio = 2)
+  original <- node
+  expect_equal(box_in(node)[c("width", "height")], c(width = 80, height = 40))
+  expect_identical(node, original)
+  constrained <- l_place(
+    l_rect(),
+    id = "ratio-case",
+    aspect_ratio = 2,
+    min_width = 200,
+    max_height = 50
+  )
+  condition <- tryCatch(box_in(constrained), lplot_error = identity)
+  expect_s3_class(condition, "lplot_error")
+  expect_identical(condition$node, "ratio-case")
+  expect_identical(condition$property, "aspect_ratio")
+})
+
 test_that("explicit layout contexts preserve an already open device and viewport", {
   for (size in list(c(5, 5), c(8, 4))) {
     grDevices::pdf(NULL, width = size[[1]], height = size[[2]])

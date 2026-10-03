@@ -1,6 +1,5 @@
 read_export_image <- function(path) {
-  reader <- switch(
-    tolower(tools::file_ext(path)),
+  reader <- switch(tolower(tools::file_ext(path)),
     png = png::readPNG,
     jpg = jpeg::readJPEG,
     jpeg = jpeg::readJPEG,
@@ -58,8 +57,7 @@ test_that("l_save writes decodable raster formats with correct orientation and d
     expect_false(result$visible)
     expect_true(file.exists(result$value))
     expect_equal(dirname(result$value), normalizePath(directory))
-    reader <- switch(
-      tolower(type),
+    reader <- switch(tolower(type),
       png = png::readPNG,
       jpg = jpeg::readJPEG,
       jpeg = jpeg::readJPEG,
@@ -169,15 +167,30 @@ test_that("export validation rejects unsupported formats and ambiguous paths", {
   for (arguments in list(
     list(type = "pdf"),
     list(type = NA),
+    list(type = c("png", "svg")),
+    list(type = 1),
     list(width = 0),
+    list(width = NA_real_),
+    list(height = Inf),
     list(dpi = -1),
+    list(dpi = "96"),
     list(quality = 101),
+    list(quality = -1),
+    list(quality = NA_real_),
     list(filename = "../map"),
     list(filename = "map.svg"),
+    list(filename = "."),
+    list(filename = ".."),
+    list(filename = c("first", "second")),
     list(overwrite = NA),
+    list(overwrite = 1),
     list(background = "not-a-color"),
+    list(background = NA_character_),
+    list(background = NULL),
+    list(background = c("white", "black")),
     list(type = "jpg", background = "transparent"),
     list(dir = ""),
+    list(dir = NA_character_),
     list(filename = "folder\\map"),
     list(width = 1e6),
     list(type = "webp", width = 16384, height = 1),
@@ -186,13 +199,35 @@ test_that("export validation rejects unsupported formats and ambiguous paths", {
     expect_error(
       do.call(
         l_save,
-        utils::modifyList(list(plot = scene, dir = directory), arguments)
+        utils::modifyList(
+          list(plot = scene, dir = directory),
+          arguments,
+          keep.null = TRUE
+        )
       ),
       class = "lplot_error"
     )
   }
   expect_false(dir.exists(directory))
   expect_error(l_save(1), class = "lplot_unsupported_source")
+})
+
+test_that("an export cannot replace a directory even with overwrite enabled", {
+  skip_if_not_installed("ragg")
+  directory <- tempfile()
+  destination <- file.path(directory, "map.png")
+  dir.create(destination, recursive = TRUE)
+  on.exit(unlink(directory, recursive = TRUE), add = TRUE)
+  caller <- grDevices::dev.cur()
+  devices <- grDevices::dev.list()
+  expect_error(
+    l_save(export_scene(), "png", directory, "map", overwrite = TRUE),
+    class = "lplot_file_exists"
+  )
+  expect_true(dir.exists(destination))
+  expect_identical(list.files(directory, all.files = TRUE, no.. = TRUE), "map.png")
+  expect_identical(grDevices::dev.cur(), caller)
+  expect_identical(grDevices::dev.list(), devices)
 })
 
 test_that("raw ggplots, grobs and extracted elements are exportable", {
@@ -290,7 +325,7 @@ test_that("l_save map exports match the approved files for every format", {
     } else {
       image <- read_export_image(path)
       expect_equal(dim(image)[1:2], c(600L, 900L))
-      expect_gt(diff(range(image[,, 1:3])), 0.5)
+      expect_gt(diff(range(image[, , 1:3])), 0.5)
       comparator <- compare_export_image
     }
     expect_snapshot_file(
