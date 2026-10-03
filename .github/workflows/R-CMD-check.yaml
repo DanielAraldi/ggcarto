@@ -1,0 +1,107 @@
+name: R CMD check
+
+'on':
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-check:
+    name: ${{ matrix.os }} / R ${{ matrix.r }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, r: release }
+          - { os: windows-latest, r: release }
+          - { os: windows-latest, r: devel }
+          - { os: ubuntu-latest, r: release }
+          - { os: ubuntu-latest, r: devel }
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: 'yes'
+      NOT_CRAN: 'false'
+      _R_CHECK_FORCE_SUGGESTS_: 'true'
+      _R_CHECK_CRAN_INCOMING_: 'true'
+      _R_CHECK_LIMIT_CORES_: 'true'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::rcmdcheck
+            any::tinytex
+          needs: check
+      - name: Install LaTeX
+        shell: Rscript {0}
+        run: |
+          tinytex::install_tinytex(add_path = FALSE)
+          tinytex::tlmgr_install(c("inconsolata", "helvetic", "ec", "makeindex"))
+          binaries <- list.dirs(file.path(tinytex::tinytex_root(), "bin"),
+            recursive = FALSE, full.names = TRUE)
+          writeLines(binaries, Sys.getenv("GITHUB_PATH"))
+      - name: Install HTML Tidy on Linux
+        if: runner.os == 'Linux'
+        run: sudo -n apt-get update && sudo -n apt-get install -y tidy
+      - name: Install HTML Tidy on macOS
+        if: runner.os == 'macOS'
+        run: brew install tidy-html5
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--as-cran")'
+          build_args: 'character()'
+          error-on: '"warning"'
+          upload-results: 'true'
+
+  isolated-check:
+    name: Linux / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {
+              name: noSuggests,
+              image: 'rocker/r-ver:latest',
+              mode: no-suggests,
+              ggplot: '',
+            }
+          - {
+              name: minimum-R-and-ggplot2,
+              image: 'rocker/r-ver:4.1.0',
+              mode: with-tests,
+              ggplot: '3.5.0',
+            }
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check in an isolated container
+        env:
+          IMAGE: ${{ matrix.image }}
+          CHECK_MODE: ${{ matrix.mode }}
+          GGPLOT_VERSION: ${{ matrix.ggplot }}
+        run: |
+          mkdir -p artifacts/isolated-check
+          docker build --build-arg R_IMAGE="$IMAGE" -t lplot-check \
+            -f .github/containers/Dockerfile.check .github/containers
+          docker run --rm --cpus=2 \
+            -v "$PWD:/source:ro" -v "$PWD/artifacts/isolated-check:/output" \
+            -e LPLOT_SOURCE=/source -e LPLOT_CHECK_OUTPUT=/output \
+            -e LPLOT_CHECK_MODE="$CHECK_MODE" -e LPLOT_GGPLOT2_VERSION="$GGPLOT_VERSION" \
+            -e OMP_NUM_THREADS=2 -e OPENBLAS_NUM_THREADS=2 \
+            lplot-check Rscript /source/.github/scripts/check-minimal.R
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.name }}-results
+          path: artifacts/isolated-check

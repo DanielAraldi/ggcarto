@@ -1,0 +1,8 @@
+ARG R_IMAGE=rocker/r-ver:latest
+FROM ${R_IMAGE}
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libuv1-dev pandoc tidy && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN Rscript -e 'writeLines("options(repos = c(CRAN = \"https://cloud.r-project.org\"))", file.path(R.home("etc"), "Rprofile.site"))'
