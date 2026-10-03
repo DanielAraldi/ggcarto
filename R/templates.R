@@ -20,7 +20,9 @@ template_gpar <- function(gp = NULL, overrides = list()) {
   if (!inherits(gp, "gpar")) {
     gp <- do.call(grid::gpar, gp %||% list())
   }
-  overrides <- do.call(grid::gpar, overrides)
+  if (!inherits(overrides, "gpar")) {
+    overrides <- do.call(grid::gpar, overrides)
+  }
   gp[names(overrides)] <- overrides
   gp
 }
