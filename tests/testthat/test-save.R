@@ -1,5 +1,6 @@
 read_export_image <- function(path) {
-  reader <- switch(tolower(tools::file_ext(path)),
+  reader <- switch(
+    tolower(tools::file_ext(path)),
     png = png::readPNG,
     jpg = jpeg::readJPEG,
     jpeg = jpeg::readJPEG,
@@ -56,8 +57,12 @@ test_that("l_save writes decodable raster formats with correct orientation and d
     ))
     expect_false(result$visible)
     expect_true(file.exists(result$value))
-    expect_equal(dirname(result$value), normalizePath(directory))
-    reader <- switch(tolower(type),
+    expect_equal(
+      normalizePath(dirname(result$value), winslash = "/"),
+      normalizePath(directory, winslash = "/")
+    )
+    reader <- switch(
+      tolower(type),
       png = png::readPNG,
       jpg = jpeg::readJPEG,
       jpeg = jpeg::readJPEG,
@@ -225,7 +230,10 @@ test_that("an export cannot replace a directory even with overwrite enabled", {
     class = "lplot_file_exists"
   )
   expect_true(dir.exists(destination))
-  expect_identical(list.files(directory, all.files = TRUE, no.. = TRUE), "map.png")
+  expect_identical(
+    list.files(directory, all.files = TRUE, no.. = TRUE),
+    "map.png"
+  )
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
 })
@@ -325,7 +333,7 @@ test_that("l_save map exports match the approved files for every format", {
     } else {
       image <- read_export_image(path)
       expect_equal(dim(image)[1:2], c(600L, 900L))
-      expect_gt(diff(range(image[, , 1:3])), 0.5)
+      expect_gt(diff(range(image[,, 1:3])), 0.5)
       comparator <- compare_export_image
     }
     expect_snapshot_file(

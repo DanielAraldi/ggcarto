@@ -253,7 +253,11 @@ test_that("the export example writes an SVG to a fresh temporary directory", {
   on.exit(unlink(example$directory, recursive = TRUE), add = TRUE)
   expect_identical(grDevices::dev.cur(), caller)
   expect_true(file.exists(example$result))
-  expect_identical(dirname(example$result), normalizePath(example$directory))
+  expect_identical(
+    normalizePath(dirname(example$result), winslash = "/"),
+    normalizePath(example$directory),
+    winslash = "/"
+  )
   expect_identical(basename(example$result), "title.svg")
   text <- paste(readLines(example$result, warn = FALSE), collapse = "\n")
   expect_match(text, "<svg")
