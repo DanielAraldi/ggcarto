@@ -14,11 +14,11 @@ plot <- ggplot2::ggplot(counties) +
   ggplot2::coord_sf(expand = FALSE, datum = NA) +
   ggplot2::theme_void()
 
-result <- lplot::l_frame(
+result <- ggcarto::gc_frame(
   plot,
   padding = 16,
   background = "white",
   border = list(color = "#203C43", width = 1)
 )
 
-lplot::l_render(result)
+ggcarto::gc_render(result)

@@ -1,7 +1,7 @@
-title <- lplot::l_text("Area de estudo", fontsize = 18)
-credits <- lplot::l_text("Fonte: dados locais", fontsize = 10)
+title <- ggcarto::gc_text("Area de estudo", fontsize = 18)
+credits <- ggcarto::gc_text("Fonte: dados locais", fontsize = 10)
 
-result <- lplot::l_viewport(
+result <- ggcarto::gc_viewport(
   list(title, credits),
   padding = 24,
   flow = "column",
@@ -9,4 +9,4 @@ result <- lplot::l_viewport(
   background = "#EEF3CF"
 )
 
-lplot::l_render(result)
+ggcarto::gc_render(result)

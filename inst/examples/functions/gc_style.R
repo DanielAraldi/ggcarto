@@ -1,6 +1,6 @@
-original <- lplot::l_text("Titulo do mapa", fontsize = 10)
+original <- ggcarto::gc_text("Titulo do mapa", fontsize = 10)
 
-result <- lplot::l_style(
+result <- ggcarto::gc_style(
   original,
   color = "#194E70",
   font_size = "20pt",
@@ -9,4 +9,4 @@ result <- lplot::l_style(
   padding = 12
 )
 
-lplot::l_render(result)
+ggcarto::gc_render(result)

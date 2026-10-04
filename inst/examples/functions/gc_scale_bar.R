@@ -14,7 +14,7 @@ plot <- ggplot2::ggplot(counties) +
   ggplot2::coord_sf(expand = FALSE, datum = NA) +
   ggplot2::theme_void()
 
-result <- lplot::l_scale_bar(
+result <- ggcarto::gc_scale_bar(
   distance = 200,
   unit = "km",
   segments = 2,
@@ -26,7 +26,7 @@ result <- lplot::l_scale_bar(
   padding = 4
 )
 
-lplot::l_render(lplot::l_frame(
+ggcarto::gc_render(ggcarto::gc_frame(
   plot,
   overlays = list(result),
   padding = 16,

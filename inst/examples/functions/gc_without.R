@@ -6,5 +6,5 @@ plot <- ggplot2::ggplot(
   ggplot2::labs(title = "Consumo dos veiculos", colour = "Cilindros") +
   ggplot2::theme_minimal()
 
-result <- lplot::l_without(plot, c("title", "legend"))
+result <- ggcarto::gc_without(plot, c("title", "legend"))
 print(result)

@@ -1,4 +1,4 @@
-examples_root <- system.file("examples", package = "lplot")
+examples_root <- system.file("examples", package = "ggcarto")
 sys.source(file.path(examples_root, "data", "maps.R"), envir = environment())
 sys.source(file.path(examples_root, "utils.R"), envir = environment())
 rm(examples_root)
@@ -13,13 +13,13 @@ map_sf_scene <- function(counties = map_counties()) {
     title = "Densidade de nascimentos | 1974",
     legend_title = "Nascimentos por 100 km2"
   )
-  lplot::l_viewport(
+  ggcarto::gc_viewport(
     list(
       base$children[[1]],
-      lplot::l_place(base$children[[2]], bottom = 100),
-      lplot::l_place(base$children[[3]], bottom = 36),
-      lplot::l_place(
-        lplot::l_text(
+      ggcarto::gc_place(base$children[[2]], bottom = 100),
+      ggcarto::gc_place(base$children[[3]], bottom = 36),
+      ggcarto::gc_place(
+        ggcarto::gc_text(
           "Fonte: sf::nc | Area projetada em NAD83 / North Carolina (m)",
           fontsize = 7,
           col = "#50666C"

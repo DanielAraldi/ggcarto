@@ -17,10 +17,10 @@ text_types <- c(
 #' retain their source semantics, and responsive lengths are evaluated in the
 #' actual measurement or drawing context.
 #'
-#' @param object An extracted element, grid grob, ggplot or lplot scene node.
+#' @param object An extracted element, grid grob, ggplot or ggcarto scene node.
 #'   Non-node objects are first normalized as scene nodes.
 #' @param ... Uniquely named style properties. Supported names depend on the
-#'   element type; unknown or inapplicable names raise an `lplot_error`.
+#'   element type; unknown or inapplicable names raise an `ggcarto_error`.
 #'
 #' @section Supported styles:
 #' * Text elements: `color` (or `colour`, but not both), `font_family`,
@@ -39,35 +39,35 @@ text_types <- c(
 #' `font_size`, `line_width`, `legend.key_width` and `legend.key_height` accept
 #' logical lengths including `clamp()` expressions, but not `auto`. A numeric
 #' `font_size` is in logical pixels; use `"12pt"` for twelve points. This
-#' differs from the raw grid `fontsize` argument of [l_text()]. Edge and border
-#' properties follow [l_place()] and [l_viewport()] conventions.
+#' differs from the raw grid `fontsize` argument of [gc_text()]. Edge and border
+#' properties follow [gc_place()] and [gc_viewport()] conventions.
 #'
 #' Native ggplot overrides target only the selected semantic theme component.
 #' Axis typography targets axis text, not tick geometry. For direct grobs,
 #' applicable graphical overrides are applied recursively to descendants, so
 #' this is an explicit restyling operation rather than mere group inheritance.
 #' Adapter-defined style callbacks may support additional names; see
-#' [l_register_element()].
+#' [gc_register_element()].
 #'
 #' Repeated calls merge explicit overrides without mutating the source or
 #' earlier nodes. Styling does not wrap text or guarantee that it fits a box.
-#' Use [l_measure()] and [l_resolve()] to inspect the resulting geometry.
+#' Use [gc_measure()] and [gc_resolve()] to inspect the resulting geometry.
 #'
-#' @returns A styled `l_node`, retaining any element or viewport subclasses.
+#' @returns A styled `gc_node`, retaining any element or viewport subclasses.
 #'   With no overrides, returns the normalized node unchanged.
-#' @seealso [l_get_element()], [l_text()], [l_measure()], [l_register_element()]
+#' @seealso [gc_get_element()], [gc_text()], [gc_measure()], [gc_register_element()]
 #' @examples
-#' original <- l_get_element(l_text("Survey area", fontsize = 10), "annotation")
-#' styled <- l_style(original,
+#' original <- gc_get_element(gc_text("Survey area", fontsize = 10), "annotation")
+#' styled <- gc_style(original,
 #'   color = "#194E70",
 #'   font_size = "clamp(10pt, 2vmin, 18pt)", background = "white", padding = 4
 #' )
-#' l_measure(original)
-#' l_measure(styled, list(width = 800, height = 600))
-#' viewport <- l_style(l_viewport(), background = "#EDF3F5", padding = "2mm")
+#' gc_measure(original)
+#' gc_measure(styled, list(width = 800, height = 600))
+#' viewport <- gc_style(gc_viewport(), background = "#EDF3F5", padding = "2mm")
 #' print(viewport)
 #' @export
-l_style <- function(object, ...) {
+gc_style <- function(object, ...) {
   node <- as_l_node(object)
   type <- node$type %||% node$kind
   style <- list(...)
@@ -79,11 +79,11 @@ l_style <- function(object, ...) {
       any(!nzchar(names(style))) ||
       anyDuplicated(names(style))
   ) {
-    l_abort("Styles must be uniquely named.")
+    gc_abort("Styles must be uniquely named.")
   }
   if (!is.null(style$colour)) {
     if (!is.null(style$color)) {
-      l_abort("Use color or colour, not both.")
+      gc_abort("Use color or colour, not both.")
     }
     style$color <- style$colour
     style$colour <- NULL
@@ -131,7 +131,7 @@ l_style <- function(object, ...) {
   }
   invalid <- setdiff(names(style), allowed)
   if (length(invalid)) {
-    l_abort(
+    gc_abort(
       paste0(
         "Unsupported style for ",
         type,
@@ -145,22 +145,22 @@ l_style <- function(object, ...) {
     names(style),
     c("font_size", "line_width", "legend.key_width", "legend.key_height")
   )) {
-    style[[property]] <- l_length(style[[property]])
+    style[[property]] <- gc_length(style[[property]])
     if (length_has_auto(style[[property]])) {
-      l_abort(paste0(property, " cannot be auto."))
+      gc_abort(paste0(property, " cannot be auto."))
     }
   }
   for (property in intersect(names(style), c("alpha", "opacity"))) {
     value <- scalar_number(style[[property]], property)
     if (value < 0 || value > 1) {
-      l_abort(paste0(property, " must be between 0 and 1."))
+      gc_abort(paste0(property, " must be between 0 and 1."))
     }
   }
   if (
     !is.null(style$legend.direction) &&
       !style$legend.direction %in% c("horizontal", "vertical")
   ) {
-    l_abort("legend.direction must be horizontal or vertical.")
+    gc_abort("legend.direction must be horizontal or vertical.")
   }
   for (property in intersect(
     names(style),
@@ -201,14 +201,14 @@ theme_keys <- function(type) {
 
 resolved_style <- function(style, context) {
   for (property in names(style)) {
-    if (inherits(style[[property]], "l_length")) {
+    if (inherits(style[[property]], "gc_length")) {
       value <- resolve_length(
         style[[property]],
         context,
         if (property == "legend.key_height") "y" else "x"
       )
       if (!is.finite(value) || value < 0) {
-        l_abort(
+        gc_abort(
           paste0("Invalid resolved style: ", property),
           property = property
         )
@@ -271,7 +271,7 @@ style_source <- function(source, type, style) {
     names(style),
     c("legend.key_width", "legend.key_height")
   )) {
-    properties[[sub("_", ".", property, fixed = TRUE)]] <- l_unit(
+    properties[[sub("_", ".", property, fixed = TRUE)]] <- gc_unit(
       style[[property]] / 96,
       "inches"
     )

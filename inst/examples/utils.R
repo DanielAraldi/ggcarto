@@ -16,19 +16,19 @@ map_label_template <- function(
   accent = "#197C80",
   background = "#F0F6F5"
 ) {
-  lplot::l_template(
-    lplot::l_rect(fill = background, col = NA, name = "background"),
-    lplot::l_rect(
+  ggcarto::gc_template(
+    ggcarto::gc_rect(fill = background, col = NA, name = "background"),
+    ggcarto::gc_rect(
       x = 0,
       just = "left",
-      width = lplot::l_unit(4, "pt"),
+      width = ggcarto::gc_unit(4, "pt"),
       fill = accent,
       col = NA,
       name = "accent"
     ),
-    lplot::l_text(
+    ggcarto::gc_text(
       title,
-      x = lplot::l_unit(14, "pt"),
+      x = ggcarto::gc_unit(14, "pt"),
       y = 0.65,
       just = "left",
       fontsize = 12,
@@ -36,9 +36,9 @@ map_label_template <- function(
       col = accent,
       name = "title"
     ),
-    lplot::l_text(
+    ggcarto::gc_text(
       subtitle,
-      x = lplot::l_unit(14, "pt"),
+      x = ggcarto::gc_unit(14, "pt"),
       y = 0.28,
       just = "left",
       fontsize = 8,
@@ -70,8 +70,8 @@ map_source <- function(
       guide = ggplot2::guide_colourbar(
         direction = "horizontal",
         title.position = "top",
-        barwidth = lplot::l_unit(42, "mm"),
-        barheight = lplot::l_unit(2.5, "mm")
+        barwidth = ggcarto::gc_unit(42, "mm"),
+        barheight = ggcarto::gc_unit(2.5, "mm")
       )
     ) +
     ggplot2::coord_sf(
@@ -100,11 +100,11 @@ map_source <- function(
 }
 
 map_frame <- function(plot, distance_m = 200000, overlays = list()) {
-  lplot::l_frame(
+  ggcarto::gc_frame(
     plot,
     overlays = c(
       list(
-        lplot::l_scale_bar(
+        ggcarto::gc_scale_bar(
           distance_m / 1000,
           "km",
           segments = 1,
@@ -123,38 +123,38 @@ map_frame <- function(plot, distance_m = 200000, overlays = list()) {
 }
 
 map_sheet <- function(plot, frame, heading = "Carolina do Norte") {
-  title <- lplot::l_get_element(
+  title <- ggcarto::gc_get_element(
     plot,
     "title",
     style = list(font_size = "clamp(12pt, 2.5vmin, 20pt)")
   )
-  subtitle <- lplot::l_get_element(
+  subtitle <- ggcarto::gc_get_element(
     plot,
     "subtitle",
     style = list(font_size = "clamp(8pt, 1.4vmin, 10pt)")
   )
-  legend <- lplot::l_get_element(plot, "legend")
-  credit <- lplot::l_get_element(
-    lplot::l_text(
+  legend <- ggcarto::gc_get_element(plot, "legend")
+  credit <- ggcarto::gc_get_element(
+    ggcarto::gc_text(
       "Fonte: NAD83 / NC (m)\nElaboração: Daniel Sansão Araldi",
       fontsize = 7,
       col = "#50666C"
     ),
     "credits"
   )
-  lplot::l_viewport(
+  ggcarto::gc_viewport(
     list(
-      lplot::l_place(title, left = 0, top = 0, z_index = 20),
-      lplot::l_place(subtitle, left = 0, top = 34, z_index = 20),
-      lplot::l_place(
-        lplot::l_viewport(list(frame)),
+      ggcarto::gc_place(title, left = 0, top = 0, z_index = 20),
+      ggcarto::gc_place(subtitle, left = 0, top = 34, z_index = 20),
+      ggcarto::gc_place(
+        ggcarto::gc_viewport(list(frame)),
         left = 0,
         right = 0,
         top = 68,
         bottom = 98
       ),
-      lplot::l_place(legend, x = "50%", bottom = 28, anchor = "bottom-center"),
-      lplot::l_place(credit, x = "50%", bottom = 4, anchor = "bottom-center")
+      ggcarto::gc_place(legend, x = "50%", bottom = 28, anchor = "bottom-center"),
+      ggcarto::gc_place(credit, x = "50%", bottom = 4, anchor = "bottom-center")
     ),
     width = 1000,
     height = 650,
@@ -173,13 +173,13 @@ map_north_arrow <- function(extent) {
     crs = sf::st_crs(extent)
   )
   lonlat <- sf::st_coordinates(sf::st_transform(center, 4326))[1, ]
-  angle <- lplot::l_north_angle(extent)
-  arrow <- lplot::l_north_arrow(
+  angle <- ggcarto::gc_north_angle(extent)
+  arrow <- ggcarto::gc_north_arrow(
     design = "minimal",
     angle = angle,
     label_gp = list(col = "black")
   )
-  lplot::l_get_element(
+  ggcarto::gc_get_element(
     arrow,
     "north_arrow",
     width = 40,
@@ -208,8 +208,8 @@ map_locator <- function(counties, reference) {
         linewidth = 0.4
       )
     )
-  lplot::l_place(
-    lplot::l_inset(
+  ggcarto::gc_place(
+    ggcarto::gc_inset(
       plot,
       reference = reference,
       mode = "locator",

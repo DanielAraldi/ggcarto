@@ -12,22 +12,22 @@ anchors <- c(
 
 normalize_edges <- function(value = 0) {
   sides <- c("top", "right", "bottom", "left")
-  if (inherits(value, "l_length")) {
+  if (inherits(value, "gc_length")) {
     value <- list(value)
   }
   if (!is.null(names(value))) {
     if (any(!names(value) %in% sides) || anyDuplicated(names(value))) {
-      l_abort("Invalid edge names.")
+      gc_abort("Invalid edge names.")
     }
-    edges <- stats::setNames(rep(list(l_length(0)), 4L), sides)
+    edges <- stats::setNames(rep(list(gc_length(0)), 4L), sides)
     for (side in names(value)) {
-      edges[[side]] <- l_length(value[[side]])
+      edges[[side]] <- gc_length(value[[side]])
     }
     return(edges)
   }
   count <- length(value)
   if (!count %in% 1:4) {
-    l_abort("Edges need one to four values, or named sides.")
+    gc_abort("Edges need one to four values, or named sides.")
   }
   index <- switch(
     as.character(count),
@@ -37,7 +37,7 @@ normalize_edges <- function(value = 0) {
     "4" = 1:4
   )
   stats::setNames(
-    lapply(index, function(position) l_length(value[[position]])),
+    lapply(index, function(position) gc_length(value[[position]])),
     sides
   )
 }
@@ -57,8 +57,8 @@ new_l_node <- function(
       type = type,
       content = content,
       children = list(),
-      width = l_length(width),
-      height = l_length(height),
+      width = gc_length(width),
+      height = gc_length(height),
       x = NULL,
       y = NULL,
       top = NULL,
@@ -84,17 +84,17 @@ new_l_node <- function(
       border = NULL,
       safe_area = normalize_edges(),
       flow = "absolute",
-      gap = l_length(0),
+      gap = gc_length(0),
       metadata = list()
     ),
-    class = "l_node"
+    class = "gc_node"
   )
 }
 
 capture_plot <- function(plot) plot + (ggplot2::theme_get() + plot$theme)
 
 as_l_node <- function(object) {
-  if (inherits(object, "l_node")) {
+  if (inherits(object, "gc_node")) {
     return(object)
   }
   if (inherits(object, "ggplot")) {
@@ -103,8 +103,8 @@ as_l_node <- function(object) {
   if (grid::is.grob(object)) {
     return(new_l_node("element", object, "custom"))
   }
-  l_abort(
-    "Expected a ggplot, grob, l_element or l_viewport.",
+  gc_abort(
+    "Expected a ggplot, grob, gc_element or gc_viewport.",
     "unsupported_source"
   )
 }
@@ -151,15 +151,15 @@ update_node <- function(node, properties) {
         any(!nzchar(names(properties))) ||
         anyDuplicated(names(properties)))
   ) {
-    l_abort("Properties must have unique names.")
+    gc_abort("Properties must have unique names.")
   }
   for (property in names(properties)) {
     if (!property %in% allowed) {
-      l_abort(paste0("Unknown node property: ", property), property = property)
+      gc_abort(paste0("Unknown node property: ", property), property = property)
     }
     value <- properties[[property]]
     if (property %in% lengths && !is.null(value)) {
-      value <- l_length(value)
+      value <- gc_length(value)
     }
     if (property %in% c("padding", "margin", "safe_area")) {
       value <- normalize_edges(value)
@@ -185,7 +185,7 @@ validate_node <- function(node) {
     if (
       length(value) != 1L || is.na(value) || !value %in% choices[[property]]
     ) {
-      l_abort(
+      gc_abort(
         paste0("Invalid ", property, "."),
         node = node$id,
         property = property
@@ -203,7 +203,7 @@ validate_node <- function(node) {
   )) {
     value <- node[[property]]
     if (!is.null(value) && value$kind == "value" && value$value < 0) {
-      l_abort(
+      gc_abort(
         paste0(property, " cannot be negative."),
         node = node$id,
         property = property
@@ -222,7 +222,7 @@ validate_node <- function(node) {
         length(node[[property]]) != 1L ||
         is.na(node[[property]])
     ) {
-      l_abort(paste0(property, " must be TRUE or FALSE."), property = property)
+      gc_abort(paste0(property, " must be TRUE or FALSE."), property = property)
     }
   }
   if (
@@ -232,13 +232,13 @@ validate_node <- function(node) {
         is.na(node$id) ||
         !nzchar(node$id))
   ) {
-    l_abort("id must be a nonempty string.", property = "id")
+    gc_abort("id must be a nonempty string.", property = "id")
   }
   if (
     !is.null(node$candidates) &&
       (!is.character(node$candidates) || any(!node$candidates %in% anchors))
   ) {
-    l_abort(
+    gc_abort(
       "Collision candidates must be valid anchors.",
       property = "candidates"
     )
@@ -252,11 +252,11 @@ validate_node <- function(node) {
 #' logical placement properties. No drawing or device-dependent conversion
 #' occurs, and the input object is not modified.
 #'
-#' @param object A ggplot, grid grob, extracted `l_element`, or existing lplot
+#' @param object A ggplot, grid grob, extracted `gc_element`, or existing ggcarto
 #'   scene node. A ggplot's effective theme is captured when it becomes a node.
 #' @param x,y Optional anchor coordinates measured from the top-left of the
-#'   containing content box. Positive `y` points down. Values use [l_length()].
-#' @param width,height Logical border-box dimensions accepted by [l_length()].
+#'   containing content box. Positive `y` points down. Values use [gc_length()].
+#' @param width,height Logical border-box dimensions accepted by [gc_length()].
 #'   `"auto"` uses content or available space, depending on the node type.
 #' @param top,right,bottom,left Optional edge insets. Opposing insets determine
 #'   an automatic dimension. Do not combine `x` with horizontal insets or `y`
@@ -267,14 +267,14 @@ validate_node <- function(node) {
 #' @param z_index Finite numeric drawing order. Higher values draw later;
 #'   original child order breaks ties.
 #' @param ... Uniquely named additional node properties, described below.
-#'   Unknown properties raise an `lplot_error`.
+#'   Unknown properties raise an `ggcarto_error`.
 #'
 #' @details
 #' Omitted placement arguments preserve an existing node's declarations.
 #' Explicit `NULL` clears an optional coordinate or constraint. Bare numbers
 #' are logical pixels, percentages use the parent's content box, and viewport
 #' units use the root. Padding and borders are inside the box; margins are
-#' outside. See [l_length()] for units and [l_viewport()] for edge shorthand.
+#' outside. See [gc_length()] for units and [gc_viewport()] for edge shorthand.
 #'
 #' @section Additional properties:
 #' * `min_width`, `max_width`, `min_height`, `max_height`: optional logical
@@ -303,23 +303,23 @@ validate_node <- function(node) {
 #' protected unless `allow_move = TRUE`. Shrinking requires `responsive = TRUE`
 #' and a minimum dimension, with a 10 percent scale safety floor. Whole plots
 #' and panel/background elements are normally excluded as obstacles. Failed
-#' placement preserves a fallback and emits `lplot_collision`; an overflowing
-#' box emits `lplot_overflow`. Inspect [l_resolve()] results for diagnostics.
+#' placement preserves a fallback and emits `ggcarto_collision`; an overflowing
+#' box emits `ggcarto_overflow`. Inspect [gc_resolve()] results for diagnostics.
 #'
-#' @returns A positioned `l_node`, preserving subclasses when `object` was
+#' @returns A positioned `gc_node`, preserving subclasses when `object` was
 #'   already a scene node. Child-local declarations are retained.
-#' @seealso [l_viewport()], [l_join()], [l_length()], [l_render()]
+#' @seealso [gc_viewport()], [gc_join()], [gc_length()], [gc_render()]
 #' @examples
-#' label <- l_place(l_text("Survey area"),
+#' label <- gc_place(gc_text("Survey area"),
 #'   x = "50%", top = 10,
 #'   anchor = "top-center", id = "label"
 #' )
-#' scene <- l_viewport(list(label), width = 300, height = 100)
-#' l_resolve(scene)$root$children[[1]]$box
-#' moved <- l_place(label, x = NULL, left = 20)
-#' l_resolve(l_viewport(list(moved)), width = 300, height = 100)
+#' scene <- gc_viewport(list(label), width = 300, height = 100)
+#' gc_resolve(scene)$root$children[[1]]$box
+#' moved <- gc_place(label, x = NULL, left = 20)
+#' gc_resolve(gc_viewport(list(moved)), width = 300, height = 100)
 #' @export
-l_place <- function(
+gc_place <- function(
   object,
   x = NULL,
   y = NULL,
@@ -374,12 +374,12 @@ scene_ids <- function(node) {
 #' viewports. Children are resolved relative to this node's content box when
 #' the scene is measured or drawn, not when it is constructed.
 #'
-#' @param plots List of ggplots, grid grobs or lplot nodes. A single graphics
+#' @param plots List of ggplots, grid grobs or ggcarto nodes. A single graphics
 #'   object is also accepted. The default creates an empty viewport.
 #' @param width,height Logical border-box dimensions. At the root these are
 #'   reference dimensions for resolution without a device, not forced render
-#'   sizes. Use [l_render()] arguments to request explicit drawing dimensions.
-#' @param units Unit for numeric `width` and `height`; see [l_length()]. Other
+#'   sizes. Use [gc_render()] arguments to request explicit drawing dimensions.
+#' @param units Unit for numeric `width` and `height`; see [gc_length()]. Other
 #'   numeric properties remain logical pixels.
 #' @param padding,margin One to four logical edge lengths, or a named list with
 #'   `top`, `right`, `bottom`, `left` entries. Padding is inside the box; margin
@@ -390,7 +390,7 @@ scene_ids <- function(node) {
 #'   when minimum dimensions are supplied. Logical units always resolve anew.
 #' @param safe_area Insets reserved for automatically positioned children,
 #'   using the same shorthand as `padding`. `NULL` means zero insets.
-#' @param ... Additional named node properties accepted by [l_place()], such
+#' @param ... Additional named node properties accepted by [gc_place()], such
 #'   as `id`, `border`, `flow`, `gap`, `overflow` and dimension constraints.
 #'
 #' @details
@@ -403,23 +403,23 @@ scene_ids <- function(node) {
 #' Implicit IDs are assigned from tree paths such as `root/1`. Explicit IDs must
 #' be unique within the scene. Objects are copied logically; no active plot or
 #' global registry is consulted. Automatic sizing does not wrap text or infer
-#' a bounding box for arbitrary grid trees. See [l_place()] for collision and
-#' clipping rules and [l_template()] for composition inside a single grob.
+#' a bounding box for arbitrary grid trees. See [gc_place()] for collision and
+#' clipping rules and [gc_template()] for composition inside a single grob.
 #'
-#' @returns An `l_viewport`, also inheriting from `l_scene` and `l_node`.
-#'   Construction does not draw; use [l_render()] or [grid::grid.draw()].
-#' @seealso [l_place()], [l_join()], [l_resolve()], [l_template()]
+#' @returns An `gc_viewport`, also inheriting from `gc_scene` and `gc_node`.
+#'   Construction does not draw; use [gc_render()] or [grid::grid.draw()].
+#' @seealso [gc_place()], [gc_join()], [gc_resolve()], [gc_template()]
 #' @examples
-#' scene <- l_viewport(list(
-#'   l_place(l_rect(fill = "#95CEC0", col = NA),
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_rect(fill = "#95CEC0", col = NA),
 #'     left = "10%", top = "10%", width = "80%", height = "80%"
 #'   ),
-#'   l_place(l_text("Local context"), x = "50%", y = "50%", anchor = "center")
+#'   gc_place(gc_text("Local context"), x = "50%", y = "50%", anchor = "center")
 #' ), width = 400, height = 200, padding = 10, background = "white")
-#' l_resolve(scene, width = 800, height = 400)$root$children[[1]]$box
-#' l_render(scene, width = 400, height = 200)
+#' gc_resolve(scene, width = 800, height = 400)$root$children[[1]]$box
+#' gc_render(scene, width = 400, height = 200)
 #' @export
-l_viewport <- function(
+gc_viewport <- function(
   plots = list(),
   width = "auto",
   height = "auto",
@@ -431,16 +431,16 @@ l_viewport <- function(
   safe_area = NULL,
   ...
 ) {
-  if (inherits(plots, c("l_node", "ggplot")) || grid::is.grob(plots)) {
+  if (inherits(plots, c("gc_node", "ggplot")) || grid::is.grob(plots)) {
     plots <- list(plots)
   }
   if (!is.list(plots)) {
-    l_abort("plots must be a list of scene nodes.")
+    gc_abort("plots must be a list of scene nodes.")
   }
   node <- new_l_node(
     "viewport",
-    width = l_length(width, units),
-    height = l_length(height, units)
+    width = gc_length(width, units),
+    height = gc_length(height, units)
   )
   node$children <- lapply(plots, as_l_node)
   node <- update_node(
@@ -456,10 +456,10 @@ l_viewport <- function(
       list(...)
     )
   )
-  class(node) <- c("l_viewport", "l_scene", "l_node")
+  class(node) <- c("gc_viewport", "gc_scene", "gc_node")
   node <- assign_scene_ids(node)
   if (anyDuplicated(scene_ids(node))) {
-    l_abort("Node IDs must be unique within a scene.", property = "id")
+    gc_abort("Node IDs must be unique within a scene.", property = "id")
   }
   node
 }
@@ -470,37 +470,37 @@ l_viewport <- function(
 #' flattening their child declarations. Joining alone does not imply a grid or
 #' automatic side-by-side placement.
 #'
-#' @inheritParams l_viewport
-#' @param position Optional uniquely named list of [l_place()] node properties
+#' @inheritParams gc_viewport
+#' @param position Optional uniquely named list of [gc_place()] node properties
 #'   applied to the joined parent after construction, not to its children.
 #' @param gap Logical spacing between children in row or column flow. Ignored
 #'   by absolute positioning, the default flow.
-#' @param ... Additional arguments forwarded to [l_viewport()], such as
+#' @param ... Additional arguments forwarded to [gc_viewport()], such as
 #'   `padding`, `flow`, `border`, `overflow` and other node properties.
 #'
 #' @details
-#' Position children with [l_place()] before joining, or request `flow = "row"`
+#' Position children with [gc_place()] before joining, or request `flow = "row"`
 #' or `flow = "column"`. Each nested scene keeps its own local coordinates and
 #' is resolved in the box allocated by the parent. Moving the joined object
 #' later does not rewrite those child declarations.
 #'
-#' @returns An `l_viewport`, also inheriting from `l_scene` and `l_node`.
+#' @returns An `gc_viewport`, also inheriting from `gc_scene` and `gc_node`.
 #'   The input scenes are not modified.
-#' @seealso [l_viewport()], [l_place()], [l_resolve()]
+#' @seealso [gc_viewport()], [gc_place()], [gc_resolve()]
 #' @examples
-#' first <- l_viewport(list(l_place(l_text("First"), left = 8, top = 8)),
+#' first <- gc_viewport(list(gc_place(gc_text("First"), left = 8, top = 8)),
 #'   background = "#DCEFE8"
 #' )
-#' second <- l_viewport(list(l_place(l_text("Second"), left = 8, top = 8)),
+#' second <- gc_viewport(list(gc_place(gc_text("Second"), left = 8, top = 8)),
 #'   background = "#EDF3F5"
 #' )
-#' joined <- l_join(list(
-#'   l_place(first, left = "0%", width = "48%", height = "100%"),
-#'   l_place(second, left = "52%", width = "48%", height = "100%")
+#' joined <- gc_join(list(
+#'   gc_place(first, left = "0%", width = "48%", height = "100%"),
+#'   gc_place(second, left = "52%", width = "48%", height = "100%")
 #' ), width = 400, height = 160)
-#' l_render(joined, width = 400, height = 160)
+#' gc_render(joined, width = 400, height = 160)
 #' @export
-l_join <- function(
+gc_join <- function(
   plots,
   width = "auto",
   height = "auto",
@@ -509,7 +509,7 @@ l_join <- function(
   background = NULL,
   ...
 ) {
-  node <- l_viewport(
+  node <- gc_viewport(
     plots,
     width = width,
     height = height,
@@ -526,23 +526,23 @@ l_join <- function(
 #' Print a compact summary of a scene node
 #'
 #' Display the node class, kind, identifier, logical dimensions and child
-#' count. Unlike printing a ggplot, printing an lplot node does not draw it.
+#' count. Unlike printing a ggplot, printing an ggcarto node does not draw it.
 #'
-#' @param x An `l_node` or subclass, such as an `l_element` or `l_viewport`.
+#' @param x An `gc_node` or subclass, such as an `gc_element` or `gc_viewport`.
 #' @param ... Additional arguments required by the generic; currently unused.
 #' @details Dimensions are printed as stored declarations, not as resolved
-#'   measurements. An unassigned node ID is shown explicitly. Use [l_resolve()]
-#'   to inspect calculated boxes and [l_render()] to display the scene.
+#'   measurements. An unassigned node ID is shown explicitly. Use [gc_resolve()]
+#'   to inspect calculated boxes and [gc_render()] to display the scene.
 #' @returns `x`, invisibly and unchanged. A summary is written to the console.
-#' @seealso [l_viewport()], [l_place()], [l_resolve()]
+#' @seealso [gc_viewport()], [gc_place()], [gc_resolve()]
 #' @examples
-#' scene <- l_viewport(list(l_place(l_text("Example"), left = 10, top = 10)),
+#' scene <- gc_viewport(list(gc_place(gc_text("Example"), left = 10, top = 10)),
 #'   width = 300, height = 100
 #' )
 #' returned <- print(scene)
 #' identical(returned, scene)
 #' @export
-print.l_node <- function(x, ...) {
+print.gc_node <- function(x, ...) {
   cat(
     "<",
     class(x)[[1L]],

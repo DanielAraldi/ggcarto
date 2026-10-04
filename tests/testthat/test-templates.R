@@ -1,7 +1,7 @@
-test_that("l_unit preserves the grid signature and unit construction", {
+test_that("gc_unit preserves the grid signature and unit construction", {
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
-  expect_identical(formals(l_unit), formals(grid::unit))
+  expect_identical(formals(gc_unit), formals(grid::unit))
   for (units in c(
     "npc",
     "native",
@@ -13,24 +13,24 @@ test_that("l_unit preserves the grid signature and unit construction", {
     "char",
     "null"
   )) {
-    expect_identical(l_unit(2, units), grid::unit(2, units))
+    expect_identical(gc_unit(2, units), grid::unit(2, units))
     expect_identical(
-      l_unit(c(0, 0.5, 2), units),
+      gc_unit(c(0, 0.5, 2), units),
       grid::unit(c(0, 0.5, 2), units)
     )
   }
   expect_identical(
-    l_unit(c(1, 2, 3, 4), c("cm", "mm")),
+    gc_unit(c(1, 2, 3, 4), c("cm", "mm")),
     grid::unit(c(1, 2, 3, 4), c("cm", "mm"))
   )
-  expect_true(grid::is.unit(l_unit(5, "mm")))
-  expect_false(inherits(l_unit(5, "mm"), "l_length"))
+  expect_true(grid::is.unit(gc_unit(5, "mm")))
+  expect_false(inherits(gc_unit(5, "mm"), "gc_length"))
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
 })
 
-test_that("l_unit forwards auxiliary data without changing grid semantics", {
-  label <- l_text("Survey", name = "unit-label")
+test_that("gc_unit forwards auxiliary data without changing grid semantics", {
+  label <- gc_text("Survey", name = "unit-label")
   original <- label
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
@@ -42,24 +42,24 @@ test_that("l_unit forwards auxiliary data without changing grid semantics", {
     list(1, "grobheight", data = grid::gPath("unit-label")),
     list(c(1, 2), c("grobwidth", "grobheight"), data = list(label, label))
   )) {
-    expect_identical(do.call(l_unit, arguments), do.call(grid::unit, arguments))
+    expect_identical(do.call(gc_unit, arguments), do.call(grid::unit, arguments))
   }
   expect_identical(label, original)
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
 })
 
-test_that("l_unit retains native arithmetic and primitive compatibility", {
-  width <- l_unit(1, "npc") - l_unit(5, "mm")
+test_that("gc_unit retains native arithmetic and primitive compatibility", {
+  width <- gc_unit(1, "npc") - gc_unit(5, "mm")
   native_width <- grid::unit(1, "npc") - grid::unit(5, "mm")
   expect_identical(width, native_width)
-  expect_identical(2 * l_unit(c(1, 2), "cm"), 2 * grid::unit(c(1, 2), "cm"))
+  expect_identical(2 * gc_unit(c(1, 2), "cm"), 2 * grid::unit(c(1, 2), "cm"))
   expect_identical(
-    grid::unit.c(l_unit(1, "cm"), l_unit(0.5, "npc"))[2],
+    grid::unit.c(gc_unit(1, "cm"), gc_unit(0.5, "npc"))[2],
     grid::unit.c(grid::unit(1, "cm"), grid::unit(0.5, "npc"))[2]
   )
   expect_identical(
-    l_rect(width = width, height = l_unit(10, "mm"), name = "outline"),
+    gc_rect(width = width, height = gc_unit(10, "mm"), name = "outline"),
     grid::rectGrob(
       width = native_width,
       height = grid::unit(10, "mm"),
@@ -67,20 +67,20 @@ test_that("l_unit retains native arithmetic and primitive compatibility", {
     )
   )
   expect_identical(
-    l_text("Note", x = l_unit(5, "mm"), name = "note"),
+    gc_text("Note", x = gc_unit(5, "mm"), name = "note"),
     grid::textGrob("Note", x = grid::unit(5, "mm"), name = "note")
   )
 })
 
-test_that("l_unit defers conversion to the current viewport", {
-  relative <- l_unit(0.5, "npc")
-  native <- l_unit(50, "native")
+test_that("gc_unit defers conversion to the current viewport", {
+  relative <- gc_unit(0.5, "npc")
+  native <- gc_unit(50, "native")
   original <- relative
   grDevices::pdf(NULL, width = 8, height = 6)
   on.exit(grDevices::dev.off(), add = TRUE)
 
   expect_equal(
-    grid::convertWidth(l_unit(25.4, "mm"), "inches", valueOnly = TRUE),
+    grid::convertWidth(gc_unit(25.4, "mm"), "inches", valueOnly = TRUE),
     1
   )
   for (width in c(2, 4)) {
@@ -100,7 +100,7 @@ test_that("l_unit defers conversion to the current viewport", {
   expect_identical(relative, original)
 })
 
-test_that("l_unit leaves invalid-input errors to grid", {
+test_that("gc_unit leaves invalid-input errors to grid", {
   for (arguments in list(
     list(),
     list(x = 1),
@@ -114,7 +114,7 @@ test_that("l_unit leaves invalid-input errors to grid", {
     list(1, "grobwidth", data = 42)
   )) {
     expected <- tryCatch(do.call(grid::unit, arguments), error = identity)
-    actual <- tryCatch(do.call(l_unit, arguments), error = identity)
+    actual <- tryCatch(do.call(gc_unit, arguments), error = identity)
     expect_s3_class(expected, "error")
     expect_s3_class(actual, "error")
     if (inherits(expected, "missingArgError")) {
@@ -129,13 +129,13 @@ test_that("l_unit leaves invalid-input errors to grid", {
 test_that("primitive defaults match native grid constructors", {
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
-  expect_identical(l_rect(name = "rect"), grid::rectGrob(name = "rect"))
+  expect_identical(gc_rect(name = "rect"), grid::rectGrob(name = "rect"))
   expect_identical(
-    l_text("Label", name = "text"),
+    gc_text("Label", name = "text"),
     grid::textGrob("Label", name = "text")
   )
   expect_identical(
-    l_template(name = "template"),
+    gc_template(name = "template"),
     grid::grobTree(name = "template")
   )
   expect_identical(grDevices::dev.cur(), caller)
@@ -158,7 +158,7 @@ test_that("primitives retain native geometry, vectorization and text controls", 
     gp = grid::gpar(fill = c("white", "red"), col = NA, alpha = 0.7)
   )
   expect_identical(
-    do.call(l_rect, rectangle_args),
+    do.call(gc_rect, rectangle_args),
     do.call(grid::rectGrob, rectangle_args)
   )
   text_args <- list(
@@ -180,7 +180,7 @@ test_that("primitives retain native geometry, vectorization and text controls", 
     )
   )
   expect_identical(
-    do.call(l_text, text_args),
+    do.call(gc_text, text_args),
     do.call(grid::textGrob, text_args)
   )
 })
@@ -192,13 +192,13 @@ test_that("graphical shortcuts override gp without mutating it", {
   expect_identical(validated, original_validated)
   theme <- grid::gpar(col = "red", fontface = "bold", fontsize = 9)
   original <- theme
-  label <- l_text("Note", gp = theme, col = "blue", fontface = "italic")
+  label <- gc_text("Note", gp = theme, col = "blue", fontface = "italic")
   expect_identical(theme, original)
   expect_equal(label$gp$col, "blue")
   expect_equal(label$gp$fontsize, 9)
   expect_equal(unname(label$gp$font), 3L)
   expect_equal(
-    unname(l_text("Note", gp = list(fontface = "italic"), font = 2)$gp$font),
+    unname(gc_text("Note", gp = list(fontface = "italic"), font = 2)$gp$font),
     2L
   )
   parameters <- list(
@@ -213,7 +213,7 @@ test_that("graphical shortcuts override gp without mutating it", {
     lex = 1.2
   )
   expect_identical(
-    do.call(l_rect, parameters)$gp,
+    do.call(gc_rect, parameters)$gp,
     do.call(grid::gpar, parameters)
   )
   parameters <- list(
@@ -225,23 +225,23 @@ test_that("graphical shortcuts override gp without mutating it", {
     cex = 0.9
   )
   expect_identical(
-    l_text("Note", gp = parameters)$gp,
+    gc_text("Note", gp = parameters)$gp,
     do.call(grid::gpar, parameters)
   )
-  expect_identical(l_rect(gp = list(fill = "red"))$gp, grid::gpar(fill = "red"))
+  expect_identical(gc_rect(gp = list(fill = "red"))$gp, grid::gpar(fill = "red"))
   expect_identical(
-    l_template(gp = parameters)$gp,
+    gc_template(gp = parameters)$gp,
     do.call(grid::gpar, parameters)
   )
 })
 
 test_that("templates retain child order, nesting and native viewport controls", {
-  background <- l_rect(name = "background", fill = "white")
-  label <- l_text("N", name = "label")
-  nested <- l_template(grid::segmentsGrob(name = "segment"), name = "nested")
+  background <- gc_rect(name = "background", fill = "white")
+  label <- gc_text("N", name = "label")
+  nested <- gc_template(grid::segmentsGrob(name = "segment"), name = "nested")
   viewport <- grid::viewport(angle = 10)
   child_viewports <- grid::vpList(grid::viewport(name = "child"))
-  template <- l_template(
+  template <- gc_template(
     background,
     children = list(label, nested),
     name = "template",
@@ -266,18 +266,18 @@ test_that("templates retain child order, nesting and native viewport controls", 
   expect_identical(template$childrenOrder, c("background", "label", "nested"))
   expect_null(label$gp$col)
   expect_identical(
-    l_template(children = grid::gList(background, label), name = "list"),
+    gc_template(children = grid::gList(background, label), name = "list"),
     grid::grobTree(background, label, name = "list")
   )
 })
 
 test_that("invalid children and malformed graphical parameter lists are rejected", {
-  expect_error(l_template(1), class = "lplot_unsupported_source")
-  expect_error(l_template(l_viewport()), class = "lplot_unsupported_source")
-  expect_error(l_template(children = "label"), class = "lplot_error")
+  expect_error(gc_template(1), class = "ggcarto_unsupported_source")
+  expect_error(gc_template(gc_viewport()), class = "ggcarto_unsupported_source")
+  expect_error(gc_template(children = "label"), class = "ggcarto_error")
   expect_error(
-    l_template(children = list(l_rect(), NULL)),
-    class = "lplot_error"
+    gc_template(children = list(gc_rect(), NULL)),
+    class = "ggcarto_error"
   )
   for (bad in list(
     "red",
@@ -285,12 +285,12 @@ test_that("invalid children and malformed graphical parameter lists are rejected
     list(col = "red", col = "blue"),
     stats::setNames(list("red"), NA_character_)
   )) {
-    expect_error(l_text("Label", gp = bad), class = "lplot_error")
-    expect_error(l_rect(gp = bad), class = "lplot_error")
-    expect_error(l_template(gp = bad), class = "lplot_error")
+    expect_error(gc_text("Label", gp = bad), class = "ggcarto_error")
+    expect_error(gc_rect(gp = bad), class = "ggcarto_error")
+    expect_error(gc_template(gp = bad), class = "ggcarto_error")
   }
   expect_error(
-    l_text(
+    gc_text(
       "Label",
       0.5,
       0.5,
@@ -305,31 +305,31 @@ test_that("invalid children and malformed graphical parameter lists are rejected
       NULL,
       "red"
     ),
-    class = "lplot_error"
+    class = "ggcarto_error"
   )
-  expect_error(l_rect(col = "red", col = "blue"), class = "lplot_error")
-  expect_error(l_text("Label", font = 2, fontface = "italic"))
+  expect_error(gc_rect(col = "red", col = "blue"), class = "ggcarto_error")
+  expect_error(gc_text("Label", font = 2, fontface = "italic"))
 })
 
 test_that("templates enter extraction and layout through the existing grob path", {
-  template <- l_template(
-    l_rect(fill = "white", col = "black"),
-    l_text("N", fontsize = 12, fontface = "bold")
+  template <- gc_template(
+    gc_rect(fill = "white", col = "black"),
+    gc_text("N", fontsize = 12, fontface = "bold")
   )
   original <- template
-  element <- l_get_element(template, "north_arrow", width = 40, height = 60)
+  element <- gc_get_element(template, "north_arrow", width = 40, height = 60)
   expect_identical(element$content, template)
-  scene <- l_viewport(
+  scene <- gc_viewport(
     list(
-      l_place(template, left = 10, top = 10, width = 40, height = 60),
-      l_place(element, right = 10, bottom = 10)
+      gc_place(template, left = 10, top = 10, width = 40, height = 60),
+      gc_place(element, right = 10, bottom = 10)
     ),
     width = 200,
     height = 120
   )
-  expect_s3_class(l_resolve(scene, width = 200, height = 120), "l_layout")
+  expect_s3_class(gc_resolve(scene, width = 200, height = 120), "gc_layout")
   expect_true(grid::is.grob(prepared(element)))
-  expect_gt(l_measure(l_text("Measured", fontsize = 12))$width, 0)
+  expect_gt(gc_measure(gc_text("Measured", fontsize = 12))$width, 0)
   expect_identical(template, original)
 })
 
@@ -356,20 +356,20 @@ test_that("template themes render like native grid and preserve child overrides"
       gp = grid::gpar(fill = "#2B8E98", fontsize = 12)
     )
   }
-  template <- build(l_template, l_rect, l_text, l_unit)
+  template <- build(gc_template, gc_rect, gc_text, gc_unit)
   native <- build(grid::grobTree, grid::rectGrob, grid::textGrob, grid::unit)
   original <- template
   capture <- function(grob, size) {
     image <- ragg::agg_capture(width = size[[1]], height = size[[2]], res = 96)
     on.exit(grDevices::dev.off())
-    scene <- l_viewport(list(l_place(
+    scene <- gc_viewport(list(gc_place(
       grob,
       left = 10,
       right = 10,
       top = 10,
       bottom = 10
     )))
-    l_render(scene)
+    gc_render(scene)
     image()
   }
   for (size in list(c(200, 120), c(400, 240))) {

@@ -6,6 +6,6 @@ plot <- ggplot2::ggplot(
   ggplot2::labs(title = "Consumo dos veiculos", colour = "Cilindros") +
   ggplot2::theme_minimal()
 
-result <- lplot::l_get_element(plot, "legend")
+result <- ggcarto::gc_get_element(plot, "legend")
 
-lplot::l_render(result)
+ggcarto::gc_render(result)

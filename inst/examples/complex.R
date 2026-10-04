@@ -1,4 +1,4 @@
-examples_root <- system.file("examples", package = "lplot")
+examples_root <- system.file("examples", package = "ggcarto")
 sys.source(file.path(examples_root, "data", "maps.R"), envir = environment())
 sys.source(file.path(examples_root, "utils.R"), envir = environment())
 rm(examples_root)
@@ -42,28 +42,28 @@ map_complex_scene <- function() {
     distance_m = 50000,
     overlays = list(
       map_locator(counties, plot),
-      lplot::l_place(map_north_arrow(focus), right = 12, top = 12, z_index = 30)
+      ggcarto::gc_place(map_north_arrow(focus), right = 12, top = 12, z_index = 30)
     )
   )
-  map <- lplot::l_viewport(list(
-    lplot::l_place(
-      lplot::l_viewport(list(frame)),
+  map <- ggcarto::gc_viewport(list(
+    ggcarto::gc_place(
+      ggcarto::gc_viewport(list(frame)),
       left = 0,
       right = 0,
       top = 0,
       bottom = 68,
       id = "frame"
     ),
-    lplot::l_place(
-      lplot::l_get_element(plot, "legend"),
+    ggcarto::gc_place(
+      ggcarto::gc_get_element(plot, "legend"),
       x = "50%",
       bottom = 0,
       anchor = "bottom-center",
       id = "legend"
     )
   ))
-  indicators <- lplot::l_viewport(list(
-    lplot::l_place(
+  indicators <- ggcarto::gc_viewport(list(
+    ggcarto::gc_place(
       map_label_template(
         format(
           sum(region$BIR74),
@@ -80,7 +80,7 @@ map_complex_scene <- function() {
       height = 64,
       id = "births"
     ),
-    lplot::l_place(
+    ggcarto::gc_place(
       map_label_template(
         as.character(nrow(region)),
         "Condados que intersectam o recorte",
@@ -93,7 +93,7 @@ map_complex_scene <- function() {
       height = 64,
       id = "counties"
     ),
-    lplot::l_place(
+    ggcarto::gc_place(
       chart,
       left = 0,
       right = 0,
@@ -102,9 +102,9 @@ map_complex_scene <- function() {
       id = "ranking"
     )
   ))
-  lplot::l_viewport(
+  ggcarto::gc_viewport(
     list(
-      lplot::l_place(
+      ggcarto::gc_place(
         map_label_template(
           "Nascimentos | recorte regional",
           "Carolina do Norte, 1974 | Regiao central e leste"
@@ -115,7 +115,7 @@ map_complex_scene <- function() {
         height = 76,
         id = "header"
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         map,
         left = 0,
         width = "66%",
@@ -123,7 +123,7 @@ map_complex_scene <- function() {
         bottom = 68,
         id = "map"
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         indicators,
         left = "69%",
         right = 0,
@@ -131,8 +131,8 @@ map_complex_scene <- function() {
         bottom = 68,
         id = "indicators"
       ),
-      lplot::l_place(
-        lplot::l_text(
+      ggcarto::gc_place(
+        ggcarto::gc_text(
           paste(
             "Fonte: sf::nc | NAD83 / North Carolina (m) | Escala em distancia projetada",
             "Indicadores incluem o total de cada condado que intersecta o recorte.",

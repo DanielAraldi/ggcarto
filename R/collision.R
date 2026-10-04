@@ -171,7 +171,7 @@ resolve_collisions <- function(children, context, safe_area) {
       }
       current$collision_candidates <- attempts
       if (!found) {
-        l_warn(
+        gc_warn(
           "No permitted collision-free placement; keeping the preferred box.",
           "collision",
           current$id,

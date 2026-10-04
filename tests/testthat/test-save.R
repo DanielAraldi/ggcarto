@@ -20,15 +20,15 @@ compare_export_image <- function(old, new) {
 }
 
 export_scene <- function() {
-  l_viewport(list(
-    l_place(
+  gc_viewport(list(
+    gc_place(
       grid::rectGrob(gp = grid::gpar(fill = "red", col = NA)),
       left = 0,
       top = 0,
       width = "50%",
       height = "50%"
     ),
-    l_place(
+    gc_place(
       grid::rectGrob(gp = grid::gpar(fill = "blue", col = NA)),
       right = 0,
       bottom = 0,
@@ -38,7 +38,7 @@ export_scene <- function() {
   ))
 }
 
-test_that("l_save writes decodable raster formats with correct orientation and density", {
+test_that("gc_save writes decodable raster formats with correct orientation and density", {
   skip_if_not_installed("ragg")
   skip_if_not_installed("webp")
   skip_if_not_installed("png")
@@ -46,7 +46,7 @@ test_that("l_save writes decodable raster formats with correct orientation and d
   directory <- tempfile()
   on.exit(unlink(directory, recursive = TRUE))
   for (type in c("PNG", "jpg", "jpeg", "webp")) {
-    result <- withVisible(l_save(
+    result <- withVisible(gc_save(
       export_scene(),
       type,
       directory,
@@ -85,7 +85,7 @@ test_that("SVG preserves vector content and raster backgrounds can be transparen
   skip_if_not_installed("webp")
   directory <- tempfile()
   on.exit(unlink(directory, recursive = TRUE))
-  path <- l_save(
+  path <- gc_save(
     export_scene(),
     "svg",
     directory,
@@ -99,7 +99,7 @@ test_that("SVG preserves vector content and raster backgrounds can be transparen
   expect_match(text, "<rect")
   expect_false(grepl("<image", text, fixed = TRUE))
   for (type in c("png", "webp")) {
-    path <- l_save(
+    path <- gc_save(
       export_scene(),
       type,
       directory,
@@ -124,7 +124,7 @@ test_that("exports preserve existing files and restore caller devices on success
   grid::pushViewport(grid::viewport(name = "caller"))
   original <- export_scene()
   snapshot <- original
-  path <- l_save(
+  path <- gc_save(
     original,
     "png",
     directory,
@@ -136,24 +136,24 @@ test_that("exports preserve existing files and restore caller devices on success
   expect_equal(grDevices::dev.cur(), caller)
   expect_equal(grid::current.viewport()$name, "caller")
   expect_error(
-    l_save(original, "png", directory, filename = "map.png"),
-    class = "lplot_file_exists"
+    gc_save(original, "png", directory, filename = "map.png"),
+    class = "ggcarto_file_exists"
   )
-  bad <- l_viewport(list(l_place(
+  bad <- gc_viewport(list(gc_place(
     grid::rectGrob(),
     left = 0,
     right = 0,
     width = 900
   )))
   expect_error(
-    l_save(bad, "png", directory, filename = "map.png", overwrite = TRUE),
-    class = "lplot_contradictory_constraints"
+    gc_save(bad, "png", directory, filename = "map.png", overwrite = TRUE),
+    class = "ggcarto_contradictory_constraints"
   )
   expect_equal(unname(tools::md5sum(path)), digest)
   expect_equal(grDevices::dev.cur(), caller)
   expect_equal(grid::current.viewport()$name, "caller")
   expect_equal(list.files(directory, all.files = TRUE, no.. = TRUE), "map.png")
-  expect_no_warning(l_save(
+  expect_no_warning(gc_save(
     original,
     "png",
     directory,
@@ -203,18 +203,18 @@ test_that("export validation rejects unsupported formats and ambiguous paths", {
   )) {
     expect_error(
       do.call(
-        l_save,
+        gc_save,
         utils::modifyList(
           list(plot = scene, dir = directory),
           arguments,
           keep.null = TRUE
         )
       ),
-      class = "lplot_error"
+      class = "ggcarto_error"
     )
   }
   expect_false(dir.exists(directory))
-  expect_error(l_save(1), class = "lplot_unsupported_source")
+  expect_error(gc_save(1), class = "ggcarto_unsupported_source")
 })
 
 test_that("export requires an explicit destination directory", {
@@ -224,8 +224,8 @@ test_that("export requires an explicit destination directory", {
   original <- setwd(working)
   on.exit(setwd(original), add = TRUE, after = FALSE)
   condition <- expect_error(
-    l_save(export_scene(), "png", filename = "map"),
-    class = "lplot_error"
+    gc_save(export_scene(), "png", filename = "map"),
+    class = "ggcarto_error"
   )
   expect_identical(condition$property, "dir")
   expect_length(list.files(working, all.files = TRUE, no.. = TRUE), 0L)
@@ -240,8 +240,8 @@ test_that("an export cannot replace a directory even with overwrite enabled", {
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
   expect_error(
-    l_save(export_scene(), "png", directory, "map", overwrite = TRUE),
-    class = "lplot_file_exists"
+    gc_save(export_scene(), "png", directory, "map", overwrite = TRUE),
+    class = "ggcarto_file_exists"
   )
   expect_true(dir.exists(destination))
   expect_identical(
@@ -259,11 +259,11 @@ test_that("raw ggplots, grobs and extracted elements are exportable", {
   objects <- list(
     example_plot(),
     grid::textGrob("Map"),
-    l_get_element(example_plot(), "title")
+    gc_get_element(example_plot(), "title")
   )
   for (index in seq_along(objects)) {
     expect_no_warning(
-      path <- l_save(
+      path <- gc_save(
         objects[[index]],
         "png",
         directory,
@@ -281,7 +281,7 @@ test_that("directory creation, JPEG aliases and headless exports do not leak dev
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
   destination <- file.path(directory, "nested folder")
-  path <- l_save(
+  path <- gc_save(
     export_scene(),
     "JPEG",
     destination,
@@ -293,16 +293,16 @@ test_that("directory creation, JPEG aliases and headless exports do not leak dev
   expect_equal(basename(path), "map.JPG")
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
-  expect_error(l_save(export_scene(), "png", path), class = "lplot_export")
-  bad <- l_viewport(list(l_place(
+  expect_error(gc_save(export_scene(), "png", path), class = "ggcarto_export")
+  bad <- gc_viewport(list(gc_place(
     grid::rectGrob(),
     left = 0,
     right = 0,
     width = 900
   )))
   expect_error(
-    l_save(bad, "png", destination, filename = "failed"),
-    class = "lplot_error"
+    gc_save(bad, "png", destination, filename = "failed"),
+    class = "ggcarto_error"
   )
   expect_identical(grDevices::dev.list(), devices)
   expect_equal(
@@ -311,14 +311,14 @@ test_that("directory creation, JPEG aliases and headless exports do not leak dev
   )
 })
 
-test_that("l_save map exports match the approved files for every format", {
+test_that("gc_save map exports match the approved files for every format", {
   skip_on_cran()
   for (package in c("sf", "ragg", "svglite", "webp", "png", "jpeg")) {
     skip_if_not_installed(package)
   }
   examples <- new.env(parent = globalenv())
   sys.source(
-    system.file("examples", "inset.R", package = "lplot"),
+    system.file("examples", "inset.R", package = "ggcarto"),
     envir = examples
   )
   scene <- examples$map_inset_scene()
@@ -326,7 +326,7 @@ test_that("l_save map exports match the approved files for every format", {
   on.exit(unlink(directory, recursive = TRUE))
   for (type in c("png", "jpg", "jpeg", "svg", "webp")) {
     expect_no_warning(
-      path <- l_save(
+      path <- gc_save(
         scene,
         type = type,
         dir = directory,
@@ -365,7 +365,7 @@ test_that("export snapshot comparisons reject blank, resized and changed images"
   directory <- tempfile()
   on.exit(unlink(directory, recursive = TRUE))
   for (type in c("png", "jpg", "jpeg", "webp")) {
-    reference <- l_save(
+    reference <- gc_save(
       export_scene(),
       type,
       directory,
@@ -373,7 +373,7 @@ test_that("export snapshot comparisons reject blank, resized and changed images"
       width = 120,
       height = 80
     )
-    identical_image <- l_save(
+    identical_image <- gc_save(
       export_scene(),
       type,
       directory,
@@ -381,15 +381,15 @@ test_that("export snapshot comparisons reject blank, resized and changed images"
       width = 120,
       height = 80
     )
-    blank <- l_save(
-      l_viewport(),
+    blank <- gc_save(
+      gc_viewport(),
       type,
       directory,
       filename = "blank",
       width = 120,
       height = 80
     )
-    resized <- l_save(
+    resized <- gc_save(
       export_scene(),
       type,
       directory,
@@ -398,14 +398,14 @@ test_that("export snapshot comparisons reject blank, resized and changed images"
       height = 80
     )
     changed <- export_scene()
-    changed$children[[1]] <- l_place(
+    changed$children[[1]] <- gc_place(
       grid::rectGrob(gp = grid::gpar(fill = "green", col = NA)),
       left = 0,
       top = 0,
       width = "50%",
       height = "50%"
     )
-    different_image <- l_save(
+    different_image <- gc_save(
       changed,
       type,
       directory,

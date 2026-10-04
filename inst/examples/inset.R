@@ -1,4 +1,4 @@
-examples_root <- system.file("examples", package = "lplot")
+examples_root <- system.file("examples", package = "ggcarto")
 sys.source(file.path(examples_root, "data", "maps.R"), envir = environment())
 sys.source(file.path(examples_root, "utils.R"), envir = environment())
 rm(examples_root)
@@ -15,7 +15,7 @@ map_inset_scene <- function() {
     distance_m = 50000,
     overlays = list(
       map_locator(counties, plot),
-      lplot::l_place(map_north_arrow(focus), right = 12, top = 12, z_index = 30)
+      ggcarto::gc_place(map_north_arrow(focus), right = 12, top = 12, z_index = 30)
     )
   )
   map_sheet(plot, frame)

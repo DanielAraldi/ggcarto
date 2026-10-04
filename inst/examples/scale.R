@@ -1,4 +1,4 @@
-examples_root <- system.file("examples", package = "lplot")
+examples_root <- system.file("examples", package = "ggcarto")
 sys.source(file.path(examples_root, "data", "maps.R"), envir = environment())
 sys.source(file.path(examples_root, "utils.R"), envir = environment())
 rm(examples_root)

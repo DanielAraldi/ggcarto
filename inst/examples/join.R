@@ -1,4 +1,4 @@
-examples_root <- system.file("examples", package = "lplot")
+examples_root <- system.file("examples", package = "ggcarto")
 sys.source(file.path(examples_root, "data", "maps.R"), envir = environment())
 sys.source(file.path(examples_root, "utils.R"), envir = environment())
 rm(examples_root)
@@ -20,16 +20,16 @@ map_join_scene <- function() {
   )
   first_scene <- map_sheet(first, map_frame(first))
   second_scene <- map_sheet(second, map_frame(second))
-  lplot::l_join(
+  ggcarto::gc_join(
     list(
-      lplot::l_place(
+      ggcarto::gc_place(
         first_scene,
         left = "0%",
         top = "0%",
         width = "49%",
         height = "100%"
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         second_scene,
         left = "51%",
         top = "0%",

@@ -1,7 +1,7 @@
-label <- lplot::l_text("Titulo exportado", fontsize = 18)
-directory <- tempfile("lplot-save-")
+label <- ggcarto::gc_text("Titulo exportado", fontsize = 18)
+directory <- tempfile("ggcarto-save-")
 
-result <- lplot::l_save(
+result <- ggcarto::gc_save(
   label,
   type = "svg",
   dir = directory,

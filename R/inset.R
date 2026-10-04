@@ -13,7 +13,7 @@ map_footprint <- function(source, destination) {
   longitude <- sf::st_coordinates(geographic)[, "X"]
   longitude <- (longitude + 180) %% 360 - 180
   if (any(!is.finite(longitude)) || any(abs(diff(longitude)) > 180)) {
-    l_abort(
+    gc_abort(
       "Inset footprints crossing the antimeridian are not supported.",
       "inset_projection"
     )
@@ -21,7 +21,7 @@ map_footprint <- function(source, destination) {
   transformed <- tryCatch(
     sf::st_transform(polygon, destination$crs, partial = FALSE),
     error = function(error) {
-      l_abort(
+      gc_abort(
         "The inset footprint cannot be transformed to the target CRS.",
         "inset_projection"
       )
@@ -29,7 +29,7 @@ map_footprint <- function(source, destination) {
   )
   coordinates <- sf::st_coordinates(transformed)
   if (any(sf::st_is_empty(transformed)) || any(!is.finite(coordinates))) {
-    l_abort(
+    gc_abort(
       "The inset footprint falls outside the target projection.",
       "inset_projection"
     )
@@ -38,7 +38,7 @@ map_footprint <- function(source, destination) {
     isTRUE(sf::st_is_longlat(destination$crs)) &&
       any(abs(diff(coordinates[, "X"])) > 180)
   ) {
-    l_abort(
+    gc_abort(
       "Inset footprints crossing the antimeridian are not supported.",
       "inset_projection"
     )
@@ -57,7 +57,7 @@ footprint_node <- function(footprint, context, col, fill, lwd) {
     gp = grid::gpar(col = col, fill = fill, lwd = lwd),
     name = "inset-footprint"
   )
-  l_get_element(
+  gc_get_element(
     grob,
     "custom",
     width = "100%",
@@ -72,7 +72,7 @@ footprint_node <- function(footprint, context, col, fill, lwd) {
 #' projected footprint linking it to an explicit reference map.
 #'
 #' @param plot Single-panel coord_sf ggplot for the secondary map.
-#' @param reference Main map, supplied as an [l_frame()] or single-panel
+#' @param reference Main map, supplied as an [gc_frame()] or single-panel
 #'   coord_sf ggplot. Only its displayed extent and CRS are retained.
 #' @param mode `"locator"` highlights the reference extent inside the secondary
 #'   map. `"detail"` highlights the secondary extent in the containing main
@@ -81,11 +81,11 @@ footprint_node <- function(footprint, context, col, fill, lwd) {
 #' @param highlight_col,highlight_fill,highlight_lwd Footprint outline color,
 #'   fill color and positive grid line width.
 #' @param overlays Additional elements belonging to the secondary map, such as
-#'   its own [l_scale_bar()]. Their coordinates refer to its own fitted panel.
+#'   its own [gc_scale_bar()]. Their coordinates refer to its own fitted panel.
 #' @param width,height Logical outer dimensions. Width defaults to 30 percent
 #'   of the parent map. Automatic height follows the secondary map aspect.
-#' @param ... Outer viewport properties passed to [l_frame()], including
-#'   positioning, padding, border and background. Use [l_place()] to position
+#' @param ... Outer viewport properties passed to [gc_frame()], including
+#'   positioning, padding, border and background. Use [gc_place()] to position
 #'   the returned inset explicitly inside a main frame.
 #'
 #' @details
@@ -101,10 +101,10 @@ footprint_node <- function(footprint, context, col, fill, lwd) {
 #' detail-mode parent highlighting requires insertion in the main frame.
 #' No connector lines or automatic cartographic feature selection are added.
 #'
-#' @returns An `l_inset` inheriting from `l_frame`, `l_viewport` and `l_node`.
+#' @returns An `gc_inset` inheriting from `gc_frame`, `gc_viewport` and `gc_node`.
 #'   `reference_context` stores the main extent and CRS; `footprint` holds the
 #'   transformed sf polygon when highlighting is enabled. Inputs are unchanged.
-#' @seealso [l_frame()], [l_scale_bar()], [l_place()]
+#' @seealso [gc_frame()], [gc_scale_bar()], [gc_place()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {
 #'   area <- sf::st_as_sfc(sf::st_bbox(c(
@@ -118,13 +118,13 @@ footprint_node <- function(footprint, context, col, fill, lwd) {
 #'     xlim = c(20000, 40000), ylim = c(10000, 30000),
 #'     expand = FALSE, datum = NA
 #'   )
-#'   inset <- l_inset(overview, reference = detail, mode = "locator")
-#'   l_render(l_frame(detail, overlays = list(
-#'     l_place(inset, right = 8, top = 8)
+#'   inset <- gc_inset(overview, reference = detail, mode = "locator")
+#'   gc_render(gc_frame(detail, overlays = list(
+#'     gc_place(inset, right = 8, top = 8)
 #'   )))
 #' }
 #' @export
-l_inset <- function(
+gc_inset <- function(
   plot,
   reference,
   mode = "locator",
@@ -138,15 +138,15 @@ l_inset <- function(
   ...
 ) {
   if (length(mode) != 1L || is.na(mode) || !mode %in% c("locator", "detail")) {
-    l_abort("mode must be locator or detail.", property = "mode")
+    gc_abort("mode must be locator or detail.", property = "mode")
   }
   if (!is.logical(highlight) || length(highlight) != 1L || is.na(highlight)) {
-    l_abort("highlight must be TRUE or FALSE.", property = "highlight")
+    gc_abort("highlight must be TRUE or FALSE.", property = "highlight")
   }
   scalar_number(highlight_lwd, "highlight_lwd", positive = TRUE)
   cartographic_colour(highlight_col, "highlight_col")
   cartographic_colour(highlight_fill, "highlight_fill")
-  reference_context <- if (inherits(reference, "l_frame")) {
+  reference_context <- if (inherits(reference, "gc_frame")) {
     reference$map_context
   } else {
     map_panel_context(reference)
@@ -171,7 +171,7 @@ l_inset <- function(
       parent_highlight <- highlight_node
     }
   }
-  inset <- l_frame(
+  inset <- gc_frame(
     plot,
     overlays = overlays,
     width = width,
@@ -182,15 +182,15 @@ l_inset <- function(
     inset$aspect_ratio <- context$aspect_ratio
   }
   if (is.null(inset$max_height)) {
-    inset$max_height <- l_length("100%")
+    inset$max_height <- gc_length("100%")
   }
   if (is.null(inset$max_width)) {
-    inset$max_width <- l_length("100%")
+    inset$max_width <- gc_length("100%")
   }
   inset$reference_context <- reference_context
   inset$footprint <- footprint
   inset$parent_highlight <- parent_highlight
   inset$inset_mode <- mode
-  class(inset) <- c("l_inset", class(inset))
+  class(inset) <- c("gc_inset", class(inset))
   inset
 }

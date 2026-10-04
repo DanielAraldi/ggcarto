@@ -8,13 +8,13 @@ test_that("themes, legends and nested scenes have stable visual output", {
       void = ggplot2::theme_void()
     )
     scene <- visual_scene(theme)
-    vdiffr::expect_doppelganger(paste0("theme-", name), l_as_grob(scene))
+    vdiffr::expect_doppelganger(paste0("theme-", name), gc_as_grob(scene))
   }
-  nested <- l_join(list(
-    l_place(scene, width = "60%", height = "100%"),
-    l_place(scene, left = "60%", width = "40%", height = "100%")
+  nested <- gc_join(list(
+    gc_place(scene, width = "60%", height = "100%"),
+    gc_place(scene, left = "60%", width = "40%", height = "100%")
   ))
-  vdiffr::expect_doppelganger("nested-viewports", l_as_grob(nested))
+  vdiffr::expect_doppelganger("nested-viewports", gc_as_grob(nested))
 })
 
 test_that("the same scene resolves on differently sized visual viewports", {
@@ -29,7 +29,7 @@ test_that("the same scene resolves on differently sized visual viewports", {
     }
     vdiffr::expect_doppelganger(
       paste0("responsive-full-", paste(size, collapse = "x")),
-      l_as_grob(scene),
+      gc_as_grob(scene),
       writer = writer
     )
   }
@@ -71,35 +71,35 @@ test_that("custom cartographic symbols and collision fallback render natively", 
       gp = grid::gpar(fontsize = 9)
     )
   )
-  scene <- l_viewport(
+  scene <- gc_viewport(
     list(
-      l_place(
-        l_get_element(arrow, "north_arrow", width = 32, height = 60),
+      gc_place(
+        gc_get_element(arrow, "north_arrow", width = 32, height = 60),
         anchor = "top-right"
       ),
-      l_place(
-        l_get_element(scale, "scale_bar", width = 140, height = 30),
+      gc_place(
+        gc_get_element(scale, "scale_bar", width = 140, height = 30),
         anchor = "bottom-left"
       )
     ),
     padding = 20,
     background = "#F3F6F2"
   )
-  vdiffr::expect_doppelganger("cartographic-symbols", l_as_grob(scene))
+  vdiffr::expect_doppelganger("cartographic-symbols", gc_as_grob(scene))
   scene <- collision_scene()
   vdiffr::expect_doppelganger(
     "collision-fallback-debug",
-    l_as_grob(scene, debug = TRUE)
+    gc_as_grob(scene, debug = TRUE)
   )
-  label <- l_get_element(
+  label <- gc_get_element(
     grid::textGrob("A long label", gp = grid::gpar(fontsize = 28)),
     "annotation",
     collision = "shrink",
     min_width = 50,
     min_height = 10
   )
-  shrink <- l_viewport(list(label), padding = 4)
+  shrink <- gc_viewport(list(label), padding = 4)
   vdiffr::expect_doppelganger("permitted-shrink", function() {
-    l_render(shrink, width = 120, height = 100)
+    gc_render(shrink, width = 120, height = 100)
   })
 })

@@ -33,7 +33,7 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
   }
   ring <- function(radius, name) {
     add(grid::circleGrob(
-      r = l_unit(radius, "npc"),
+      r = gc_unit(radius, "npc"),
       name = name,
       gp = grid::gpar(fill = NA)
     ))
@@ -95,7 +95,7 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
       rays(4, 0.265, 0.32, "cardinal-ticks")
       star(2, c(0.29, 0.25), inner = 0.055, prefix = "needle")
       add(grid::circleGrob(
-        r = l_unit(0.024, "npc"),
+        r = gc_unit(0.024, "npc"),
         name = "pivot",
         gp = grid::gpar(fill = fill_secondary)
       ))
@@ -139,7 +139,7 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
         add(grid::circleGrob(
           x = position$x,
           y = position$y,
-          r = l_unit(0.016, "npc"),
+          r = gc_unit(0.016, "npc"),
           name = sprintf("bead-%02d", index),
           gp = grid::gpar(fill = fill_secondary)
         ))
@@ -222,7 +222,7 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #' `"asymmetric"` combines broad cardinal tips with smaller intercardinal
 #' diamonds and an emphasized north tip.
 #'
-#' Supply explicit sizes with [l_place()] or [l_get_element()]: a generic gTree
+#' Supply explicit sizes with [gc_place()] or [gc_get_element()]: a generic gTree
 #' has no automatic child bounding-box measurement. Start with a 120 by 120
 #' logical-pixel box and enlarge it for dense or long labels. Text is not
 #' automatically shrunk, wrapped or collision-checked, and parent clipping is
@@ -231,22 +231,22 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #'
 #' This is graphical content, not a geographic calculation. It does not inspect
 #' a map, calculate true north or apply magnetic declination. Supply an angle
-#' computed by [l_north_angle()] for the map and reference location when required.
+#' computed by [gc_north_angle()] for the map and reference location when required.
 #' No spatial packages are needed to construct or render the rose.
 #'
-#' @returns A native grid `gTree`, usable with [grid::grid.draw()], [l_template()],
-#'   [l_place()], [l_get_element()] and [l_save()].
-#' @seealso [l_north_angle()], [l_template()], [l_unit()], [l_place()], [l_get_element()]
+#' @returns A native grid `gTree`, usable with [grid::grid.draw()], [gc_template()],
+#'   [gc_place()], [gc_get_element()] and [gc_save()].
+#' @seealso [gc_north_angle()], [gc_template()], [gc_unit()], [gc_place()], [gc_get_element()]
 #' @examples
-#' rose <- l_north_rose("eight_point", fill = "#197C80")
-#' scene <- l_viewport(list(
-#'   l_place(rose, right = 12, top = 12, width = 120, height = 120)
+#' rose <- gc_north_rose("eight_point", fill = "#197C80")
+#' scene <- gc_viewport(list(
+#'   gc_place(rose, right = 12, top = 12, width = 120, height = 120)
 #' ), width = 240, height = 180, background = "white")
-#' l_render(scene)
-#' l_north_rose("stellar", points = 32, labels = FALSE)
-#' l_north_rose("classic", labels = c("N", "L", "S", "O"), angle = 15)
+#' gc_render(scene)
+#' gc_north_rose("stellar", points = 32, labels = FALSE)
+#' gc_north_rose("classic", labels = c("N", "L", "S", "O"), angle = 15)
 #' @export
-l_north_rose <- function(
+gc_north_rose <- function(
   design = "classic",
   angle = 0,
   points = 16,
@@ -269,7 +269,7 @@ l_north_rose <- function(
       is.na(design) ||
       !design %in% north_rose_designs
   ) {
-    l_abort(
+    gc_abort(
       paste(
         "design must be one of:",
         paste(north_rose_designs, collapse = ", ")
@@ -280,7 +280,7 @@ l_north_rose <- function(
   angle <- scalar_number(angle, "angle")
   points <- scalar_number(points, "points")
   if (!points %in% c(8, 16, 32)) {
-    l_abort("points must be 8, 16 or 32.", property = "points")
+    gc_abort("points must be 8, 16 or 32.", property = "points")
   }
   lwd <- scalar_number(lwd, "lwd", positive = TRUE)
   fontsize <- scalar_number(fontsize, "fontsize", positive = TRUE)
@@ -300,7 +300,7 @@ l_north_rose <- function(
         error = function(error) FALSE
       )
     if (!valid) {
-      l_abort(
+      gc_abort(
         paste(property, "must be a scalar grid colour or NA."),
         property = property
       )
@@ -319,7 +319,7 @@ l_north_rose <- function(
       !length(labels) %in% c(4, 8, 16, 32) ||
       anyNA(labels)
   ) {
-    l_abort(
+    gc_abort(
       "labels must be TRUE, FALSE, NULL, or 4, 8, 16 or 32 strings.",
       property = "labels"
     )
@@ -329,7 +329,7 @@ l_north_rose <- function(
   if (
     !is.character(fontfamily) || length(fontfamily) != 1L || is.na(fontfamily)
   ) {
-    l_abort(
+    gc_abort(
       "fontfamily must be a single string or NULL.",
       property = "fontfamily"
     )
@@ -345,7 +345,7 @@ l_north_rose <- function(
     overrides <- template_gpar(label_gp)
     label_parameters[names(overrides)] <- overrides
   }
-  body <- l_template(
+  body <- gc_template(
     children = north_rose_body(design, points, fill, fill_secondary),
     name = "body",
     gp = if (design == "minimal") grid::gpar(lwd = lwd * 0.65) else NULL
@@ -358,7 +358,7 @@ l_north_rose <- function(
     )
     content <- c(
       content,
-      list(l_text(
+      list(gc_text(
         labels,
         x = position$x,
         y = position$y,
@@ -367,13 +367,13 @@ l_north_rose <- function(
       ))
     )
   }
-  l_template(
-    l_template(
+  gc_template(
+    gc_template(
       children = content,
       name = "rose",
       vp = grid::viewport(
-        width = l_unit(1, "snpc"),
-        height = l_unit(1, "snpc"),
+        width = gc_unit(1, "snpc"),
+        height = gc_unit(1, "snpc"),
         angle = angle,
         name = "north-rose-square"
       )

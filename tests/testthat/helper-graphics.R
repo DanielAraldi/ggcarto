@@ -1,26 +1,26 @@
 visual_scene <- function(theme = ggplot2::theme_minimal()) {
   plot <- example_plot() + theme
-  title <- l_get_element(
+  title <- gc_get_element(
     plot,
     "title",
     style = list(font_size = "clamp(10pt, 2.5vmin, 20pt)")
   )
-  legend <- l_get_element(
+  legend <- gc_get_element(
     plot,
     "legend",
     style = list(background = "white", padding = 4, border = "#CCCCCC")
   )
-  l_viewport(
+  gc_viewport(
     list(
-      l_place(
-        l_without(plot, c("title", "legend", "subtitle", "tag")),
+      gc_place(
+        gc_without(plot, c("title", "legend", "subtitle", "tag")),
         left = 0,
         right = 0,
         top = 40,
         bottom = 0
       ),
-      l_place(title, top = 4, x = "50%", anchor = "top-center", z_index = 20),
-      l_place(legend, top = 56, right = 12, z_index = 10)
+      gc_place(title, top = 4, x = "50%", anchor = "top-center", z_index = 20),
+      gc_place(legend, top = 56, right = 12, z_index = 10)
     ),
     background = "white",
     padding = 8
@@ -61,7 +61,7 @@ text_grobs <- function(grob) {
 }
 
 collision_scene <- function(policy = "avoid") {
-  fixed <- l_place(
+  fixed <- gc_place(
     grid::rectGrob(),
     width = 60,
     height = 30,
@@ -69,7 +69,7 @@ collision_scene <- function(policy = "avoid") {
     right = 0,
     id = "fixed"
   )
-  moving <- l_place(
+  moving <- gc_place(
     grid::rectGrob(),
     width = 60,
     height = 30,
@@ -77,5 +77,5 @@ collision_scene <- function(policy = "avoid") {
     collision = policy,
     id = "moving"
   )
-  l_viewport(list(fixed, moving), width = 200, height = 120)
+  gc_viewport(list(fixed, moving), width = 200, height = 120)
 }

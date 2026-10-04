@@ -1,13 +1,13 @@
 test_that("recorded renders resolve joined viewports on larger and smaller devices", {
-  scene <- l_join(list(
-    l_place(
-      l_viewport(background = "red"),
+  scene <- gc_join(list(
+    gc_place(
+      gc_viewport(background = "red"),
       left = "2%",
       width = "50%",
       height = "100%"
     ),
-    l_place(
-      l_viewport(background = "blue"),
+    gc_place(
+      gc_viewport(background = "blue"),
       left = "54%",
       width = "44%",
       height = "100%"
@@ -17,7 +17,7 @@ test_that("recorded renders resolve joined viewports on larger and smaller devic
   recording <- tryCatch(
     {
       grDevices::dev.control(displaylist = "enable")
-      l_render(scene)
+      gc_render(scene)
       grDevices::recordPlot()
     },
     finally = grDevices::dev.off()
@@ -56,7 +56,7 @@ test_that("recorded renders resolve joined viewports on larger and smaller devic
 })
 
 test_that("replay preserves explicit dimensions and resolves auto axes inside the caller", {
-  scene <- l_viewport(list(l_place(
+  scene <- gc_viewport(list(gc_place(
     grid::rectGrob(),
     width = "50%",
     height = "50%"
@@ -78,7 +78,7 @@ test_that("replay preserves explicit dimensions and resolves auto axes inside th
           height = 0.5
         ))
         snapshot <- do.call(
-          l_render,
+          gc_render,
           c(
             list(object = scene, newpage = FALSE, debug = TRUE, dpi = 144),
             case$arguments
@@ -122,7 +122,7 @@ test_that("replay preserves explicit dimensions and resolves auto axes inside th
 test_that("terrain replay fills the resized device without changing child declarations", {
   examples <- new.env(parent = globalenv())
   sys.source(
-    system.file("examples", "terrain.R", package = "lplot"),
+    system.file("examples", "terrain.R", package = "ggcarto"),
     envir = examples
   )
   scene <- examples$terrain_scene()
@@ -131,7 +131,7 @@ test_that("terrain replay fills the resized device without changing child declar
   recording <- tryCatch(
     {
       grDevices::dev.control(displaylist = "enable")
-      expect_no_warning(l_render(scene))
+      expect_no_warning(gc_render(scene))
       grDevices::recordPlot()
     },
     finally = grDevices::dev.off()
@@ -164,7 +164,7 @@ test_that("terrain replay fills the resized device without changing child declar
 test_that("terrain example fits compact plotting devices without overflow", {
   examples <- new.env(parent = globalenv())
   sys.source(
-    system.file("examples", "terrain.R", package = "lplot"),
+    system.file("examples", "terrain.R", package = "ggcarto"),
     envir = examples
   )
   scene <- examples$terrain_scene()
@@ -172,7 +172,7 @@ test_that("terrain example fits compact plotting devices without overflow", {
     grDevices::pdf(NULL, width = size[[1]] / 96, height = size[[2]] / 96)
     tryCatch(
       {
-        expect_no_warning(layout <- l_render(scene))
+        expect_no_warning(layout <- gc_render(scene))
         sidebar <- layout$root$children[[2]]
         credits <- sidebar$children[[2]]
         available <- content_box(sidebar)
@@ -199,30 +199,30 @@ test_that("rendering uses the actual device and restores viewport state", {
   grid::grid.newpage()
   grid::pushViewport(grid::viewport(name = "caller", width = 0.5, height = 0.5))
   on.exit(grid::popViewport(), add = TRUE, after = FALSE)
-  scene <- l_viewport(
-    list(l_place(grid::rectGrob(), width = "50%", height = "50%")),
+  scene <- gc_viewport(
+    list(gc_place(grid::rectGrob(), width = "50%", height = "50%")),
     width = 256,
     height = 256
   )
-  layout <- l_render(scene, newpage = FALSE)
+  layout <- gc_render(scene, newpage = FALSE)
   expect_equal(layout$context$width, 384)
   expect_equal(layout$context$height, 288)
   expect_equal(layout$root$children[[1]]$box[["width"]], 192)
   expect_equal(grid::current.viewport()$name, "caller")
   expect_no_error(grid::grid.draw(scene))
-  expect_no_error(grid::grid.draw(l_as_grob(scene)))
+  expect_no_error(grid::grid.draw(gc_as_grob(scene)))
   expect_equal(grid::current.viewport()$name, "caller")
 })
 
 test_that("compiled drawing order, clipping, backgrounds and debug overlays are explicit", {
-  top <- l_place(
+  top <- gc_place(
     grid::rectGrob(),
     width = 40,
     height = 20,
     z_index = 9,
     id = "top"
   )
-  bottom <- l_place(
+  bottom <- gc_place(
     grid::rectGrob(),
     width = 40,
     height = 20,
@@ -230,8 +230,8 @@ test_that("compiled drawing order, clipping, backgrounds and debug overlays are 
     id = "bottom",
     overflow = "hidden"
   )
-  layout <- l_resolve(
-    l_viewport(list(top, bottom), background = "white", border = "red"),
+  layout <- gc_resolve(
+    gc_viewport(list(top, bottom), background = "white", border = "red"),
     200,
     100
   )
@@ -249,30 +249,30 @@ test_that("compiled drawing order, clipping, backgrounds and debug overlays are 
 
 test_that("title, legend and nested plots render without rasterizing", {
   plot <- example_plot()
-  title <- l_get_element(
+  title <- gc_get_element(
     plot,
     "title",
     style = list(color = "blue", font_size = "clamp(10pt, 2vmin, 18pt)")
   )
-  legend <- l_get_element(
+  legend <- gc_get_element(
     plot,
     "legend",
     style = list(background = "white", padding = "4px")
   )
-  scene <- l_viewport(
+  scene <- gc_viewport(
     list(
-      l_without(plot, c("title", "legend")),
-      l_place(title, x = "50%", top = 4, anchor = "top-center"),
-      l_place(legend, right = 4, top = 40)
+      gc_without(plot, c("title", "legend")),
+      gc_place(title, x = "50%", top = 4, anchor = "top-center"),
+      gc_place(legend, right = 4, top = 40)
     ),
     padding = 8
   )
-  final <- l_join(list(
-    l_place(scene, width = "65%", height = "100%"),
-    l_place(scene, left = "65%", width = "35%", height = "100%")
+  final <- gc_join(list(
+    gc_place(scene, width = "65%", height = "100%"),
+    gc_place(scene, left = "65%", width = "35%", height = "100%")
   ))
   grDevices::pdf(NULL, width = 12, height = 7)
   on.exit(grDevices::dev.off())
-  expect_no_warning(l_render(final))
-  expect_no_error(grid::grid.draw(l_as_grob(final)))
+  expect_no_warning(gc_render(final))
+  expect_no_error(grid::grid.draw(gc_as_grob(final)))
 })

@@ -14,8 +14,8 @@ terrain_scene <- function() {
     ggplot2::scale_fill_gradientn(
       colours = c("#E0F3DB", "#A8DDB5", "#43A2CA", "#0868AC", "#084081"),
       guide = ggplot2::guide_colourbar(
-        barheight = lplot::l_unit(22, "mm"),
-        barwidth = lplot::l_unit(2.5, "mm")
+        barheight = ggcarto::gc_unit(22, "mm"),
+        barwidth = ggcarto::gc_unit(2.5, "mm")
       )
     ) +
     ggplot2::labs(
@@ -29,33 +29,33 @@ terrain_scene <- function() {
       panel.grid = ggplot2::element_blank(),
       plot.title = ggplot2::element_text(face = "bold")
     )
-  title <- lplot::l_get_element(
+  title <- ggcarto::gc_get_element(
     plot,
     "title",
     style = list(color = "#173B34", font_size = "clamp(10pt, 2.5vmin, 16pt)")
   )
-  legend <- lplot::l_get_element(
+  legend <- ggcarto::gc_get_element(
     plot,
     "legend",
     style = list(background = "#FFFFFFEE", padding = "3px", font_size = "8pt")
   )
-  main <- lplot::l_viewport(
+  main <- ggcarto::gc_viewport(
     list(
-      lplot::l_place(
-        lplot::l_without(plot, c("title", "legend")),
+      ggcarto::gc_place(
+        ggcarto::gc_without(plot, c("title", "legend")),
         left = 0,
         right = 0,
         top = 28,
         bottom = 0
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         title,
         x = "50%",
         top = 4,
         anchor = "top-center",
         z_index = 20
       ),
-      lplot::l_place(legend, right = 4, top = 36, z_index = 10)
+      ggcarto::gc_place(legend, right = 4, top = 36, z_index = 10)
     ),
     padding = 6,
     background = "white"
@@ -69,8 +69,8 @@ terrain_scene <- function() {
       y = "Grid cells"
     ) +
     ggplot2::theme_minimal(base_size = 8)
-  note <- lplot::l_get_element(
-    lplot::l_text(
+  note <- ggcarto::gc_get_element(
+    ggcarto::gc_text(
       "Data:\ndatasets::volcano\n10 m local grid",
       just = "left",
       x = 0,
@@ -79,25 +79,25 @@ terrain_scene <- function() {
     ),
     "credits"
   )
-  sidebar <- lplot::l_viewport(
+  sidebar <- ggcarto::gc_viewport(
     list(
-      lplot::l_place(profile, left = 0, right = 0, top = 4, height = "65%"),
-      lplot::l_place(note, left = 4, bottom = 8)
+      ggcarto::gc_place(profile, left = 0, right = 0, top = 4, height = "65%"),
+      ggcarto::gc_place(note, left = 4, bottom = 8)
     ),
     padding = 6,
     background = "#F1F5F2",
     border = list(color = "#CCD8D0", width = "1px")
   )
-  lplot::l_join(
+  ggcarto::gc_join(
     list(
-      lplot::l_place(
+      ggcarto::gc_place(
         main,
         left = "2%",
         top = "3%",
         width = "50%",
         height = "94%"
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         sidebar,
         left = "54%",
         top = "3%",

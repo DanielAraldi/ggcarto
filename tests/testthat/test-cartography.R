@@ -13,16 +13,16 @@ test_that("frames preserve the built panel extent and aspect across devices", {
   skip_if_not_installed("sf")
   plot <- cartographic_plot()
   original <- plot
-  frame <- l_frame(
+  frame <- gc_frame(
     plot,
     padding = 10,
     border = list(width = 2, color = "black")
   )
-  expect_s3_class(frame, "l_frame")
+  expect_s3_class(frame, "gc_frame")
   expect_equal(as.numeric(frame$map_context$extent), c(0, 0, 100000, 50000))
   expect_equal(frame$map_context$crs$epsg, 32119)
   for (size in list(c(800, 300), c(300, 800))) {
-    expect_no_warning(layout <- l_resolve(frame, size[[1]], size[[2]]))
+    expect_no_warning(layout <- gc_resolve(frame, size[[1]], size[[2]]))
     panel <- layout$root$children[[1]]
     expect_equal(panel$box[["width"]] / panel$box[["height"]], 2)
     expect_lte(panel$box[["width"]], size[[1]] - 24)
@@ -41,7 +41,7 @@ test_that("frames use coord_sf limits and expansion instead of the data bounds",
     expand = TRUE,
     datum = NA
   )
-  frame <- l_frame(plot)
+  frame <- gc_frame(plot)
   panel <- ggplot2::ggplot_build(plot)$layout$panel_params[[1]]
   expect_equal(
     as.numeric(frame$map_context$extent),
@@ -52,17 +52,17 @@ test_that("frames use coord_sf limits and expansion instead of the data bounds",
       panel$y_range[[2]]
     )
   )
-  expect_error(l_frame(ggplot2::ggplot()), "coord_sf", class = "lplot_error")
-  expect_error(l_frame(plot, overlays = l_text("invalid")), "overlays")
+  expect_error(gc_frame(ggplot2::ggplot()), "coord_sf", class = "ggcarto_error")
+  expect_error(gc_frame(plot, overlays = gc_text("invalid")), "overlays")
 })
 
 test_that("scale bars bind projected distances to the actual panel at every size", {
   skip_if_not_installed("sf")
-  scale <- l_scale_bar(50, "km", segments = 2, left = 8, bottom = 8)
-  frame <- l_frame(cartographic_plot(), overlays = list(scale), padding = 10)
+  scale <- gc_scale_bar(50, "km", segments = 2, left = 8, bottom = 8)
+  frame <- gc_frame(cartographic_plot(), overlays = list(scale), padding = 10)
   original <- frame
   for (size in list(c(800, 400), c(400, 800))) {
-    expect_no_warning(layout <- l_resolve(frame, size[[1]], size[[2]]))
+    expect_no_warning(layout <- gc_resolve(frame, size[[1]], size[[2]]))
     panel <- layout$root$children[[1]]
     bar <- panel$children[[2]]
     expect_equal(bar$box[["width"]] / panel$box[["width"]], 0.5)
@@ -76,14 +76,14 @@ test_that("scale bars bind projected distances to the actual panel at every size
 test_that("scale bars convert CRS units and select automatic distances", {
   skip_if_not_installed("sf")
   plot <- cartographic_plot(2264, 100000 * 3937 / 1200, 50000 * 3937 / 1200)
-  frame <- l_frame(plot, overlays = list(l_scale_bar(50, "km", segments = 2)))
-  panel <- l_resolve(frame, 800, 400)$root$children[[1]]
+  frame <- gc_frame(plot, overlays = list(gc_scale_bar(50, "km", segments = 2)))
+  panel <- gc_resolve(frame, 800, 400)$root$children[[1]]
   expect_equal(panel$children[[2]]$box[["width"]] / panel$box[["width"]], 0.5)
   expect_equal(panel$children[[2]]$scale_bar$extent_width_m, 100000)
-  frame <- l_frame(
+  frame <- gc_frame(
     cartographic_plot(),
     overlays = list(
-      l_scale_bar(
+      gc_scale_bar(
         max_fraction = 0.3,
         segments = 2,
         design = "ticks",
@@ -91,44 +91,44 @@ test_that("scale bars convert CRS units and select automatic distances", {
       )
     )
   )
-  bar <- l_resolve(frame, 800, 400)$root$children[[1]]$children[[2]]
+  bar <- gc_resolve(frame, 800, 400)$root$children[[1]]$children[[2]]
   expect_equal(bar$scale_bar$distance, 20)
   expect_equal(bar$scale_bar$width, 160)
   expect_length(bar$content$children$`scale-ticks`$x0, 5)
-  frame <- l_frame(
+  frame <- gc_frame(
     cartographic_plot(),
-    overlays = list(l_scale_bar(10, "mi", segments = 1))
+    overlays = list(gc_scale_bar(10, "mi", segments = 1))
   )
-  bar <- l_resolve(frame, 800, 400)$root$children[[1]]$children[[2]]
+  bar <- gc_resolve(frame, 800, 400)$root$children[[1]]$children[[2]]
   expect_equal(bar$scale_bar$distance_m, 16093.44)
 })
 
 test_that("scale bars reject unbound, geographic and metrically unsafe layouts", {
   skip_if_not_installed("sf")
-  expect_error(l_resolve(l_scale_bar()), class = "lplot_unbound_scale")
+  expect_error(gc_resolve(gc_scale_bar()), class = "ggcarto_unbound_scale")
   plot <- cartographic_plot(4326, 1, 1)
   expect_error(
-    l_resolve(l_frame(plot, overlays = list(l_scale_bar()))),
-    class = "lplot_unsupported_crs"
+    gc_resolve(gc_frame(plot, overlays = list(gc_scale_bar()))),
+    class = "ggcarto_unsupported_crs"
   )
   for (scale in list(
-    l_place(l_scale_bar(), width = 100),
-    l_place(l_scale_bar(), max_width = 50),
-    l_scale_bar(collision = "shrink")
+    gc_place(gc_scale_bar(), width = 100),
+    gc_place(gc_scale_bar(), max_width = 50),
+    gc_scale_bar(collision = "shrink")
   )) {
     expect_error(
-      l_resolve(l_frame(cartographic_plot(), overlays = list(scale))),
-      class = "lplot_scale_constraint"
+      gc_resolve(gc_frame(cartographic_plot(), overlays = list(scale))),
+      class = "ggcarto_scale_constraint"
     )
   }
   expect_error(
-    l_resolve(l_frame(cartographic_plot(), overlays = list(l_scale_bar(200)))),
-    class = "lplot_scale_distance"
+    gc_resolve(gc_frame(cartographic_plot(), overlays = list(gc_scale_bar(200)))),
+    class = "ggcarto_scale_distance"
   )
-  expect_error(l_scale_bar(-1), class = "lplot_error")
-  expect_error(l_scale_bar(unit = "degrees"), class = "lplot_error")
-  expect_error(l_scale_bar(segments = 1.5), class = "lplot_error")
-  expect_error(l_scale_bar(max_fraction = 2), class = "lplot_error")
+  expect_error(gc_scale_bar(-1), class = "ggcarto_error")
+  expect_error(gc_scale_bar(unit = "degrees"), class = "ggcarto_error")
+  expect_error(gc_scale_bar(segments = 1.5), class = "ggcarto_error")
+  expect_error(gc_scale_bar(max_fraction = 2), class = "ggcarto_error")
 })
 
 test_that("locator insets highlight the main extent without changing either plot", {
@@ -136,12 +136,12 @@ test_that("locator insets highlight the main extent without changing either plot
   overview <- cartographic_plot()
   main <- cartographic_plot(width = 20000, height = 10000)
   original <- main
-  inset <- l_inset(overview, reference = main)
-  expect_s3_class(inset, "l_inset")
-  expect_equal(sf::st_bbox(inset$footprint), l_frame(main)$map_context$extent)
+  inset <- gc_inset(overview, reference = main)
+  expect_s3_class(inset, "gc_inset")
+  expect_equal(sf::st_bbox(inset$footprint), gc_frame(main)$map_context$extent)
   expect_gt(nrow(sf::st_coordinates(inset$footprint)), 4)
-  frame <- l_frame(main, overlays = list(l_place(inset, right = 10, top = 10)))
-  expect_no_warning(layout <- l_resolve(frame, 800, 400))
+  frame <- gc_frame(main, overlays = list(gc_place(inset, right = 10, top = 10)))
+  expect_no_warning(layout <- gc_resolve(frame, 800, 400))
   panel <- layout$root$children[[1]]
   secondary <- panel$children[[2]]
   expect_equal(secondary$box[["width"]] / panel$box[["width"]], 0.3)
@@ -149,8 +149,8 @@ test_that("locator insets highlight the main extent without changing either plot
   expect_identical(main, original)
   expect_equal(as.numeric(inset$map_context$extent), c(0, 0, 100000, 50000))
   expect_error(
-    l_frame(overview, overlays = list(inset)),
-    class = "lplot_inset_reference"
+    gc_frame(overview, overlays = list(inset)),
+    class = "ggcarto_inset_reference"
   )
 })
 
@@ -158,21 +158,21 @@ test_that("detail insets highlight their footprint in the main map and own their
   skip_if_not_installed("sf")
   main <- cartographic_plot()
   detail <- cartographic_plot(width = 20000, height = 10000)
-  inset <- l_inset(
+  inset <- gc_inset(
     detail,
-    reference = l_frame(main),
+    reference = gc_frame(main),
     mode = "detail",
     width = "40%",
-    overlays = list(l_scale_bar(10, "km", segments = 1))
+    overlays = list(gc_scale_bar(10, "km", segments = 1))
   )
-  frame <- l_frame(
+  frame <- gc_frame(
     main,
     overlays = list(
-      l_place(inset, right = 10, top = 10),
-      l_scale_bar(50, "km", segments = 2)
+      gc_place(inset, right = 10, top = 10),
+      gc_scale_bar(50, "km", segments = 2)
     )
   )
-  expect_no_warning(layout <- l_resolve(frame, 1000, 500))
+  expect_no_warning(layout <- gc_resolve(frame, 1000, 500))
   children <- layout$root$children[[1]]$children
   expect_length(children, 4)
   expect_identical(children[[2]]$content$name, "inset-footprint")
@@ -192,27 +192,27 @@ test_that("inset footprints transform between CRSs without retraining the map", 
     datum = NA
   )
   before <- map_panel_context(overview)
-  inset <- l_inset(overview, reference = main)
+  inset <- gc_inset(overview, reference = main)
   expect_equal(sf::st_crs(inset$footprint)$epsg, 3857)
   expect_identical(inset$map_context, before)
   expected <- sf::st_transform(
-    sf::st_as_sfc(l_frame(main)$map_context$extent),
+    sf::st_as_sfc(gc_frame(main)$map_context$extent),
     3857
   )
   expect_equal(
     sf::st_coordinates(inset$footprint)[1, 1:2],
     sf::st_coordinates(expected)[1, 1:2]
   )
-  expect_null(l_inset(overview, reference = main, highlight = FALSE)$footprint)
+  expect_null(gc_inset(overview, reference = main, highlight = FALSE)$footprint)
   expect_error(
-    l_inset(overview, reference = main, mode = "other"),
-    class = "lplot_error"
+    gc_inset(overview, reference = main, mode = "other"),
+    class = "ggcarto_error"
   )
 })
 
 test_that("scale decoration and automatic height do not change calibrated distance", {
   skip_if_not_installed("sf")
-  scale <- l_scale_bar(
+  scale <- gc_scale_bar(
     50,
     "km",
     segments = 2,
@@ -220,28 +220,28 @@ test_that("scale decoration and automatic height do not change calibrated distan
     padding = 4,
     border = list(width = 2, color = "black")
   )
-  frame <- l_frame(cartographic_plot(), overlays = list(scale))
-  expect_no_warning(layout <- l_resolve(frame, 800, 400))
+  frame <- gc_frame(cartographic_plot(), overlays = list(scale))
+  expect_no_warning(layout <- gc_resolve(frame, 800, 400))
   bar <- layout$root$children[[1]]$children[[2]]
   expect_equal(content_box(bar)[["width"]], 400)
   expect_equal(bar$box[["width"]], 412)
   expect_gt(bar$box[["height"]], 30)
-  expect_error(l_scale_bar(col = "not-a-colour"), class = "lplot_error")
-  expect_error(l_scale_bar(fill = Inf), class = "lplot_error")
-  expect_error(l_scale_bar(fontfamily = NA), class = "lplot_error")
-  cramped <- l_frame(
+  expect_error(gc_scale_bar(col = "not-a-colour"), class = "ggcarto_error")
+  expect_error(gc_scale_bar(fill = Inf), class = "ggcarto_error")
+  expect_error(gc_scale_bar(fontfamily = NA), class = "ggcarto_error")
+  cramped <- gc_frame(
     cartographic_plot(),
-    overlays = list(l_scale_bar(1, segments = 4))
+    overlays = list(gc_scale_bar(1, segments = 4))
   )
-  expect_warning(l_resolve(cramped, 800, 400), class = "lplot_scale_labels")
+  expect_warning(gc_resolve(cramped, 800, 400), class = "ggcarto_scale_labels")
 })
 
 test_that("scale avoidance moves the bar without changing its metric length", {
   skip_if_not_installed("sf")
-  obstacle <- l_place(l_rect(), left = 0, bottom = 0, width = 400, height = 40)
-  scale <- l_scale_bar(50, segments = 2, collision = "avoid")
-  frame <- l_frame(cartographic_plot(), overlays = list(obstacle, scale))
-  expect_no_warning(layout <- l_resolve(frame, 800, 400))
+  obstacle <- gc_place(gc_rect(), left = 0, bottom = 0, width = 400, height = 40)
+  scale <- gc_scale_bar(50, segments = 2, collision = "avoid")
+  frame <- gc_frame(cartographic_plot(), overlays = list(obstacle, scale))
+  expect_no_warning(layout <- gc_resolve(frame, 800, 400))
   bar <- layout$root$children[[1]]$children[[3]]
   expect_equal(bar$scale, 1)
   expect_equal(bar$box[["width"]], 400)
@@ -259,7 +259,7 @@ test_that("antimeridian-crossing inset footprints are rejected", {
   )
   expect_error(
     map_footprint(source, list(crs = sf::st_crs(3857))),
-    class = "lplot_inset_projection"
+    class = "ggcarto_inset_projection"
   )
 })
 
@@ -285,7 +285,7 @@ cartographic_scene <- function(mode = "locator") {
   )
   main <- if (mode == "locator") detail else overview
   secondary <- if (mode == "locator") overview else detail
-  inset <- l_inset(
+  inset <- gc_inset(
     secondary,
     reference = main,
     mode = mode,
@@ -293,11 +293,11 @@ cartographic_scene <- function(mode = "locator") {
     background = "white",
     border = list(color = "#718A90", width = 1)
   )
-  l_frame(
+  gc_frame(
     main,
     overlays = list(
-      l_place(inset, right = 10, top = 10),
-      l_scale_bar(
+      gc_place(inset, right = 10, top = 10),
+      gc_scale_bar(
         if (mode == "locator") 50 else 200,
         "km",
         segments = 2,
@@ -325,7 +325,7 @@ test_that("cartographic frames and insets have stable responsive visual output",
       }
       vdiffr::expect_doppelganger(
         paste(mode, paste(size, collapse = "x"), sep = "-"),
-        l_as_grob(cartographic_scene(mode)),
+        gc_as_grob(cartographic_scene(mode)),
         writer = writer
       )
     }
@@ -341,7 +341,7 @@ test_that("cartographic composition exports natively and preserves the caller", 
   scene <- cartographic_scene()
   original <- scene
   expect_no_warning(
-    path <- l_save(
+    path <- gc_save(
       scene,
       type = "svg",
       dir = directory,

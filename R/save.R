@@ -4,8 +4,8 @@
 #' independent graphics device. Export dimensions do not depend on the Plots
 #' pane or on the size of the current device.
 #'
-#' @param plot An explicit ggplot, grid grob, `l_element` or `l_viewport`/scene.
-#'   A filename, screenshot or resolved `l_layout` is not an accepted source.
+#' @param plot An explicit ggplot, grid grob, `gc_element` or `gc_viewport`/scene.
+#'   A filename, screenshot or resolved `gc_layout` is not an accepted source.
 #' @param type Single case-insensitive format: `"jpg"`, `"jpeg"`, `"png"`,
 #'   `"svg"` or `"webp"`. JPG and JPEG use the same encoder.
 #' @param dir Destination directory, created recursively when necessary.
@@ -29,12 +29,12 @@
 #'
 #' @section Optional codecs:
 #' PNG and JPEG require **ragg**, SVG requires **svglite**, and WebP requires
-#' **ragg** and **webp**. Missing packages raise `lplot_missing_dependency` with
+#' **ragg** and **webp**. Missing packages raise `ggcarto_missing_dependency` with
 #' installation guidance; no packages are installed automatically. SVG preserves
 #' vector content, but source raster layers remain embedded raster images.
 #'
 #' @section Device and file safety:
-#' Export opens its own device, draws with [l_render()], closes that device and
+#' Export opens its own device, draws with [gc_render()], closes that device and
 #' restores the caller's device, including after rendering errors. It does not
 #' depend on an implicit last plot and does not mutate scene declarations.
 #'
@@ -50,38 +50,38 @@
 #' DPI increases raster density without changing logical layout size. Font
 #' metrics can differ between graphics devices.
 #'
-#' Invalid arguments raise `lplot_error`; an existing destination raises
-#' `lplot_file_exists`; directory/publication failures raise `lplot_export`.
+#' Invalid arguments raise `ggcarto_error`; an existing destination raises
+#' `ggcarto_file_exists`; directory/publication failures raise `ggcarto_export`.
 #' Layout warnings remain visible and normally do not prevent saving, whereas
 #' invalid constraints still fail. PDF is not supported by `type`; use a PDF
-#' device with [l_render()] when that format is required.
+#' device with [gc_render()] when that format is required.
 #'
 #' @returns The normalized absolute path of the exported file, invisibly.
 #'   The output file and, if necessary, its parent directory are created as
 #'   side effects.
-#' @seealso [l_render()], [l_viewport()], [l_resolve()]
+#' @seealso [gc_render()], [gc_viewport()], [gc_resolve()]
 #' @examples
-#' scene <- l_viewport(list(l_place(l_text("Map export"), left = 12, top = 12)))
+#' scene <- gc_viewport(list(gc_place(gc_text("Map export"), left = 12, top = 12)))
 #' if (requireNamespace("ragg", quietly = TRUE)) {
-#'   file <- l_save(scene,
+#'   file <- gc_save(scene,
 #'     type = "png", dir = tempdir(),
-#'     filename = basename(tempfile("lplot-")), width = 400, height = 200,
+#'     filename = basename(tempfile("ggcarto-")), width = 400, height = 200,
 #'     dpi = 144
 #'   )
 #'   stopifnot(file.exists(file))
 #'   unlink(file)
 #' }
 #' if (requireNamespace("svglite", quietly = TRUE)) {
-#'   file <- l_save(scene,
+#'   file <- gc_save(scene,
 #'     type = "svg", dir = tempdir(),
-#'     filename = basename(tempfile("lplot-")), width = 400, height = 200,
+#'     filename = basename(tempfile("ggcarto-")), width = 400, height = 200,
 #'     background = "transparent"
 #'   )
 #'   stopifnot(file.exists(file))
 #'   unlink(file)
 #' }
 #' @export
-l_save <- function(
+gc_save <- function(
   plot,
   type = "png",
   dir,
@@ -95,7 +95,7 @@ l_save <- function(
 ) {
   node <- as_l_node(plot)
   if (missing(dir)) {
-    l_abort(
+    gc_abort(
       "dir must be supplied; for example, use dir = tempdir().",
       property = "dir"
     )
@@ -108,7 +108,7 @@ l_save <- function(
   require_export_codecs(type)
   destination <- export_destination(dir, filename, overwrite)
   temporary <- tempfile(
-    pattern = ".lplot-",
+    pattern = ".ggcarto-",
     tmpdir = dirname(destination),
     fileext = paste0(".", type)
   )
@@ -120,11 +120,11 @@ l_save <- function(
 
 export_type <- function(type) {
   if (!is.character(type) || length(type) != 1L || is.na(type)) {
-    l_abort("type must be jpg, jpeg, png, svg or webp.", property = "type")
+    gc_abort("type must be jpg, jpeg, png, svg or webp.", property = "type")
   }
   type <- tolower(type)
   if (!type %in% c("jpg", "jpeg", "png", "svg", "webp")) {
-    l_abort("type must be jpg, jpeg, png, svg or webp.", property = "type")
+    gc_abort("type must be jpg, jpeg, png, svg or webp.", property = "type")
   }
   type
 }
@@ -138,14 +138,14 @@ export_filename <- function(type, dir, filename) {
         is.na(value) ||
         !nzchar(value)
     ) {
-      l_abort(
+      gc_abort(
         paste0(property, " must be a nonempty string."),
         property = property
       )
     }
   }
   if (filename %in% c(".", "..") || grepl("[/\\\\]", filename)) {
-    l_abort(
+    gc_abort(
       "filename must be a file name, without a directory path.",
       property = "filename"
     )
@@ -153,7 +153,7 @@ export_filename <- function(type, dir, filename) {
   extension <- tolower(tools::file_ext(filename))
   aliases <- if (type %in% c("jpg", "jpeg")) c("jpg", "jpeg") else type
   if (nzchar(extension) && !extension %in% aliases) {
-    l_abort(
+    gc_abort(
       paste0(
         "filename extension does not match type; ",
         "omit it or use the selected format."
@@ -181,24 +181,24 @@ export_settings <- function(
   dpi <- scalar_number(dpi, "dpi", TRUE)
   quality <- scalar_number(quality, "quality")
   if (quality < 0 || quality > 100) {
-    l_abort("quality must be between 0 and 100.", property = "quality")
+    gc_abort("quality must be between 0 and 100.", property = "quality")
   }
   if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
-    l_abort("overwrite must be TRUE or FALSE.", property = "overwrite")
+    gc_abort("overwrite must be TRUE or FALSE.", property = "overwrite")
   }
   if (
     !is.character(background) || length(background) != 1L || is.na(background)
   ) {
-    l_abort("background must be a color string.", property = "background")
+    gc_abort("background must be a color string.", property = "background")
   }
   rgba <- tryCatch(
     grDevices::col2rgb(background, alpha = TRUE),
     error = function(condition) {
-      l_abort("background must be a valid color.", property = "background")
+      gc_abort("background must be a valid color.", property = "background")
     }
   )
   if (type %in% c("jpg", "jpeg") && rgba[[4L]] != 255L) {
-    l_abort(
+    gc_abort(
       "JPEG does not support transparency; choose an opaque background.",
       property = "background"
     )
@@ -211,7 +211,7 @@ export_settings <- function(
         min(pixel_width, pixel_height) < 1 ||
         pixel_width * pixel_height > 1e8)
   ) {
-    l_abort(
+    gc_abort(
       paste0(
         "Raster dimensions must produce at least one pixel per axis ",
         "and at most 100 million pixels."
@@ -220,7 +220,7 @@ export_settings <- function(
     )
   }
   if (type == "webp" && max(pixel_width, pixel_height) > 16383) {
-    l_abort(
+    gc_abort(
       "WebP supports at most 16383 pixels per axis.",
       property = "width/height"
     )
@@ -247,7 +247,7 @@ require_export_codecs <- function(type) {
   }
   for (package in packages) {
     if (!requireNamespace(package, quietly = TRUE)) {
-      l_abort(
+      gc_abort(
         paste0(
           "Exporting ",
           type,
@@ -269,14 +269,14 @@ export_destination <- function(dir, filename, overwrite) {
   if (
     !dir.exists(dir) && !dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   ) {
-    l_abort("Cannot create destination directory.", "export", property = "dir")
+    gc_abort("Cannot create destination directory.", "export", property = "dir")
   }
   destination <- file.path(
     normalizePath(dir, winslash = "/", mustWork = TRUE),
     filename
   )
   if (dir.exists(destination) || (file.exists(destination) && !overwrite)) {
-    l_abort(
+    gc_abort(
       paste0(
         "Destination already exists; ",
         "choose another name or set overwrite = TRUE."
@@ -341,7 +341,7 @@ render_export <- function(node, temporary, settings) {
     )
   }
   device <- grDevices::dev.cur()
-  l_render(
+  gc_render(
     node,
     width = settings$width,
     height = settings$height,
@@ -367,7 +367,7 @@ publish_export <- function(temporary, destination) {
       file.info(temporary)$size == 0 ||
       !file.rename(temporary, destination)
   ) {
-    l_abort("Could not publish the exported image.", "export", property = "dir")
+    gc_abort("Could not publish the exported image.", "export", property = "dir")
   }
   invisible(destination)
 }

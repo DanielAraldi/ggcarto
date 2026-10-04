@@ -1,6 +1,6 @@
-rectangle <- lplot::l_rect(fill = "#95CEC0", col = "#194E70")
+rectangle <- ggcarto::gc_rect(fill = "#95CEC0", col = "#194E70")
 
-result <- lplot::l_place(
+result <- ggcarto::gc_place(
   rectangle,
   left = "10%",
   top = "15%",
@@ -9,4 +9,4 @@ result <- lplot::l_place(
   id = "positioned_rectangle"
 )
 
-lplot::l_render(result)
+ggcarto::gc_render(result)

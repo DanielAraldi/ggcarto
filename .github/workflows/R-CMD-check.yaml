@@ -114,19 +114,19 @@ jobs:
         run: |
           mkdir -p artifacts/isolated-check
 
-          docker build --build-arg R_IMAGE="$IMAGE" -t lplot-check \
+          docker build --build-arg R_IMAGE="$IMAGE" -t ggcarto-check \
             -f .github/containers/Dockerfile.check .github/containers
 
           docker run --rm --cpus=2 \
             -v "$PWD:/source:ro" \
             -v "$PWD/artifacts/isolated-check:/output" \
-            -e LPLOT_SOURCE=/source \
-            -e LPLOT_CHECK_OUTPUT=/output \
-            -e LPLOT_CHECK_MODE="$CHECK_MODE" \
-            -e LPLOT_GGPLOT2_VERSION="$GGPLOT_VERSION" \
+            -e GGCARTO_SOURCE=/source \
+            -e GGCARTO_CHECK_OUTPUT=/output \
+            -e GGCARTO_CHECK_MODE="$CHECK_MODE" \
+            -e GGCARTO_GGPLOT2_VERSION="$GGPLOT_VERSION" \
             -e OMP_NUM_THREADS=2 \
             -e OPENBLAS_NUM_THREADS=2 \
-            lplot-check \
+            ggcarto-check \
             Rscript /source/.github/scripts/check-minimal.R
 
       - uses: actions/upload-artifact@v4

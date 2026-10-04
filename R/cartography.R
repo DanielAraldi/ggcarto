@@ -1,6 +1,6 @@
 require_cartography <- function() {
   if (!requireNamespace("sf", quietly = TRUE)) {
-    l_abort(
+    gc_abort(
       "Cartographic functions require the optional sf package.",
       "missing_dependency"
     )
@@ -28,7 +28,7 @@ cartographic_colour <- function(value, property) {
     )
   }
   if (!valid) {
-    l_abort(
+    gc_abort(
       paste(property, "must be a single grid colour or NA."),
       property = property
     )
@@ -39,12 +39,12 @@ cartographic_colour <- function(value, property) {
 map_panel_context <- function(plot) {
   require_cartography()
   if (!inherits(plot, "ggplot") || !inherits(plot$coordinates, "CoordSf")) {
-    l_abort("plot must be a ggplot using coord_sf().", property = "plot")
+    gc_abort("plot must be a ggplot using coord_sf().", property = "plot")
   }
   built <- ggplot2::ggplot_build(plot)
   panels <- built$layout$panel_params
   if (length(panels) != 1L) {
-    l_abort("Cartographic frames require exactly one panel.", property = "plot")
+    gc_abort("Cartographic frames require exactly one panel.", property = "plot")
   }
   panel <- panels[[1L]]
   crs <- sf::st_crs(panel$crs)
@@ -56,7 +56,7 @@ map_panel_context <- function(plot) {
       diff(panel$x_range) <= 0 ||
       diff(panel$y_range) <= 0
   ) {
-    l_abort("The map needs a known CRS and finite, increasing panel ranges.")
+    gc_abort("The map needs a known CRS and finite, increasing panel ranges.")
   }
   extent <- sf::st_bbox(
     c(
@@ -80,24 +80,24 @@ map_panel_context <- function(plot) {
 #'
 #' @param plot A single-panel ggplot using [ggplot2::coord_sf()] with a known
 #'   CRS. Set the projection, limits and expansion on this plot before framing.
-#' @param overlays List of grobs or lplot nodes placed over the map panel.
+#' @param overlays List of grobs or ggcarto nodes placed over the map panel.
 #' @param width,height Logical dimensions of the outer layout viewport.
-#' @param ... Additional outer viewport properties passed to [l_viewport()],
+#' @param ... Additional outer viewport properties passed to [gc_viewport()],
 #'   including padding, border, background and positioning constraints.
 #'
 #' @details
 #' Requires the optional sf package. The source plot and its theme are preserved.
 #' Titles, legends and axes are not included in the extracted panel; extract
-#' them separately with [l_get_element()]. The actual built panel ranges,
+#' them separately with [gc_get_element()]. The actual built panel ranges,
 #' including coord_sf expansion, define the extent, not the data bounding box.
 #' Geographic and projected CRSs are supported by the frame. The inner panel
 #' is centered, preserves the coord_sf aspect ratio and clips overlays at its
 #' edges. Padding and borders belong to the outer viewport, outside the map.
 #' No device dimensions are stored. Each draw fits the panel again.
 #'
-#' @returns An `l_frame` inheriting from `l_viewport` and `l_node`, with a
+#' @returns An `gc_frame` inheriting from `gc_viewport` and `gc_node`, with a
 #'   `map_context` containing the displayed extent, CRS and aspect ratio.
-#' @seealso [l_scale_bar()], [l_inset()], [l_viewport()], [l_place()], [l_get_element()]
+#' @seealso [gc_scale_bar()], [gc_inset()], [gc_viewport()], [gc_place()], [gc_get_element()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {
 #'   area <- sf::st_as_sfc(sf::st_bbox(c(
@@ -106,10 +106,10 @@ map_panel_context <- function(plot) {
 #'   plot <- ggplot2::ggplot() +
 #'     ggplot2::geom_sf(data = area) +
 #'     ggplot2::coord_sf(expand = FALSE, datum = NA)
-#'   l_render(l_frame(plot, padding = 12))
+#'   gc_render(gc_frame(plot, padding = 12))
 #' }
 #' @export
-l_frame <- function(
+gc_frame <- function(
   plot,
   overlays = list(),
   width = "auto",
@@ -119,19 +119,19 @@ l_frame <- function(
   context <- map_panel_context(plot)
   if (
     !is.list(overlays) ||
-      inherits(overlays, "l_node") ||
+      inherits(overlays, "gc_node") ||
       grid::is.grob(overlays)
   ) {
-    l_abort(
+    gc_abort(
       "overlays must be a list of graphics objects.",
       property = "overlays"
     )
   }
   overlays <- unlist(
     lapply(overlays, function(overlay) {
-      if (inherits(overlay, "l_inset")) {
+      if (inherits(overlay, "gc_inset")) {
         if (!same_map_context(overlay$reference_context, context)) {
-          l_abort(
+          gc_abort(
             "The inset reference does not match its containing frame.",
             "inset_reference"
           )
@@ -144,8 +144,8 @@ l_frame <- function(
     }),
     recursive = FALSE
   )
-  panel <- l_get_element(plot, "panel", width = "100%", height = "100%")
-  inner <- l_viewport(
+  panel <- gc_get_element(plot, "panel", width = "100%", height = "100%")
+  inner <- gc_viewport(
     c(list(panel), overlays),
     width = "100%",
     max_height = "100%",
@@ -156,16 +156,16 @@ l_frame <- function(
     overflow = "hidden"
   )
   inner$map_panel <- context
-  frame <- l_viewport(list(inner), width = width, height = height, ...)
+  frame <- gc_viewport(list(inner), width = width, height = height, ...)
   frame$map_context <- context
   frame$map_plot <- panel$source
-  class(frame) <- c("l_frame", class(frame))
+  class(frame) <- c("gc_frame", class(frame))
   frame
 }
 
 map_metres_per_unit <- function(context) {
   if (isTRUE(sf::st_is_longlat(context$crs))) {
-    l_abort(
+    gc_abort(
       "Scale bars require a projected CRS; angular coordinates are not distances.",
       "unsupported_crs"
     )
@@ -187,7 +187,7 @@ map_metres_per_unit <- function(context) {
     NULL
   )
   if (is.null(factor)) {
-    l_abort(
+    gc_abort(
       paste0("Unsupported projected CRS unit: ", unit, "."),
       "unsupported_crs"
     )
@@ -205,7 +205,7 @@ scale_bar_grob <- function(specification, distance, width, context) {
   )
   justification <- c("left", rep("center", length(labels) - 2L), "right")
   label_grobs <- lapply(seq_along(labels), function(index) {
-    l_text(
+    gc_text(
       labels[[index]],
       x = positions[[index]],
       y = 0.76,
@@ -228,14 +228,14 @@ scale_bar_grob <- function(specification, distance, width, context) {
     label_widths * c(0, rep(0.5, length(labels) - 2L), 1)
   ends <- starts + label_widths
   if (any(ends[-length(ends)] + 2 > starts[-1L])) {
-    l_warn(
+    gc_warn(
       "Scale labels overlap; reduce segments/fontsize or enlarge the map.",
       "scale_labels"
     )
   }
   if (specification$design == "bar") {
     body <- lapply(seq_len(specification$segments), function(index) {
-      l_rect(
+      gc_rect(
         x = (index - 0.5) / specification$segments,
         y = 0.28,
         width = 1 / specification$segments,
@@ -276,14 +276,14 @@ scale_bar_grob <- function(specification, distance, width, context) {
       name = "scale-ticks"
     )
   }
-  l_template(children = c(body, label_grobs), name = "scale-bar")
+  gc_template(children = c(body, label_grobs), name = "scale-bar")
 }
 
 bind_scale_bar <- function(node, context) {
   map <- context$map_panel
   if (is.null(map)) {
-    l_abort(
-      "Place l_scale_bar() directly in the overlays of l_frame() or l_inset().",
+    gc_abort(
+      "Place gc_scale_bar() directly in the overlays of gc_frame() or gc_inset().",
       "unbound_scale",
       node$id
     )
@@ -296,7 +296,7 @@ bind_scale_bar <- function(node, context) {
       (!is.null(node$left) && !is.null(node$right)) ||
       node$collision %in% c("shrink", "avoid-and-shrink")
   ) {
-    l_abort(
+    gc_abort(
       "Scale width is geographic; do not override width, constrain it or shrink it.",
       "scale_constraint",
       node$id,
@@ -318,7 +318,7 @@ bind_scale_bar <- function(node, context) {
   }
   fraction <- distance * metres_per_unit[[specification$unit]] / extent_metres
   if (!is.finite(fraction) || fraction <= 0 || fraction > 1) {
-    l_abort(
+    gc_abort(
       "The scale distance must be positive and no wider than the map extent.",
       "scale_distance",
       node$id
@@ -327,7 +327,7 @@ bind_scale_bar <- function(node, context) {
   width <- context$width * fraction
   padding <- resolve_edges(node$padding, context, node, "padding")
   border <- resolve_border(node$border, context, node)
-  node$width <- l_length(
+  node$width <- gc_length(
     width + sum(padding[c("left", "right")]) + 2 * border$width
   )
   node$content <- scale_bar_grob(specification, distance, width, context)
@@ -344,8 +344,8 @@ bind_scale_bar <- function(node, context) {
 #' Construct a map-bound projected-distance scale bar
 #'
 #' Declare a scale whose physical width is resolved from its containing map
-#' panel on every draw. Use it directly in the overlays of [l_frame()] or
-#' [l_inset()], optionally positioned with [l_place()].
+#' panel on every draw. Use it directly in the overlays of [gc_frame()] or
+#' [gc_inset()], optionally positioned with [gc_place()].
 #'
 #' @param distance Positive distance in `unit`, or `NULL` to choose a 1, 2 or 5
 #'   times a power of ten automatically.
@@ -361,7 +361,7 @@ bind_scale_bar <- function(node, context) {
 #' @param lwd Positive grid line width.
 #' @param fontsize Positive label font size in points.
 #' @param fontfamily Grid font family.
-#' @param ... Additional node properties accepted by [l_place()], such as
+#' @param ... Additional node properties accepted by [gc_place()], such as
 #'   left, bottom, margin, padding, background or id. The default position is
 #'   bottom-left. Width is determined geographically and cannot be overridden.
 #'
@@ -371,17 +371,17 @@ bind_scale_bar <- function(node, context) {
 #' or US survey feet. Angular, missing and unsupported CRS units are rejected;
 #' projection distortion is not corrected. sf remains an optional dependency.
 #' Text and stroke sizes remain physical; geometry follows the map panel.
-#' Labels that do not fit produce an `lplot_scale_labels` warning without
+#' Labels that do not fit produce an `ggcarto_scale_labels` warning without
 #' falsifying the distance. Width constraints, aspect ratios and collision
 #' shrinking are rejected. Collision avoidance can move the bar without
 #' changing its distance. Padding/borders are outside its calibrated length.
 #' A standalone scale cannot be rendered or measured without a frame.
 #'
-#' @returns An `l_scale_bar` inheriting from `l_element` and `l_node`.
+#' @returns An `gc_scale_bar` inheriting from `gc_element` and `gc_node`.
 #'   Resolved scale nodes expose a `scale_bar` list with distance, units,
 #'   distance in metres, displayed extent width in metres and bar width in
 #'   logical pixels. The original declaration is not modified.
-#' @seealso [l_frame()], [l_inset()], [l_place()], [l_resolve()]
+#' @seealso [gc_frame()], [gc_inset()], [gc_place()], [gc_resolve()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {
 #'   area <- sf::st_as_sfc(sf::st_bbox(c(
@@ -390,11 +390,11 @@ bind_scale_bar <- function(node, context) {
 #'   plot <- ggplot2::ggplot() +
 #'     ggplot2::geom_sf(data = area) +
 #'     ggplot2::coord_sf(expand = FALSE, datum = NA)
-#'   scale <- l_scale_bar(50, "km", segments = 2, left = 12, bottom = 8)
-#'   l_render(l_frame(plot, overlays = list(scale)))
+#'   scale <- gc_scale_bar(50, "km", segments = 2, left = 12, bottom = 8)
+#'   gc_render(gc_frame(plot, overlays = list(scale)))
 #' }
 #' @export
-l_scale_bar <- function(
+gc_scale_bar <- function(
   distance = NULL,
   unit = "km",
   max_fraction = 0.25,
@@ -416,28 +416,28 @@ l_scale_bar <- function(
   if (
     length(unit) != 1L || is.na(unit) || !unit %in% c("km", "m", "ft", "mi")
   ) {
-    l_abort("unit must be km, m, ft or mi.", property = "unit")
+    gc_abort("unit must be km, m, ft or mi.", property = "unit")
   }
   scalar_number(max_fraction, "max_fraction", positive = TRUE)
   if (max_fraction > 1) {
-    l_abort("max_fraction cannot exceed one.")
+    gc_abort("max_fraction cannot exceed one.")
   }
   for (property in c("segments", "subdivisions")) {
     value <- get(property)
     scalar_number(value, property, positive = TRUE)
     if (value != floor(value) || value > 20) {
-      l_abort(paste(property, "must be an integer from 1 to 20."))
+      gc_abort(paste(property, "must be an integer from 1 to 20."))
     }
   }
   if (length(design) != 1L || is.na(design) || !design %in% c("bar", "ticks")) {
-    l_abort("design must be bar or ticks.", property = "design")
+    gc_abort("design must be bar or ticks.", property = "design")
   }
   scalar_number(fontsize, "fontsize", positive = TRUE)
   scalar_number(lwd, "lwd", positive = TRUE)
   if (
     !is.character(fontfamily) || length(fontfamily) != 1L || is.na(fontfamily)
   ) {
-    l_abort("fontfamily must be a single string.", property = "fontfamily")
+    gc_abort("fontfamily must be a single string.", property = "fontfamily")
   }
   for (property in c("col", "fill", "fill_secondary")) {
     cartographic_colour(get(property), property)
@@ -461,6 +461,6 @@ l_scale_bar <- function(
     fontsize = fontsize,
     fontfamily = fontfamily
   )
-  class(node) <- c("l_scale_bar", "l_element", "l_node")
+  class(node) <- c("gc_scale_bar", "gc_element", "gc_node")
   update_node(node, list(...))
 }

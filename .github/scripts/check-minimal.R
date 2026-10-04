@@ -1,7 +1,7 @@
 local({
-  source_dir <- normalizePath(Sys.getenv("LPLOT_SOURCE", "."), mustWork = TRUE)
-  output_dir <- Sys.getenv("LPLOT_CHECK_OUTPUT", tempfile("lplot-check-"))
-  mode <- Sys.getenv("LPLOT_CHECK_MODE", "no-suggests")
+  source_dir <- normalizePath(Sys.getenv("GGCARTO_SOURCE", "."), mustWork = TRUE)
+  output_dir <- Sys.getenv("GGCARTO_CHECK_OUTPUT", tempfile("ggcarto-check-"))
+  mode <- Sys.getenv("GGCARTO_CHECK_MODE", "no-suggests")
   stopifnot(mode %in% c("no-suggests", "with-tests"))
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   output_dir <- normalizePath(output_dir, mustWork = TRUE)
@@ -39,7 +39,7 @@ local({
   required <- dependency_names(metadata, hard_fields)
   bundled <- rownames(installed.packages(priority = c("base", "recommended")))
   required <- setdiff(required, bundled)
-  ggplot_version <- Sys.getenv("LPLOT_GGPLOT2_VERSION")
+  ggplot_version <- Sys.getenv("GGCARTO_GGPLOT2_VERSION")
   if (nzchar(ggplot_version)) {
     archive <- tempfile(fileext = ".tar.gz")
     download.file(
@@ -116,21 +116,21 @@ local({
   )
 
   .libPaths(c(normalizePath(check_dir), .libPaths()))
-  library(lplot)
-  scene <- l_viewport(
-    list(l_place(l_text("Dependency check"), left = 10, top = 10)),
+  library(ggcarto)
+  scene <- gc_viewport(
+    list(gc_place(gc_text("Dependency check"), left = 10, top = 10)),
     width = 400,
     height = 200
   )
-  resolved <- l_resolve(scene, width = 800, height = 400)
+  resolved <- gc_resolve(scene, width = 800, height = 400)
   stopifnot(
-    inherits(resolved, "l_layout"),
+    inherits(resolved, "gc_layout"),
     identical(unname(resolved$root$box), c(0, 0, 800, 400))
   )
   pdf("core-smoke.pdf", width = 8, height = 4)
   device <- dev.cur()
   on.exit(if (device %in% dev.list()) dev.off(device), add = TRUE)
-  l_render(scene, width = 800, height = 400)
+  gc_render(scene, width = 800, height = 400)
   dev.off(device)
   stopifnot(file.info("core-smoke.pdf")$size > 0)
   cat("PASS:", mode, "checks and core rendering smoke test.\n")

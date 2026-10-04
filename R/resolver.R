@@ -19,12 +19,12 @@ resolve_property <- function(
   }
   result <- tryCatch(
     resolve_length(value, context, axis),
-    lplot_error = function(condition) {
-      l_abort(condition$message, node = node$id, property = property)
+    ggcarto_error = function(condition) {
+      gc_abort(condition$message, node = node$id, property = property)
     }
   )
   if (!is.finite(result)) {
-    l_abort(
+    gc_abort(
       paste0(property, " must resolve to a finite length."),
       node = node$id,
       property = property
@@ -48,7 +48,7 @@ resolve_edges <- function(edges, context, node, property) {
     numeric(1)
   )
   if (any(result < 0)) {
-    l_abort(
+    gc_abort(
       paste0(property, " cannot be negative."),
       node = node$id,
       property = property
@@ -68,7 +68,7 @@ resolve_border <- function(border, context, node) {
     !is.list(border) ||
       any(!names(border) %in% c("color", "colour", "width", "line_type"))
   ) {
-    l_abort(
+    gc_abort(
       "border must be a color or a list of color, width and line_type.",
       node = node$id,
       property = "border"
@@ -82,7 +82,7 @@ resolve_border <- function(border, context, node) {
     "border"
   )
   if (width < 0) {
-    l_abort(
+    gc_abort(
       "Border width cannot be negative.",
       node = node$id,
       property = "border"
@@ -135,7 +135,7 @@ measure_content <- function(node, grob, context) {
       any(!is.finite(dimensions)) ||
       any(dimensions < 0)
   ) {
-    l_abort(
+    gc_abort(
       "Measurer must return finite, nonnegative width and height in logical pixels.",
       "invalid_measurement",
       node$id
@@ -167,7 +167,7 @@ size_limits <- function(node, context) {
       Inf
     )
     if (result[[minimum]] < 0 || result[[maximum]] < result[[minimum]]) {
-      l_abort(
+      gc_abort(
         paste0("Invalid min/max constraints for ", axis, "."),
         node = node$id,
         property = axis
@@ -222,7 +222,7 @@ resolve_size <- function(
       )
     }
     if (preferred < 0) {
-      l_abort(
+      gc_abort(
         paste0("Negative resolved ", dimension, "."),
         node = node$id,
         property = dimension
@@ -240,7 +240,7 @@ resolve_size <- function(
         node$height$kind != "auto" &&
         abs(dimensions[["width"]] - ratio * dimensions[["height"]]) > 1e-7
     ) {
-      l_abort(
+      gc_abort(
         "Explicit dimensions contradict aspect_ratio.",
         node = node$id,
         property = "aspect_ratio"
@@ -254,7 +254,7 @@ resolve_size <- function(
     minimum <- max(limits$min_width, limits$min_height * ratio)
     maximum <- min(limits$max_width, limits$max_height * ratio)
     if (minimum > maximum) {
-      l_abort(
+      gc_abort(
         "Aspect ratio conflicts with min/max constraints.",
         node = node$id,
         property = "aspect_ratio"
@@ -275,7 +275,7 @@ placement_area <- function(node, context, safe_area) {
     area[["height"]] <- context$height - sum(safe_area[c("top", "bottom")])
   }
   if (any(area[c("width", "height")] < 0)) {
-    l_abort(
+    gc_abort(
       "Safe area exceeds the containing viewport.",
       node = node$id,
       property = "safe_area"
@@ -306,7 +306,7 @@ resolve_position <- function(node, dimensions, context, margin, area) {
     )
     coordinate <- resolve_property(node[[axis]], context, axis, node, axis)
     if (!is.null(coordinate) && (!is.null(near) || !is.null(far))) {
-      l_abort(
+      gc_abort(
         paste0(
           axis,
           " cannot be combined with ",
@@ -325,7 +325,7 @@ resolve_position <- function(node, dimensions, context, margin, area) {
         abs(near + far + extent + sum(margin[sides]) - context[[dimension]]) >
           1e-7
     ) {
-      l_abort(
+      gc_abort(
         paste0("Opposing insets contradict ", dimension, "."),
         "contradictory_constraints",
         node$id,
@@ -351,7 +351,7 @@ resolve_position <- function(node, dimensions, context, margin, area) {
 }
 
 resolve_node <- function(node, context, safe_area) {
-  if (inherits(node, "l_scale_bar")) {
+  if (inherits(node, "gc_scale_bar")) {
     node <- bind_scale_bar(node, context)
   }
   margin <- resolve_edges(node$margin, context, node, "margin")
@@ -414,7 +414,7 @@ validate_resolved <- function(resolved, context) {
     box[["y"]] + box[["height"]] + margin[["bottom"]] >
       context$height + tolerance
   if (outside) {
-    l_warn(
+    gc_warn(
       "Box exceeds its containing viewport.",
       "overflow",
       resolved$id,
@@ -433,7 +433,7 @@ validate_resolved <- function(resolved, context) {
           content[c("width", "height")] + tolerance
       )
   ) {
-    l_warn(
+    gc_warn(
       "Intrinsic content exceeds its box; no implicit clipping or text reflow is applied.",
       "overflow",
       resolved$id,
@@ -460,17 +460,17 @@ resolve_children <- function(parent, context) {
     "gap"
   )
   if (gap < 0) {
-    l_abort("gap cannot be negative.", node = parent$id, property = "gap")
+    gc_abort("gap cannot be negative.", node = parent$id, property = "gap")
   }
   children <- lapply(parent$node$children, function(child) {
     original <- child
     flow <- parent$node$flow
     automatic <- !has_coordinates(child)
     if (flow %in% c("row", "column") && automatic) {
-      child$left <- l_length(
+      child$left <- gc_length(
         if (flow == "row") cursor + safe_area[["left"]] else safe_area[["left"]]
       )
-      child$top <- l_length(
+      child$top <- gc_length(
         if (flow == "column") {
           cursor + safe_area[["top"]]
         } else {
@@ -504,7 +504,7 @@ resolve_children <- function(parent, context) {
     inner <- content_box(child)
     if (length(child$node$children)) {
       if (any(inner[c("width", "height")] <= 0)) {
-        l_warn(
+        gc_warn(
           "No positive content area for child nodes.",
           "overflow",
           child$id,
@@ -530,13 +530,13 @@ root_context <- function(node, width, height, dpi) {
   if (grDevices::dev.cur() != 1L) {
     defaults <- c(
       width = grid::convertWidth(
-        l_unit(1, "npc"),
+        gc_unit(1, "npc"),
         "inches",
         valueOnly = TRUE
       ) *
         96,
       height = grid::convertHeight(
-        l_unit(1, "npc"),
+        gc_unit(1, "npc"),
         "inches",
         valueOnly = TRUE
       ) *
@@ -572,7 +572,7 @@ root_context <- function(node, width, height, dpi) {
 #' policies without drawing. The result is an inspection snapshot for a
 #' particular size; keep the original scene for later rendering or export.
 #'
-#' @param object An lplot scene, viewport, element, ggplot or grid grob.
+#' @param object An ggcarto scene, viewport, element, ggplot or grid grob.
 #'   Non-viewport objects are wrapped in a root viewport for resolution.
 #' @param width,height Optional positive numeric root dimensions in logical
 #'   pixels. Each `NULL` dimension uses the current grid viewport if a device
@@ -585,7 +585,7 @@ root_context <- function(node, width, height, dpi) {
 #' The root content box accounts for padding and borders; child coordinates
 #' are local to their parent's content box. Implicit node IDs are assigned
 #' deterministically. Conflicting constraints raise errors. Unresolved box
-#' overflow and collision placement emit `lplot_overflow` and `lplot_collision`
+#' overflow and collision placement emit `ggcarto_overflow` and `ggcarto_collision`
 #' warnings rather than being silently repaired or clipped.
 #'
 #' Measurement uses the current graphics device's font metrics. If no device
@@ -593,33 +593,33 @@ root_context <- function(node, width, height, dpi) {
 #' viewport stack and scene declarations are preserved. Results may differ
 #' between devices with different font metrics.
 #'
-#' @returns An `l_layout` list with `root` and `context` fields. The context
+#' @returns An `gc_layout` list with `root` and `context` fields. The context
 #'   contains dimensions, root dimensions and DPI. Resolved nodes contain
 #'   `id`, the logical `node`, a named `box` (`x`, `y`, `width`, `height`),
 #'   `margin`, `padding`, `border`, prepared `content`, `intrinsic` dimensions,
 #'   a content `scale`, `collision_candidates` and resolved `children`. Box
-#'   measurements are logical pixels. This is not an input to [l_render()].
-#' @seealso [l_measure()], [l_render()], [l_place()], [l_length()]
+#'   measurements are logical pixels. This is not an input to [gc_render()].
+#' @seealso [gc_measure()], [gc_render()], [gc_place()], [gc_length()]
 #' @examples
-#' scene <- l_viewport(list(
-#'   l_place(l_rect(fill = "#95CEC0"),
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_rect(fill = "#95CEC0"),
 #'     left = "10%", top = 10,
 #'     width = "50%", height = 40
 #'   )
 #' ))
-#' small <- l_resolve(scene, width = 300, height = 120)
-#' large <- l_resolve(scene, width = 600, height = 240)
+#' small <- gc_resolve(scene, width = 300, height = 120)
+#' large <- gc_resolve(scene, width = 600, height = 240)
 #' small$root$children[[1]]$box
 #' large$root$children[[1]]$box
 #' @export
-l_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
+gc_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
   node <- as_l_node(object)
   if (node$kind != "viewport") {
-    node <- l_viewport(list(node), width = node$width, height = node$height)
+    node <- gc_viewport(list(node), width = node$width, height = node$height)
   }
   node <- assign_scene_ids(node)
   if (anyDuplicated(scene_ids(node))) {
-    l_abort("Node IDs must be unique within a scene.", property = "id")
+    gc_abort("Node IDs must be unique within a scene.", property = "id")
   }
   context <- root_context(node, width, height, dpi)
   with_grid_context(context, {
@@ -637,7 +637,7 @@ l_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
     )
     inner <- content_box(root)
     if (any(inner[c("width", "height")] <= 0)) {
-      l_abort("Root padding/border leaves no content area.", node = node$id)
+      gc_abort("Root padding/border leaves no content area.", node = node$id)
     }
     child_context <- new_layout_context(
       inner[["width"]],
@@ -647,7 +647,7 @@ l_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
       context$height
     )
     root$children <- resolve_children(root, child_context)
-    structure(list(root = root, context = context), class = "l_layout")
+    structure(list(root = root, context = context), class = "gc_layout")
   })
 }
 
@@ -655,19 +655,19 @@ l_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
 #'
 #' Prepare and measure one node in an explicit layout context without drawing.
 #' Use this for sizing annotations and checking the effect of responsive
-#' styles; use [l_resolve()] to inspect all children of a complete scene.
+#' styles; use [gc_resolve()] to inspect all children of a complete scene.
 #'
-#' @param object An lplot element, scene node, ggplot or grid grob.
+#' @param object An ggcarto element, scene node, ggplot or grid grob.
 #' @param viewport A list with positive numeric `width` and `height` in logical
 #'   pixels. Optional `root_width` and `root_height` control root-relative units;
 #'   otherwise each defaults to its corresponding local dimension.
-#' @inheritParams l_resolve
+#' @inheritParams gc_resolve
 #'
 #' @details
 #' Measurement includes the node's dimension constraints, padding and border
 #' in the reported box size, but not its outer margins. The `intrinsic` field
 #' describes content before those layout additions. Custom adapter measurers
-#' receive prepared styled content; see [l_register_element()].
+#' receive prepared styled content; see [gc_register_element()].
 #'
 #' Plots, panels and viewports use available or declared dimensions rather than
 #' inferring bounds around absolutely positioned children. Generic gTrees may
@@ -680,16 +680,16 @@ l_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
 #'
 #' @returns A list with numeric `width` and `height`, named numeric `intrinsic`
 #'   dimensions and `units = "px"`.
-#' @seealso [l_resolve()], [l_get_element()], [l_style()], [l_template()]
+#' @seealso [gc_resolve()], [gc_get_element()], [gc_style()], [gc_template()]
 #' @examples
-#' label <- l_get_element(l_text("Survey area"), "annotation",
+#' label <- gc_get_element(gc_text("Survey area"), "annotation",
 #'   style = list(font_size = "clamp(8pt, 2vmin, 18pt)", padding = 4)
 #' )
-#' l_measure(label, viewport = list(width = 300, height = 200))
-#' l_measure(label, viewport = list(width = 1200, height = 800))
-#' l_measure(l_rect(), viewport = list(width = 200, height = 100))
+#' gc_measure(label, viewport = list(width = 300, height = 200))
+#' gc_measure(label, viewport = list(width = 1200, height = 800))
+#' gc_measure(gc_rect(), viewport = list(width = 200, height = 100))
 #' @export
-l_measure <- function(
+gc_measure <- function(
   object,
   viewport = list(width = 800, height = 600),
   dpi = 96

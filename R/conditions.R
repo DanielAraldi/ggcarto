@@ -1,4 +1,4 @@
-l_abort <- function(
+gc_abort <- function(
   message,
   subclass = "invalid",
   node = NULL,
@@ -14,11 +14,11 @@ l_abort <- function(
       node = node,
       property = property
     ),
-    class = c(paste0("lplot_", subclass), "lplot_error", "error", "condition")
+    class = c(paste0("ggcarto_", subclass), "ggcarto_error", "error", "condition")
   ))
 }
 
-l_warn <- function(message, subclass, node = NULL, property = NULL) {
+gc_warn <- function(message, subclass, node = NULL, property = NULL) {
   if (!is.null(node)) {
     message <- paste0("Node '", node, "': ", message)
   }
@@ -30,8 +30,8 @@ l_warn <- function(message, subclass, node = NULL, property = NULL) {
       property = property
     ),
     class = c(
-      paste0("lplot_", subclass),
-      "lplot_warning",
+      paste0("ggcarto_", subclass),
+      "ggcarto_warning",
       "warning",
       "condition"
     )
@@ -46,7 +46,7 @@ scalar_number <- function(value, property, positive = FALSE) {
       !is.finite(value) ||
       (positive && value <= 0)
   ) {
-    l_abort(
+    gc_abort(
       paste0(
         property,
         " must be a finite ",

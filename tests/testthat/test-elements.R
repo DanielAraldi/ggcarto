@@ -1,28 +1,28 @@
 test_that("native extractors return graphics and absence is explicit", {
   plot <- example_plot() + ggplot2::facet_wrap(~cyl) + ggplot2::theme_bw()
   for (type in native_types) {
-    expect_s3_class(l_get_element(plot, type), "l_element")
-    expect_true(grid::is.grob(l_get_element(plot, type)$content))
+    expect_s3_class(gc_get_element(plot, type), "gc_element")
+    expect_true(grid::is.grob(gc_get_element(plot, type)$content))
   }
   empty <- ggplot2::ggplot()
-  expect_error(l_get_element(empty, "legend"), class = "lplot_missing_element")
-  expect_null(l_get_element(empty, "title", missing = "null"))
+  expect_error(gc_get_element(empty, "legend"), class = "ggcarto_missing_element")
+  expect_null(gc_get_element(empty, "title", missing = "null"))
   expect_error(
-    l_get_element(type = "title"),
-    class = "lplot_unsupported_source"
+    gc_get_element(type = "title"),
+    class = "ggcarto_unsupported_source"
   )
   expect_error(
-    l_get_element(plot, "unknown"),
-    class = "lplot_missing_extractor"
+    gc_get_element(plot, "unknown"),
+    class = "ggcarto_missing_extractor"
   )
-  panels <- l_get_element(plot, "panel")
+  panels <- gc_get_element(plot, "panel")
   expect_s3_class(panels$content, "gtable")
   expect_length(panels$content$grobs, 3)
   expect_false(inherits(
-    l_get_element(plot, "panel", which = 2)$content,
+    gc_get_element(plot, "panel", which = 2)$content,
     "gtable"
   ))
-  expect_error(l_get_element(plot, "panel", which = 9), class = "lplot_error")
+  expect_error(gc_get_element(plot, "panel", which = 9), class = "ggcarto_error")
 })
 
 test_that("removal and styles do not mutate sources or other elements", {
@@ -36,11 +36,11 @@ test_that("removal and styles do not mutate sources or other elements", {
     )
   }
   original <- source_state(plot)
-  removed <- l_without(plot, c("title", "legend", "x_axis_title"))
+  removed <- gc_without(plot, c("title", "legend", "x_axis_title"))
   expect_identical(source_state(plot), original)
-  expect_null(l_get_element(removed, "title", missing = "null"))
-  expect_null(l_get_element(removed, "legend", missing = "null"))
-  title <- l_get_element(
+  expect_null(gc_get_element(removed, "title", missing = "null"))
+  expect_null(gc_get_element(removed, "legend", missing = "null"))
+  title <- gc_get_element(
     plot,
     "title",
     style = list(color = "blue", font_size = "18pt")
@@ -50,16 +50,16 @@ test_that("removal and styles do not mutate sources or other elements", {
   expect_equal(text$gp$fontsize, 18)
   expect_identical(source_state(plot), original)
   for (type in c("legend", "panel", "x_axis")) {
-    before <- text_grobs(l_get_element(plot, type)$content)
-    after <- text_grobs(l_get_element(title$source, type)$content)
+    before <- text_grobs(gc_get_element(plot, type)$content)
+    after <- text_grobs(gc_get_element(title$source, type)$content)
     expect_equal(
       unname(lapply(before, function(grob) grob$gp)),
       unname(lapply(after, function(grob) grob$gp))
     )
   }
   expect_error(
-    l_get_element(plot, "title", style = list(fill = "red")),
-    class = "lplot_error"
+    gc_get_element(plot, "title", style = list(fill = "red")),
+    class = "ggcarto_error"
   )
 })
 
@@ -76,14 +76,14 @@ test_that("themes and responsive typography are retained without device state", 
       ggplot2::theme(
         plot.title = ggplot2::element_text(face = "bold", colour = "red")
       )
-    title <- l_get_element(plot, "title")
+    title <- gc_get_element(plot, "title")
     text <- text_grobs(prepared(title))[[1L]]
     expect_equal(text$gp$col, "red")
     expect_equal(unname(text$gp$font), 2L)
-    changed <- text_grobs(prepared(l_style(title, color = "blue")))[[1L]]
+    changed <- text_grobs(prepared(gc_style(title, color = "blue")))[[1L]]
     expect_equal(unname(changed$gp$font), 2L)
   }
-  title <- l_get_element(
+  title <- gc_get_element(
     example_plot(),
     "title",
     style = list(font_size = "clamp(8pt, 2vmin, 18pt)")
@@ -97,37 +97,37 @@ test_that("themes and responsive typography are retained without device state", 
 })
 
 test_that("custom registries are explicit and independent", {
-  registry <- l_register_element(
+  registry <- gc_register_element(
     "badge",
     extractor = function(plot) grid::textGrob(plot),
     can_extract = is.character
   )
-  badge <- l_get_element("Hello", "badge", registry = registry)
+  badge <- gc_get_element("Hello", "badge", registry = registry)
   expect_equal(badge$content$label, "Hello")
   expect_error(
-    l_get_element("Hello", "badge"),
-    class = "lplot_missing_extractor"
+    gc_get_element("Hello", "badge"),
+    class = "ggcarto_missing_extractor"
   )
   expect_error(
-    l_get_element(1, "badge", registry = registry),
-    class = "lplot_unsupported_source"
+    gc_get_element(1, "badge", registry = registry),
+    class = "ggcarto_unsupported_source"
   )
   expect_true(grid::is.grob(
-    l_get_element(grid::rectGrob(), "north_arrow")$content
+    gc_get_element(grid::rectGrob(), "north_arrow")$content
   ))
-  bad <- l_register_element("bad", extractor = function(plot) 1)
+  bad <- gc_register_element("bad", extractor = function(plot) 1)
   expect_error(
-    l_get_element("x", "bad", registry = bad),
-    class = "lplot_invalid_extractor"
+    gc_get_element("x", "bad", registry = bad),
+    class = "ggcarto_invalid_extractor"
   )
 })
 
 test_that("style aliases and opacity preserve the original graphical content", {
-  original <- l_text("Styled label", col = "red", fontface = "bold")
+  original <- gc_text("Styled label", col = "red", fontface = "bold")
   unchanged <- original
-  node <- l_style(original)
-  expect_identical(l_style(node), node)
-  styled <- l_style(
+  node <- gc_style(original)
+  expect_identical(gc_style(node), node)
+  styled <- gc_style(
     node,
     colour = "blue",
     alpha = 0.8,
@@ -146,47 +146,47 @@ test_that("style aliases and opacity preserve the original graphical content", {
 })
 
 test_that("styles reject ambiguous names and invalid opacity or lengths", {
-  label <- l_text("Label")
-  expect_error(l_style(label, "blue"), class = "lplot_error")
+  label <- gc_text("Label")
+  expect_error(gc_style(label, "blue"), class = "ggcarto_error")
   expect_error(
-    l_style(label, color = "red", color = "blue"),
-    class = "lplot_error"
+    gc_style(label, color = "red", color = "blue"),
+    class = "ggcarto_error"
   )
   expect_error(
-    l_style(label, color = "red", colour = "blue"),
-    class = "lplot_error"
+    gc_style(label, color = "red", colour = "blue"),
+    class = "ggcarto_error"
   )
   for (property in c("alpha", "opacity")) {
     for (value in c(-0.1, 1.1, Inf, NA_real_)) {
       expect_error(
-        do.call(l_style, c(list(label), stats::setNames(list(value), property))),
-        class = "lplot_error"
+        do.call(gc_style, c(list(label), stats::setNames(list(value), property))),
+        class = "ggcarto_error"
       )
     }
   }
-  expect_error(l_style(label, font_size = "auto"), class = "lplot_error")
-  styled <- l_style(label, font_size = "min(-1px, 10px)")
-  condition <- tryCatch(l_measure(styled), lplot_error = identity)
-  expect_s3_class(condition, "lplot_error")
+  expect_error(gc_style(label, font_size = "auto"), class = "ggcarto_error")
+  styled <- gc_style(label, font_size = "min(-1px, 10px)")
+  condition <- tryCatch(gc_measure(styled), ggcarto_error = identity)
+  expect_s3_class(condition, "ggcarto_error")
   expect_identical(condition$property, "font_size")
-  legend <- l_get_element(example_plot(), "legend")
+  legend <- gc_get_element(example_plot(), "legend")
   expect_error(
-    l_style(legend, legend.direction = "diagonal"),
-    class = "lplot_error"
+    gc_style(legend, legend.direction = "diagonal"),
+    class = "ggcarto_error"
   )
 })
 
 test_that("custom style callbacks receive overrides without changing the registry", {
-  registry <- l_register_element(
+  registry <- gc_register_element(
     "custom_label",
-    extract = function(source) l_text(source),
+    extract = function(source) gc_text(source),
     style = function(element, style, context) {
-      l_text(element$source, fontsize = style$label_size, col = style$color)
+      gc_text(element$source, fontsize = style$label_size, col = style$color)
     }
   )
   original <- registry
-  element <- l_get_element("Badge", "custom_label", registry = registry)
-  styled <- l_style(element, label_size = 18, color = "blue")
+  element <- gc_get_element("Badge", "custom_label", registry = registry)
+  styled <- gc_style(element, label_size = 18, color = "blue")
   content <- prepared(styled)
   expect_identical(content$label, "Badge")
   expect_equal(content$gp$fontsize, 18)
@@ -196,33 +196,33 @@ test_that("custom style callbacks receive overrides without changing the registr
 })
 
 test_that("legend spacer tracks do not stretch its intrinsic dimensions", {
-  legend <- l_get_element(example_plot(), "legend")
-  small <- l_measure(legend, list(width = 400, height = 300))
-  large <- l_measure(legend, list(width = 800, height = 600))
+  legend <- gc_get_element(example_plot(), "legend")
+  small <- gc_measure(legend, list(width = 400, height = 300))
+  large <- gc_measure(legend, list(width = 800, height = 600))
   expect_equal(small$intrinsic, large$intrinsic)
   expect_lt(small$width, 200)
   expect_lt(small$height, 200)
 })
 
 test_that("presentation styles work on viewports and custom measurements see styled content", {
-  viewport <- l_viewport()
-  styled <- l_style(viewport, background = "white", padding = "2mm")
+  viewport <- gc_viewport()
+  styled <- gc_style(viewport, background = "white", padding = "2mm")
   expect_null(viewport$background)
   expect_equal(styled$background, "white")
-  expect_error(l_style(viewport, font_size = 18), class = "lplot_error")
-  registry <- l_register_element(
+  expect_error(gc_style(viewport, font_size = 18), class = "ggcarto_error")
+  registry <- gc_register_element(
     "label",
     extract = function(plot) grid::textGrob(plot),
     measure = function(element, context) measure_grob(element$content, context)
   )
-  element <- l_get_element("Hello", "label", registry = registry)
+  element <- gc_get_element("Hello", "label", registry = registry)
   expect_gt(
-    l_measure(l_style(element, font_size = "30pt"))$height,
-    l_measure(element)$height
+    gc_measure(gc_style(element, font_size = "30pt"))$height,
+    gc_measure(element)$height
   )
   old_theme <- ggplot2::theme_set(ggplot2::theme_minimal(base_size = 10))
   on.exit(ggplot2::theme_set(old_theme))
-  title <- l_get_element(example_plot(), "title")
+  title <- gc_get_element(example_plot(), "title")
   before <- text_grobs(prepared(title))[[1]]$gp
   ggplot2::theme_set(ggplot2::theme_bw(base_size = 30))
   expect_equal(text_grobs(prepared(title))[[1]]$gp, before)

@@ -2,7 +2,7 @@ north_transform <- function(points, crs) {
   transformed <- tryCatch(
     sf::st_transform(points, crs, partial = FALSE),
     error = function(error) {
-      l_abort(
+      gc_abort(
         "Cannot transform the north reference into the requested CRS.",
         "north_projection"
       )
@@ -10,7 +10,7 @@ north_transform <- function(points, crs) {
   )
   coordinates <- sf::st_coordinates(transformed)
   if (any(sf::st_is_empty(transformed)) || any(!is.finite(coordinates))) {
-    l_abort(
+    gc_abort(
       "The north reference is outside the projection domain.",
       "north_projection"
     )
@@ -20,11 +20,11 @@ north_transform <- function(points, crs) {
 
 #' Calculate the local true-north rotation for cartographic symbols
 #'
-#' Compute an angle reusable by [l_north_arrow()] and [l_north_rose()] from
+#' Compute an angle reusable by [gc_north_arrow()] and [gc_north_rose()] from
 #' the local direction of a geographic meridian in the displayed map CRS.
 #'
-#' @param map A single-panel coord_sf ggplot, an [l_frame()] (including an
-#'   [l_inset()]), an sf bounding box with CRS, or a CRS specification accepted
+#' @param map A single-panel coord_sf ggplot, an [gc_frame()] (including an
+#'   [gc_inset()]), an sf bounding box with CRS, or a CRS specification accepted
 #'   by [sf::st_crs()], such as an EPSG number, WKT string or crs object.
 #' @param at Reference location. A numeric vector `c(longitude, latitude)` is
 #'   always in WGS84 degrees, regardless of the map CRS. Alternatively supply
@@ -48,37 +48,37 @@ north_transform <- function(points, crs) {
 #' approximation: north may point differently elsewhere in a large map.
 #'
 #' Invalid coordinates, unknown CRSs, poles, nonfinite transformations and
-#' locally discontinuous or degenerate directions raise an lplot error instead
+#' locally discontinuous or degenerate directions raise an ggcarto error instead
 #' of returning an arbitrary angle. Geocentric CRSs are not supported. Locations
 #' outside a frame's displayed extent are allowed if the projection is valid.
 #'
 #' @returns One finite numeric angle in degrees, in `[-180, 180)`. Zero points
 #'   up; positive values rotate counterclockwise, exactly as required by the
-#'   `angle` argument of [l_north_arrow()] and [l_north_rose()]. The value is
+#'   `angle` argument of [gc_north_arrow()] and [gc_north_rose()]. The value is
 #'   computed now, not automatically updated when a source map changes.
-#' @seealso [l_frame()], [l_inset()], [l_north_arrow()], [l_north_rose()]
+#' @seealso [gc_frame()], [gc_inset()], [gc_north_arrow()], [gc_north_rose()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {
-#'   angle <- l_north_angle(3413, at = c(0, 75))
+#'   angle <- gc_north_angle(3413, at = c(0, 75))
 #'   angle
-#'   north <- l_north_arrow("minimal", angle = angle)
-#'   rose <- l_north_rose("eight_point", angle = angle)
-#'   l_render(l_viewport(list(
-#'     l_place(north, left = 20, top = 20, width = 40, height = 68),
-#'     l_place(rose, left = 100, top = 20, width = 100, height = 100)
+#'   north <- gc_north_arrow("minimal", angle = angle)
+#'   rose <- gc_north_rose("eight_point", angle = angle)
+#'   gc_render(gc_viewport(list(
+#'     gc_place(north, left = 20, top = 20, width = 40, height = 68),
+#'     gc_place(rose, left = 100, top = 20, width = 100, height = 100)
 #'   )))
 #' }
 #' @export
-l_north_angle <- function(map, at = NULL, step = 0.0001) {
+gc_north_angle <- function(map, at = NULL, step = 0.0001) {
   require_cartography()
   scalar_number(step, "step", positive = TRUE)
   if (step > 1) {
-    l_abort("step must be at most one degree.", property = "step")
+    gc_abort("step must be at most one degree.", property = "step")
   }
   extent <- NULL
   horizontal_scale <- 1
-  if (inherits(map, "l_frame") || inherits(map, "ggplot")) {
-    context <- if (inherits(map, "l_frame")) {
+  if (inherits(map, "gc_frame") || inherits(map, "ggplot")) {
+    context <- if (inherits(map, "gc_frame")) {
       map$map_context
     } else {
       map_panel_context(map)
@@ -90,7 +90,7 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
       as.numeric(extent[["xmax"]] - extent[["xmin"]])
   } else {
     crs <- tryCatch(sf::st_crs(map), error = function(error) {
-      l_abort("map must provide a valid CRS.", property = "map")
+      gc_abort("map must provide a valid CRS.", property = "map")
     })
     if (inherits(map, "bbox")) extent <- map
   }
@@ -98,7 +98,7 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
     is.na(crs) ||
       grepl("CS[Cartesian,3]", gsub("[[:space:]]", "", crs$wkt), fixed = TRUE)
   ) {
-    l_abort(
+    gc_abort(
       "A known geographic or projected CRS is required.",
       property = "map"
     )
@@ -109,14 +109,14 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
         extent[["xmin"]] >= extent[["xmax"]] ||
         extent[["ymin"]] >= extent[["ymax"]])
   ) {
-    l_abort(
+    gc_abort(
       "The reference extent must have finite increasing bounds.",
       property = "map"
     )
   }
   if (is.null(at)) {
     if (is.null(extent)) {
-      l_abort("A CRS alone requires an explicit at location.", property = "at")
+      gc_abort("A CRS alone requires an explicit at location.", property = "at")
     }
     at <- sf::st_sfc(
       sf::st_point(c(
@@ -134,7 +134,7 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
         !inherits(geometry[[1L]], "POINT") ||
         sf::st_is_empty(geometry)
     ) {
-      l_abort(
+      gc_abort(
         "at must contain one nonempty POINT with a known CRS.",
         property = "at"
       )
@@ -147,7 +147,7 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
         length(at) != 2L ||
         any(!is.finite(at))
     ) {
-      l_abort(
+      gc_abort(
         "at must be c(longitude, latitude) or one sf POINT.",
         property = "at"
       )
@@ -155,7 +155,7 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
     location <- unname(at)
   }
   if (abs(location[[1L]]) > 180 || abs(location[[2L]]) + step >= 90) {
-    l_abort(
+    gc_abort(
       "Longitude must be within [-180, 180] and latitude samples must avoid the poles.",
       property = "at"
     )
@@ -170,7 +170,7 @@ l_north_angle <- function(map, at = NULL, step = 0.0001) {
   south <- projected[2L, ] - projected[1L, ]
   north <- projected[3L, ] - projected[2L, ]
   if (sum(south * north) <= 0 || any(!is.finite(c(south, north)))) {
-    l_abort(
+    gc_abort(
       "True north is undefined or discontinuous at this reference.",
       "north_projection"
     )

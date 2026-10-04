@@ -1,4 +1,4 @@
-result <- lplot::l_north_arrow(
+result <- ggcarto::gc_north_arrow(
   design = "fleur_de_lis",
   fill = "#197C80",
   fill_secondary = "#F4CD68",
@@ -8,7 +8,7 @@ result <- lplot::l_north_arrow(
   name = "custom_north"
 )
 
-lplot::l_render(lplot::l_place(
+ggcarto::gc_render(ggcarto::gc_place(
   result,
   x = "50%",
   y = "50%",

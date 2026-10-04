@@ -11,7 +11,7 @@ template_gpar <- function(gp = NULL, overrides = list()) {
             any(!nzchar(names(parameters))) ||
             anyDuplicated(names(parameters))))
     ) {
-      l_abort(
+      gc_abort(
         "Graphical parameters must be a gpar or a uniquely named list.",
         property = "gp"
       )
@@ -31,7 +31,7 @@ template_gpar <- function(gp = NULL, overrides = list()) {
 #'
 #' Construct a unit object by delegating directly to [grid::unit()]. The
 #' arguments, validation, vectorization and return value follow grid's native
-#' behavior. No lplot-specific units or conversions are added.
+#' behavior. No ggcarto-specific units or conversions are added.
 #'
 #' @param x Numeric vector of values interpreted in `units`.
 #' @param units Character vector of grid unit names, recycled according to
@@ -51,38 +51,38 @@ template_gpar <- function(gp = NULL, overrides = list()) {
 #' [grid::convertWidth()] or [grid::convertHeight()] for explicit conversions.
 #' Construction does not draw or open a graphics device.
 #'
-#' Unit objects work with [l_rect()], [l_text()], native grid grobs and
-#' viewports, including the children of [l_template()]. Native grid arithmetic,
+#' Unit objects work with [gc_rect()], [gc_text()], native grid grobs and
+#' viewports, including the children of [gc_template()]. Native grid arithmetic,
 #' indexing and [grid::unit.c()] remain available. With `"npc"`, `(0, 0)` is
 #' the bottom-left corner and `(1, 1)` is the top-right corner of the viewport.
 #' The `"null"` unit is meaningful for relative sizing in [grid::grid.layout()].
 #'
-#' These are not lplot layout lengths. Use [l_length()] or layout strings for
-#' [l_place()] and [l_viewport()] constraints. For example, `l_unit(0.5, "npc")`
-#' describes half a native grid viewport, whereas `l_length("50%")` describes
-#' half the relevant lplot parent dimension. CSS-like `"px"`, `"%"`, `"vw"`,
+#' These are not ggcarto layout lengths. Use [gc_length()] or layout strings for
+#' [gc_place()] and [gc_viewport()] constraints. For example, `gc_unit(0.5, "npc")`
+#' describes half a native grid viewport, whereas `gc_length("50%")` describes
+#' half the relevant ggcarto parent dimension. CSS-like `"px"`, `"%"`, `"vw"`,
 #' `"auto"` and `"clamp(...)"` are not grid unit names. Invalid input raises
-#' grid's own errors, not lplot-specific conditions.
+#' grid's own errors, not ggcarto-specific conditions.
 #'
 #' @returns A native grid `unit` object, identical to the result of
-#'   `grid::unit(x, units, data = data)`. It is not an `l_length` or a grob.
+#'   `grid::unit(x, units, data = data)`. It is not an `gc_length` or a grob.
 #' @seealso [grid::unit()], [grid::convertUnit()], [grid::unit.c()],
-#'   [l_length()], [l_rect()], [l_text()], [l_template()]
+#'   [gc_length()], [gc_rect()], [gc_text()], [gc_template()]
 #' @examples
-#' spacing <- l_unit(5, "mm")
+#' spacing <- gc_unit(5, "mm")
 #' grid::is.unit(spacing)
-#' l_unit(c(0.25, 0.75), "npc")
-#' l_unit(c(1, 5), c("cm", "mm"))
-#' l_unit(1, "strwidth", data = "Survey area")
-#' outline <- l_rect(
-#'   width = l_unit(20, "mm"), height = l_unit(10, "mm"),
+#' gc_unit(c(0.25, 0.75), "npc")
+#' gc_unit(c(1, 5), c("cm", "mm"))
+#' gc_unit(1, "strwidth", data = "Survey area")
+#' outline <- gc_rect(
+#'   width = gc_unit(20, "mm"), height = gc_unit(10, "mm"),
 #'   fill = NA, col = "black"
 #' )
 #' grid::is.grob(outline)
-#' l_unit(1, "grobwidth", data = outline)
-#' l_unit(1, "npc") - spacing
+#' gc_unit(1, "grobwidth", data = outline)
+#' gc_unit(1, "npc") - spacing
 #' @export
-l_unit <- function(x, units, data = NULL) {
+gc_unit <- function(x, units, data = NULL) {
   grid::unit(x, units, data = data)
 }
 
@@ -90,15 +90,15 @@ l_unit <- function(x, units, data = NULL) {
 #'
 #' Combine native grid grobs into a single graphical object without drawing it.
 #' Templates can contain rectangles, text, nested templates and other grid
-#' primitives, and can be placed as one element in an lplot scene.
+#' primitives, and can be placed as one element in an ggcarto scene.
 #'
 #' @param ... Child grobs in drawing order. Later children are drawn on top of
 #'   earlier children. These arguments are content, not graphical parameters.
 #' @param children Optional list or [grid::gList()] of grobs appended after the
 #'   children supplied in `...`. An empty template is allowed. Each supplied
-#'   child must be a grob; strings, `NULL`, ggplots and lplot nodes are not grobs.
+#'   child must be a grob; strings, `NULL`, ggplots and ggcarto nodes are not grobs.
 #' @param name Optional character name for the grid grob. This is distinct from
-#'   a scene node's `id` in [l_place()].
+#'   a scene node's `id` in [gc_place()].
 #' @param gp `NULL`, a [grid::gpar()] object, or a uniquely named list of grid
 #'   graphical parameters. Unspecified child properties inherit from this group.
 #' @param vp Optional grid viewport, viewport name or viewport path. A viewport
@@ -115,33 +115,33 @@ l_unit <- function(x, units, data = NULL) {
 #' Neither the input grobs nor their graphical parameters are modified.
 #'
 #' Internal coordinates follow grid conventions: with `npc` units, `(0, 0)` is
-#' the bottom-left corner and `(1, 1)` is the top-right corner. Use [l_place()]
-#' for outer positioning in lplot's top-left coordinate system. Templates have
+#' the bottom-left corner and `(1, 1)` is the top-right corner. Use [gc_place()]
+#' for outer positioning in ggcarto's top-left coordinate system. Templates have
 #' no automatic child bounding-box measurement: supply explicit layout sizes
 #' or opposing insets. Enlarging the box does not scale fixed font sizes.
 #'
-#' A template is graphical content, not a layout container. Use [l_viewport()]
+#' A template is graphical content, not a layout container. Use [gc_viewport()]
 #' when children need independent constraints, margins or collision policies.
-#' Wrap a template in [l_get_element()] to attach semantic metadata and styles.
+#' Wrap a template in [gc_get_element()] to attach semantic metadata and styles.
 #' These constructors do not draw, open devices or register global state.
 #'
 #' @returns A native grid `gTree` inheriting from `grob`. It can be passed to
-#'   [grid::grid.draw()], [l_place()], [l_get_element()] or [l_save()].
-#' @seealso [l_rect()], [l_text()], [grid::grobTree()], [grid::viewport()]
+#'   [grid::grid.draw()], [gc_place()], [gc_get_element()] or [gc_save()].
+#' @seealso [gc_rect()], [gc_text()], [grid::grobTree()], [grid::viewport()]
 #' @examples
-#' badge <- l_template(
-#'   l_rect(fill = "white", col = "#203C43"),
-#'   l_text("N", fontsize = 12, fontface = "bold"),
+#' badge <- gc_template(
+#'   gc_rect(fill = "white", col = "#203C43"),
+#'   gc_text("N", fontsize = 12, fontface = "bold"),
 #'   gp = list(col = "#203C43")
 #' )
-#' scene <- l_viewport(list(
-#'   l_place(badge, right = 12, top = 12, width = 40, height = 50)
+#' scene <- gc_viewport(list(
+#'   gc_place(badge, right = 12, top = 12, width = 40, height = 50)
 #' ), width = 240, height = 120)
-#' l_render(scene, width = 240, height = 120)
-#' nested <- l_template(children = list(badge, l_text("Survey", y = 0.1)))
+#' gc_render(scene, width = 240, height = 120)
+#' nested <- gc_template(children = list(badge, gc_text("Survey", y = 0.1)))
 #' grid::is.grob(nested)
 #' @export
-l_template <- function(
+gc_template <- function(
   ...,
   children = NULL,
   name = NULL,
@@ -151,11 +151,11 @@ l_template <- function(
   cl = NULL
 ) {
   if (!is.null(children) && !is.list(children)) {
-    l_abort("children must be a list of grobs.", property = "children")
+    gc_abort("children must be a list of grobs.", property = "children")
   }
   children <- c(list(...), children)
   if (!all(vapply(children, grid::is.grob, logical(1)))) {
-    l_abort(
+    gc_abort(
       "Template children must be grobs.",
       "unsupported_source",
       property = "children"
@@ -179,11 +179,11 @@ l_template <- function(
 #' parameters. The default rectangle is centered and fills its current grid
 #' viewport. Construction does not draw or open a graphics device.
 #'
-#' @param x,y Numeric coordinates in `default.units`, or [l_unit()] / [grid::unit()]
+#' @param x,y Numeric coordinates in `default.units`, or [gc_unit()] / [grid::unit()]
 #'   objects.
 #'   Vectors are supported according to [grid::rectGrob()] recycling rules.
 #' @param width,height Rectangle dimensions as numbers in `default.units` or
-#'   grid unit objects. These are internal geometry, not lplot layout lengths.
+#'   grid unit objects. These are internal geometry, not ggcarto layout lengths.
 #' @param just Character or numeric justification relative to `(x, y)`, such
 #'   as `"centre"` or `c("left", "bottom")`.
 #' @param hjust,vjust Optional numeric horizontal and vertical justification,
@@ -191,7 +191,7 @@ l_template <- function(
 #'   0.5 means center and one means right/top.
 #' @param default.units Grid unit used for numeric geometry, by default `"npc"`.
 #'   Existing unit objects, including the defaults, retain their own units.
-#' @inheritParams l_template
+#' @inheritParams gc_template
 #' @param ... Uniquely named [grid::gpar()] parameters overriding `gp`. Common
 #'   parameters are `fill`, `col`, `alpha`, `lwd`, `lty`, `lineend`, `linejoin`,
 #'   `linemitre` and `lex`. Values are validated by grid, not by a CSS parser.
@@ -203,8 +203,8 @@ l_template <- function(
 #'
 #' Numbers default to normalized parent coordinates, with the origin at the
 #' bottom-left. For example, `width = 0.5` occupies half the current viewport;
-#' `width = l_unit(20, "mm")` remains a physical 20 mm. Layout strings such
-#' as `"50%"` or `"8px"` belong to [l_place()], not this constructor.
+#' `width = gc_unit(20, "mm")` remains a physical 20 mm. Layout strings such
+#' as `"50%"` or `"8px"` belong to [gc_place()], not this constructor.
 #' Using `"native"` coordinates requires appropriate grid viewport scales and
 #' does not automatically connect the rectangle to a map's projection.
 #'
@@ -212,29 +212,29 @@ l_template <- function(
 #' Use a containing scene node for layout properties. Several vectorized
 #' rectangles remain one grob and one layout element.
 #'
-#' @returns A native grid `rect` grob, suitable for [l_template()] or direct
-#'   use with [l_place()] and [grid::grid.draw()].
-#' @seealso [l_unit()], [l_text()], [l_template()], [grid::rectGrob()], [grid::gpar()]
+#' @returns A native grid `rect` grob, suitable for [gc_template()] or direct
+#'   use with [gc_place()] and [grid::grid.draw()].
+#' @seealso [gc_unit()], [gc_text()], [gc_template()], [grid::rectGrob()], [grid::gpar()]
 #' @examples
-#' swatches <- l_rect(
+#' swatches <- gc_rect(
 #'   x = c(0.25, 0.75), width = 0.4, height = 0.7,
 #'   fill = c("#95CEC0", "#194E70"), col = NA
 #' )
-#' scene <- l_viewport(list(
-#'   l_place(swatches, left = 10, top = 10, width = 180, height = 60)
+#' scene <- gc_viewport(list(
+#'   gc_place(swatches, left = 10, top = 10, width = 180, height = 60)
 #' ))
-#' l_render(scene, width = 200, height = 80)
-#' outline <- l_rect(
-#'   width = l_unit(20, "mm"),
-#'   height = l_unit(10, "mm"), fill = NA, col = "black", lty = "dashed"
+#' gc_render(scene, width = 200, height = 80)
+#' outline <- gc_rect(
+#'   width = gc_unit(20, "mm"),
+#'   height = gc_unit(10, "mm"), fill = NA, col = "black", lty = "dashed"
 #' )
 #' grid::is.grob(outline)
 #' @export
-l_rect <- function(
-  x = l_unit(0.5, "npc"),
-  y = l_unit(0.5, "npc"),
-  width = l_unit(1, "npc"),
-  height = l_unit(1, "npc"),
+gc_rect <- function(
+  x = gc_unit(0.5, "npc"),
+  y = gc_unit(0.5, "npc"),
+  width = gc_unit(1, "npc"),
+  height = gc_unit(1, "npc"),
   just = "centre",
   hjust = NULL,
   vjust = NULL,
@@ -267,14 +267,14 @@ l_rect <- function(
 #'
 #' @param label Text to display, including character vectors and mathematical
 #'   expressions such as `expression(alpha^2)`. Use `"\n"` for explicit lines.
-#' @inheritParams l_rect
+#' @inheritParams gc_rect
 #' @param rot Text rotation in degrees; for example, 90 gives vertical text.
 #' @param check.overlap Logical; if `TRUE`, grid may omit overlapping labels
 #'   within this grob at draw time, in input order. It does not reposition labels
-#'   or detect collisions with other lplot nodes.
+#'   or detect collisions with other ggcarto nodes.
 #' @param ... Uniquely named [grid::gpar()] parameters overriding `gp`, including
 #'   `col`, `fontsize`, `fontfamily`, `fontface`, `lineheight`, `alpha` and `cex`.
-#'   Use grid names, not [l_style()] names such as `color` or `font_size`.
+#'   Use grid names, not [gc_style()] names such as `color` or `font_size`.
 #'
 #' @details
 #' `fontsize` is numeric, in points. `fontface` accepts values such as `"plain"`,
@@ -287,34 +287,34 @@ l_rect <- function(
 #' layout width does not turn a long label into a paragraph.
 #'
 #' Internal coordinates use grid's bottom-left origin and default `npc` units.
-#' Internal `just` and the outer [l_place()] `anchor` are independent. For a
+#' Internal `just` and the outer [gc_place()] `anchor` are independent. For a
 #' fixed font size, place the grob directly. For responsive typography, wrap it
-#' in [l_get_element()] and use `style = list(font_size = "clamp(...)")`;
+#' in [gc_get_element()] and use `style = list(font_size = "clamp(...)")`;
 #' responsive length strings cannot be passed as grid `fontsize` values.
 #'
-#' @returns A native grid `text` grob. [l_measure()] can inspect its intrinsic
-#'   size, and [l_template()] can combine it with other graphical primitives.
-#' @seealso [l_unit()], [grid::textGrob()], [grid::gpar()], [l_get_element()], [l_style()]
+#' @returns A native grid `text` grob. [gc_measure()] can inspect its intrinsic
+#'   size, and [gc_template()] can combine it with other graphical primitives.
+#' @seealso [gc_unit()], [grid::textGrob()], [grid::gpar()], [gc_get_element()], [gc_style()]
 #' @examples
-#' note <- l_text("Source: survey\nLocal coordinates",
+#' note <- gc_text("Source: survey\nLocal coordinates",
 #'   x = 0, just = "left",
 #'   gp = list(fontsize = 9, col = "#50666C"), lineheight = 1.3
 #' )
-#' l_measure(note)
-#' labels <- l_text(c("West", "East"),
+#' gc_measure(note)
+#' labels <- gc_text(c("West", "East"),
 #'   x = c(0.2, 0.8),
 #'   fontsize = 10, fontface = c("plain", "bold")
 #' )
-#' l_render(l_viewport(list(
-#'   l_place(labels, left = 0, top = 0, width = 240, height = 60)
+#' gc_render(gc_viewport(list(
+#'   gc_place(labels, left = 0, top = 0, width = 240, height = 60)
 #' )), width = 240, height = 60)
-#' formula <- l_text(expression(alpha^2 + beta^2), fontsize = 12)
+#' formula <- gc_text(expression(alpha^2 + beta^2), fontsize = 12)
 #' grid::is.grob(formula)
 #' @export
-l_text <- function(
+gc_text <- function(
   label,
-  x = l_unit(0.5, "npc"),
-  y = l_unit(0.5, "npc"),
+  x = gc_unit(0.5, "npc"),
+  y = gc_unit(0.5, "npc"),
   just = "centre",
   hjust = NULL,
   vjust = NULL,

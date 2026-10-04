@@ -1,5 +1,5 @@
 test_that("logical lengths resolve without mutation", {
-  length <- l_length("50%")
+  length <- gc_length("50%")
   original <- length
   expect_equal(resolve_length(length, new_layout_context(800, 600)), 400)
   expect_equal(resolve_length(length, new_layout_context(200, 100)), 100)
@@ -25,7 +25,7 @@ test_that("expressions are parsed safely and resolved recursively", {
   context <- new_layout_context(800, 600)
   expect_equal(resolve_length("clamp(120px, 35%, 360px)", context), 280)
   expect_equal(resolve_length("min(90%, max(20px, 600px))", context), 600)
-  expect_equal(resolve_length(l_clamp("10px", "200%", "300px"), context), 300)
+  expect_equal(resolve_length(gc_clamp("10px", "200%", "300px"), context), 300)
   expect_true(is.na(resolve_length("auto", context)))
   expect_equal(resolve_length("auto", context, intrinsic = 42), 42)
   for (invalid in c(
@@ -38,12 +38,12 @@ test_that("expressions are parsed safely and resolved recursively", {
     "system('echo no')",
     "min(2px, max(3px, 4px)"
   )) {
-    expect_error(l_length(invalid), class = "lplot_error")
+    expect_error(gc_length(invalid), class = "ggcarto_error")
   }
   expect_error(
     resolve_length("clamp(10px, 2px, 1px)", context),
-    class = "lplot_error"
+    class = "ggcarto_error"
   )
-  expect_error(l_length(Inf), class = "lplot_error")
-  expect_error(new_layout_context(-1, 20), class = "lplot_error")
+  expect_error(gc_length(Inf), class = "ggcarto_error")
+  expect_error(new_layout_context(-1, 20), class = "ggcarto_error")
 })

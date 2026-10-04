@@ -15,14 +15,14 @@
 #' @param fill_secondary Secondary fill colour for split or inset shapes.
 #' @param lwd Positive line width in grid units (multiples of 1/96 inch).
 #' @param fontsize Positive label size in points, independent of layout size.
-#' @param fontface,fontfamily Label font face and family, as in [l_text()].
+#' @param fontface,fontfamily Label font face and family, as in [gc_text()].
 #' @param label_x,label_y Label position as finite numeric `npc` coordinates or
 #'   scalar grid units. The label is centered at this position before rotation.
 #' @param arrow Native [grid::arrow()] specification for the `"minimal"`
 #'   design; `NULL` removes its tip. Controls tip length, angle, ends and type.
 #' @param children Optional list or [grid::gList()] of grobs replacing the
 #'   preset body. The label, graphical parameters and rotation still apply.
-#' @param gp Additional group graphical parameters, as in [l_template()].
+#' @param gp Additional group graphical parameters, as in [gc_template()].
 #'   Explicit `col` and `lwd` take precedence. Preset fills are controlled by
 #'   `fill` and `fill_secondary`, not `gp$fill`. Custom children retain their
 #'   own explicit graphical parameters.
@@ -33,8 +33,8 @@
 #'
 #' @details
 #' The return value is graphical content, not a scene node. Supply explicit
-#' dimensions with [l_place()], or wrap it with
-#' `l_get_element(arrow, "north_arrow", width = 40, height = 68)`.
+#' dimensions with [gc_place()], or wrap it with
+#' `gc_get_element(arrow, "north_arrow", width = 40, height = 68)`.
 #' Preset geometry uses normalized parent coordinates. A box near 40 by 68
 #' logical pixels is a useful starting point; changing its proportions changes
 #' the symbol proportions. Circles use grid's isotropic `snpc` radius.
@@ -43,7 +43,7 @@
 #' not measure bounds, shrink content or override parent clipping.
 #'
 #' This function does not infer a CRS or calculate true or magnetic north.
-#' Supply `angle` from [l_north_angle()] for your map and reference location when
+#' Supply `angle` from [gc_north_angle()] for your map and reference location when
 #' geographic orientation is needed. Additional rotation in `vp` is cumulative.
 #' Custom children should point up before rotation and use the same local
 #' coordinate system. They can contain arbitrary grid geometry, including
@@ -51,24 +51,24 @@
 #' or modify the input grobs or graphical parameters.
 #'
 #' @returns A native grid `gTree`, suitable for [grid::grid.draw()],
-#'   [l_template()], [l_get_element()], [l_place()] and [l_save()].
-#' @seealso [l_north_angle()], [l_template()], [l_text()], [l_unit()], [grid::arrow()]
+#'   [gc_template()], [gc_get_element()], [gc_place()] and [gc_save()].
+#' @seealso [gc_north_angle()], [gc_template()], [gc_text()], [gc_unit()], [grid::arrow()]
 #' @examples
-#' north <- l_north_arrow("classic", fill = "#197C80", angle = 12)
-#' scene <- l_viewport(list(
-#'   l_place(north, right = 12, top = 12, width = 40, height = 68)
+#' north <- gc_north_arrow("classic", fill = "#197C80", angle = 12)
+#' scene <- gc_viewport(list(
+#'   gc_place(north, right = 12, top = 12, width = 40, height = 68)
 #' ), width = 200, height = 140)
-#' l_render(scene)
-#' l_north_arrow("minimal", arrow = grid::arrow(
-#'   length = l_unit(2, "mm"), type = "open"
+#' gc_render(scene)
+#' gc_north_arrow("minimal", arrow = grid::arrow(
+#'   length = gc_unit(2, "mm"), type = "open"
 #' ), label_gp = list(col = "#197C80"))
-#' custom <- l_north_arrow(children = list(grid::polygonGrob(
+#' custom <- gc_north_arrow(children = list(grid::polygonGrob(
 #'   x = c(0.2, 0.5, 0.8, 0.5), y = c(0.15, 0.78, 0.15, 0.3),
 #'   gp = grid::gpar(fill = "#197C80")
 #' )))
 #' grid::is.grob(custom)
 #' @export
-l_north_arrow <- function(
+gc_north_arrow <- function(
   design = c(
     "classic",
     "ornate",
@@ -94,14 +94,14 @@ l_north_arrow <- function(
   fontfamily = "",
   label_x = 0.5,
   label_y = 0.92,
-  arrow = grid::arrow(length = l_unit(3, "mm"), type = "closed"),
+  arrow = grid::arrow(length = gc_unit(3, "mm"), type = "closed"),
   children = NULL,
   gp = NULL,
   label_gp = NULL,
   name = NULL,
   vp = NULL
 ) {
-  designs <- eval(formals(l_north_arrow)$design)
+  designs <- eval(formals(gc_north_arrow)$design)
   if (missing(design)) {
     design <- designs[[1]]
   }
@@ -111,7 +111,7 @@ l_north_arrow <- function(
       is.na(design) ||
       !design %in% designs
   ) {
-    l_abort(
+    gc_abort(
       paste0("design must be one of: ", paste(designs, collapse = ", "), "."),
       property = "design"
     )
@@ -123,7 +123,7 @@ l_north_arrow <- function(
     !is.null(label) &&
       (!is.character(label) || length(label) != 1L || is.na(label))
   ) {
-    l_abort(
+    gc_abort(
       "label must be NULL or a single character string.",
       property = "label"
     )
@@ -132,7 +132,7 @@ l_north_arrow <- function(
     value <- get(property)
     if (grid::is.unit(value)) {
       if (length(value) != 1L || !is.finite(as.numeric(value))) {
-        l_abort(
+        gc_abort(
           "Label coordinates must be finite scalar grid units.",
           property = property
         )
@@ -155,14 +155,14 @@ l_north_arrow <- function(
       )
     }
     if (!valid) {
-      l_abort(
+      gc_abort(
         paste0(property, " must be a single grid colour or NA."),
         property = property
       )
     }
   }
   if (!is.null(arrow) && !inherits(arrow, "arrow")) {
-    l_abort(
+    gc_abort(
       "arrow must be NULL or a grid::arrow() specification.",
       property = "arrow"
     )
@@ -175,12 +175,12 @@ l_north_arrow <- function(
   if (is.null(children)) {
     children <- north_arrow_body(design, fill, fill_secondary, arrow)
   }
-  body <- l_template(children = children, name = "body")
+  body <- gc_template(children = children, name = "body")
   parts <- list(body)
   if (!is.null(label) && nzchar(label)) {
     parts <- c(
       parts,
-      list(l_text(
+      list(gc_text(
         label,
         x = label_x,
         y = label_y,
@@ -189,8 +189,8 @@ l_north_arrow <- function(
       ))
     )
   }
-  l_template(
-    l_template(
+  gc_template(
+    gc_template(
       children = parts,
       vp = grid::viewport(angle = angle),
       name = "symbol"
@@ -210,7 +210,7 @@ north_arrow_body <- function(design, fill, fill_secondary, arrow) {
     grid::circleGrob(
       x = 0.5,
       y = y,
-      r = l_unit(radius, "snpc"),
+      r = gc_unit(radius, "snpc"),
       gp = grid::gpar(fill = NA),
       name = name
     )

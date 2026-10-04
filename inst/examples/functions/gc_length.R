@@ -1,2 +1,2 @@
-result <- lplot::l_length("25%")
+result <- ggcarto::gc_length("25%")
 print(result)

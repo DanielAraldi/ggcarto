@@ -1,6 +1,6 @@
 load_map_examples <- function() {
   environment <- new.env(parent = globalenv())
-  root <- system.file("examples", package = "lplot")
+  root <- system.file("examples", package = "ggcarto")
   for (file in c(
     "simple.R",
     "template.R",
@@ -19,11 +19,11 @@ test_that("simple maps work without utilities and extract only title and legend"
   skip_if_not_installed("sf")
   examples <- new.env(parent = baseenv())
   sys.source(
-    system.file("examples", "simple.R", package = "lplot"),
+    system.file("examples", "simple.R", package = "ggcarto"),
     envir = examples
   )
   expect_identical(ls(examples), "map_simple_scene")
-  expect_s3_class(examples$map_simple_scene(), "l_viewport")
+  expect_s3_class(examples$map_simple_scene(), "gc_viewport")
   counties <- sf::st_read(
     system.file("shape/nc.shp", package = "sf"),
     quiet = TRUE
@@ -66,7 +66,7 @@ test_that("simple maps let ggplot2 preserve coordinates on different devices", {
     grDevices::pdf(NULL, width = size[[1]] / 96, height = size[[2]] / 96)
     tryCatch(
       {
-        expect_no_warning(layout <- l_render(scene))
+        expect_no_warning(layout <- gc_render(scene))
         children <- layout$root$children
         expect_lte(
           children[[1]]$box[["y"]] + children[[1]]$box[["height"]],
@@ -126,13 +126,13 @@ test_that("complex maps align geographic overlays and regional indicators", {
   examples <- load_map_examples()
   scene <- examples$map_complex_scene()
   frame <- scene$children[[2]]$children[[1]]$children[[1]]
-  expect_s3_class(frame, "l_frame")
+  expect_s3_class(frame, "gc_frame")
   expect_equal(frame$map_context$extent, scene$metadata$focus)
   overlays <- frame$children[[1]]$children
-  expect_s3_class(overlays[[3]], "l_inset")
+  expect_s3_class(overlays[[3]], "gc_inset")
   expect_equal(overlays[[3]]$reference_context$extent, scene$metadata$focus)
   expect_equal(sf::st_bbox(overlays[[3]]$footprint), scene$metadata$focus)
-  expect_s3_class(overlays[[2]], "l_scale_bar")
+  expect_s3_class(overlays[[2]], "gc_scale_bar")
   expect_true(is.finite(overlays[[4]]$metadata$angle))
   counties <- examples$map_counties()
   selected <- lengths(sf::st_intersects(
@@ -174,7 +174,7 @@ test_that("new map compositions render without overlaps in their layout bands", 
       grDevices::pdf(NULL, width = size[[1]] / 96, height = size[[2]] / 96)
       tryCatch(
         {
-          expect_no_warning(layout <- l_render(scene))
+          expect_no_warning(layout <- gc_render(scene))
           children <- layout$root$children
           expect_lte(
             children[[1]]$box[["y"]] + children[[1]]$box[["height"]],
@@ -220,10 +220,10 @@ test_that("map examples resolve and render with a metrically aligned scale", {
   for (name in c("map_scale_scene", "map_inset_scene", "map_join_scene")) {
     scene <- examples[[name]]()
     for (size in list(c(800, 600), c(1200, 700))) {
-      expect_no_warning(layout <- l_resolve(scene, size[[1]], size[[2]]))
+      expect_no_warning(layout <- gc_resolve(scene, size[[1]], size[[2]]))
       grDevices::pdf(NULL, width = size[[1]] / 96, height = size[[2]] / 96)
       tryCatch(
-        expect_no_warning(l_render(scene)),
+        expect_no_warning(gc_render(scene)),
         finally = grDevices::dev.off()
       )
       sheets <- if (name == "map_join_scene") {
@@ -233,10 +233,10 @@ test_that("map examples resolve and render with a metrically aligned scale", {
       }
       for (sheet in sheets) {
         frame <- sheet$children[[3]]$children[[1]]
-        expect_s3_class(frame$node, "l_frame")
+        expect_s3_class(frame$node, "gc_frame")
         panel <- frame$children[[1]]
         scale <- panel$children[[2]]
-        expect_s3_class(scale$node, "l_scale_bar")
+        expect_s3_class(scale$node, "gc_scale_bar")
         expect_equal(
           scale$scale_bar$distance_m,
           if (name == "map_inset_scene") 50000 else 200000
@@ -265,7 +265,7 @@ test_that("joined map credits fit compact plotting devices without overflow", {
     grDevices::pdf(NULL, width = size[[1]] / 96, height = size[[2]] / 96)
     tryCatch(
       {
-        expect_no_warning(layout <- l_render(scene))
+        expect_no_warning(layout <- gc_render(scene))
         for (sheet in layout$root$children) {
           credits <- sheet$children[[5]]
           legend <- sheet$children[[4]]
@@ -302,12 +302,12 @@ test_that("locator highlights the exact projected extent and north is georeferen
   panel <- frame$children[[1]]
   locator <- panel$children[[3]]
   arrow <- panel$children[[4]]
-  expect_s3_class(locator, "l_inset")
+  expect_s3_class(locator, "gc_inset")
   expect_equal(locator$reference_context$extent, extent)
   expect_equal(sf::st_bbox(locator$footprint), extent)
   expect_length(locator$map_plot$layers, 1)
-  expect_equal(locator$left, l_length(10))
-  expect_equal(locator$top, l_length(10))
+  expect_equal(locator$left, gc_length(10))
+  expect_equal(locator$top, gc_length(10))
   panel_source <- frame$map_plot
   ranges <- ggplot2::ggplot_build(panel_source)$layout$panel_params[[1]]
   expect_equal(
@@ -343,7 +343,7 @@ test_that("joined maps use the same spatial and colour scales without flattening
   expect_equal(limits[[1]][[1]], 0)
   expect_equal(limits[[1]][[2]], 40000)
   original <- scene$children[[2]]$children
-  moved <- l_place(scene$children[[2]], left = "10%", top = "50%")
+  moved <- gc_place(scene$children[[2]], left = "10%", top = "50%")
   expect_identical(moved$children, original)
 })
 
@@ -366,7 +366,7 @@ test_that("the four progressive map examples have stable visual output", {
     }
     vdiffr::expect_doppelganger(
       name,
-      l_as_grob(examples[[name]]()),
+      gc_as_grob(examples[[name]]()),
       writer = writer
     )
   }
@@ -385,7 +385,7 @@ test_that("the three map examples have stable visual output", {
   for (name in c("map_scale_scene", "map_inset_scene", "map_join_scene")) {
     vdiffr::expect_doppelganger(
       name,
-      l_as_grob(examples[[name]]()),
+      gc_as_grob(examples[[name]]()),
       writer = writer
     )
   }

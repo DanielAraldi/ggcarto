@@ -22,7 +22,7 @@ main$coordinates <- ggplot2::coord_sf(
   datum = NA
 )
 
-result <- lplot::l_inset(
+result <- ggcarto::gc_inset(
   overview,
   reference = main,
   mode = "locator",
@@ -31,9 +31,9 @@ result <- lplot::l_inset(
   border = list(color = "#718A90", width = 1)
 )
 
-lplot::l_render(lplot::l_frame(
+ggcarto::gc_render(ggcarto::gc_frame(
   main,
-  overlays = list(lplot::l_place(result, left = 10, top = 10)),
+  overlays = list(ggcarto::gc_place(result, left = 10, top = 10)),
   padding = 16,
   background = "white"
 ))

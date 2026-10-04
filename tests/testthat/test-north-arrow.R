@@ -35,15 +35,15 @@ north_arrow_gallery <- function(styled = FALSE) {
     children <- c(
       children,
       list(
-        l_place(
-          do.call(l_north_arrow, c(list(design = design), arguments)),
+        gc_place(
+          do.call(gc_north_arrow, c(list(design = design), arguments)),
           left = column * 150 + 45,
           top = row * 170 + 12,
           width = 60,
           height = 102
         ),
-        l_place(
-          l_text(design, fontsize = 10),
+        gc_place(
+          gc_text(design, fontsize = 10),
           left = column * 150,
           top = row * 170 + 126,
           width = 150,
@@ -52,16 +52,16 @@ north_arrow_gallery <- function(styled = FALSE) {
       )
     )
   }
-  l_viewport(children, width = 600, height = 510, background = "white")
+  gc_viewport(children, width = 600, height = 510, background = "white")
 }
 
 test_that("all twelve north arrow presets are lazy native grobs", {
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
-  expect_identical(eval(formals(l_north_arrow)$design), north_arrow_designs)
+  expect_identical(eval(formals(gc_north_arrow)$design), north_arrow_designs)
   bodies <- list()
   for (design in north_arrow_designs) {
-    arrow <- l_north_arrow(design, name = "north")
+    arrow <- gc_north_arrow(design, name = "north")
     expect_s3_class(arrow, "gTree")
     expect_identical(arrow$name, "north")
     symbol <- arrow$children$symbol
@@ -78,8 +78,8 @@ test_that("all twelve north arrow presets are lazy native grobs", {
   }
   expect_length(unique(bodies), 12)
   expect_identical(
-    l_north_arrow()$children$symbol$children,
-    l_north_arrow("classic")$children$symbol$children
+    gc_north_arrow()$children$symbol$children,
+    gc_north_arrow("classic")$children$symbol$children
   )
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
@@ -92,7 +92,7 @@ test_that("all presets support styling and independently positioned rotated labe
   original_label <- label_style
   viewport <- grid::viewport(x = 0.4, angle = 5)
   for (design in north_arrow_designs) {
-    arrow <- l_north_arrow(
+    arrow <- gc_north_arrow(
       design,
       angle = -30,
       label = "North",
@@ -103,7 +103,7 @@ test_that("all presets support styling and independently positioned rotated labe
       fontsize = 13,
       fontface = "plain",
       fontfamily = "serif",
-      label_x = l_unit(12, "mm"),
+      label_x = gc_unit(12, "mm"),
       label_y = 0.88,
       gp = group,
       label_gp = label_style,
@@ -118,8 +118,8 @@ test_that("all presets support styling and independently positioned rotated labe
     expect_equal(symbol$vp$angle, -30)
     label <- symbol$children$label
     expect_identical(label$label, "North")
-    expect_identical(label$x, l_unit(12, "mm"))
-    expect_identical(label$y, l_unit(0.88, "npc"))
+    expect_identical(label$x, gc_unit(12, "mm"))
+    expect_identical(label$y, gc_unit(0.88, "npc"))
     expect_equal(label$gp$fontsize, 15)
     expect_equal(label$gp$col, "blue")
     expect_equal(label$gp$fontfamily, "serif")
@@ -137,7 +137,7 @@ test_that("all presets support styling and independently positioned rotated labe
     )
     for (hidden in list(NULL, "")) {
       expect_identical(
-        l_north_arrow(design, label = hidden)$children$symbol$childrenOrder,
+        gc_north_arrow(design, label = hidden)$children$symbol$childrenOrder,
         "body"
       )
     }
@@ -148,18 +148,18 @@ test_that("all presets support styling and independently positioned rotated labe
 
 test_that("minimal arrows accept the full native arrow specification", {
   tip <- grid::arrow(
-    length = l_unit(5, "mm"),
+    length = gc_unit(5, "mm"),
     angle = 20,
     ends = "both",
     type = "open"
   )
-  arrow <- l_north_arrow("minimal", arrow = tip)
+  arrow <- gc_north_arrow("minimal", arrow = tip)
   shaft <- arrow$children$symbol$children$body$children$shaft
   expect_identical(shaft$arrow, tip)
   expect_equal(as.numeric(shaft$x0), 0.5)
   expect_equal(as.numeric(shaft$y1), 0.72)
   expect_null(
-    l_north_arrow(
+    gc_north_arrow(
       "minimal",
       arrow = NULL
     )$children$symbol$children$body$children$shaft$arrow
@@ -167,7 +167,7 @@ test_that("minimal arrows accept the full native arrow specification", {
 })
 
 test_that("pennant uses a right triangular flag without an arrowhead", {
-  symbol <- l_north_arrow("pennant", angle = 25, fill = "red")$children$symbol
+  symbol <- gc_north_arrow("pennant", angle = 25, fill = "red")$children$symbol
   body <- symbol$children$body
   expect_identical(body$childrenOrder, c("mast", "flag", "base"))
   flag <- body$children$flag
@@ -203,16 +203,16 @@ test_that("custom bodies retain their geometry, styles and viewports", {
   )
   original <- child
   for (children in list(list(child), grid::gList(child))) {
-    arrow <- l_north_arrow(children = children, angle = 45, col = "black")
+    arrow <- gc_north_arrow(children = children, angle = 45, col = "black")
     expect_identical(arrow$children$symbol$children$body$children$custom, child)
     expect_equal(arrow$children$symbol$vp$angle, 45)
   }
   expect_identical(child, original)
   expect_length(
-    l_north_arrow(children = list())$children$symbol$children$body$children,
+    gc_north_arrow(children = list())$children$symbol$children$body$children,
     0
   )
-  expect_no_error(l_north_arrow(
+  expect_no_error(gc_north_arrow(
     col = NA,
     fill = NA,
     fill_secondary = "transparent"
@@ -228,26 +228,26 @@ test_that("invalid north arrow inputs fail at construction", {
     1,
     c("classic", "bold")
   )) {
-    expect_error(l_north_arrow(design), class = "lplot_error")
+    expect_error(gc_north_arrow(design), class = "ggcarto_error")
   }
   for (property in c("angle", "lwd", "fontsize", "label_x", "label_y")) {
     for (value in list(NA_real_, Inf, "bad", numeric(), c(1, 2))) {
       expect_error(
-        do.call(l_north_arrow, stats::setNames(list(value), property)),
-        class = "lplot_error"
+        do.call(gc_north_arrow, stats::setNames(list(value), property)),
+        class = "ggcarto_error"
       )
     }
   }
   for (property in c("lwd", "fontsize")) {
     for (value in c(0, -1)) {
       expect_error(
-        do.call(l_north_arrow, stats::setNames(list(value), property)),
-        class = "lplot_error"
+        do.call(gc_north_arrow, stats::setNames(list(value), property)),
+        class = "ggcarto_error"
       )
     }
   }
   for (label in list(NA_character_, 1, c("N", "S"))) {
-    expect_error(l_north_arrow(label = label), class = "lplot_error")
+    expect_error(gc_north_arrow(label = label), class = "ggcarto_error")
   }
   for (property in c("col", "fill", "fill_secondary")) {
     for (colour in list(
@@ -257,29 +257,29 @@ test_that("invalid north arrow inputs fail at construction", {
       list("red")
     )) {
       expect_error(
-        do.call(l_north_arrow, stats::setNames(list(colour), property)),
-        class = "lplot_error"
+        do.call(gc_north_arrow, stats::setNames(list(colour), property)),
+        class = "ggcarto_error"
       )
     }
   }
   expect_error(
-    l_north_arrow(label_x = l_unit(c(1, 2), "mm")),
-    class = "lplot_error"
+    gc_north_arrow(label_x = gc_unit(c(1, 2), "mm")),
+    class = "ggcarto_error"
   )
   expect_error(
-    l_north_arrow(label_y = l_unit(NA_real_, "npc")),
-    class = "lplot_error"
+    gc_north_arrow(label_y = gc_unit(NA_real_, "npc")),
+    class = "ggcarto_error"
   )
-  expect_error(l_north_arrow(arrow = TRUE), class = "lplot_error")
+  expect_error(gc_north_arrow(arrow = TRUE), class = "ggcarto_error")
   expect_error(
-    l_north_arrow(children = list(NULL)),
-    class = "lplot_unsupported_source"
+    gc_north_arrow(children = list(NULL)),
+    class = "ggcarto_unsupported_source"
   )
-  expect_error(l_north_arrow(children = 1), class = "lplot_error")
-  expect_error(l_north_arrow(gp = list("red")), class = "lplot_error")
+  expect_error(gc_north_arrow(children = 1), class = "ggcarto_error")
+  expect_error(gc_north_arrow(gp = list("red")), class = "ggcarto_error")
   expect_error(
-    l_north_arrow(label_gp = list(col = "red", col = "blue")),
-    class = "lplot_error"
+    gc_north_arrow(label_gp = list(col = "red", col = "blue")),
+    class = "ggcarto_error"
   )
 })
 
@@ -287,12 +287,12 @@ test_that("every preset integrates with extraction and explicit layout sizes", {
   grDevices::pdf(NULL, width = 6, height = 4)
   on.exit(grDevices::dev.off(), add = TRUE)
   for (design in north_arrow_designs) {
-    arrow <- l_north_arrow(design)
+    arrow <- gc_north_arrow(design)
     original <- arrow
-    element <- l_get_element(arrow, "north_arrow", width = 40, height = 68)
+    element <- gc_get_element(arrow, "north_arrow", width = 40, height = 68)
     expect_identical(element$content, arrow)
-    scene <- l_viewport(list(l_place(element, right = 8, top = 8)), padding = 4)
-    expect_no_warning(layout <- l_render(scene))
+    scene <- gc_viewport(list(gc_place(element, right = 8, top = 8)), padding = 4)
+    expect_no_warning(layout <- gc_render(scene))
     expect_equal(
       layout$root$children[[1]]$box[c("width", "height")],
       c(width = 40, height = 68)
@@ -310,13 +310,13 @@ test_that("all presets have distinct nonblank raster output at different sizes",
   capture <- function(arrow, width, height) {
     image <- ragg::agg_capture(width = width, height = height, res = 96)
     on.exit(grDevices::dev.off())
-    l_render(l_place(arrow, left = 8, right = 8, top = 8, bottom = 8))
+    gc_render(gc_place(arrow, left = 8, right = 8, top = 8, bottom = 8))
     image()
   }
   for (size in list(c(56, 84), c(96, 152))) {
     images <- lapply(north_arrow_designs, function(design) {
       image <- capture(
-        l_north_arrow(design, label = NULL),
+        gc_north_arrow(design, label = NULL),
         size[[1]],
         size[[2]]
       )
@@ -325,13 +325,13 @@ test_that("all presets have distinct nonblank raster output at different sizes",
         20
       )
       rotated <- capture(
-        l_north_arrow(design, label = NULL, angle = 25),
+        gc_north_arrow(design, label = NULL, angle = 25),
         size[[1]],
         size[[2]]
       )
       expect_false(identical(image, rotated), info = design)
       recoloured <- capture(
-        l_north_arrow(design, label = NULL, col = "red", fill = "red"),
+        gc_north_arrow(design, label = NULL, col = "red", fill = "red"),
         size[[1]],
         size[[2]]
       )
@@ -340,16 +340,16 @@ test_that("all presets have distinct nonblank raster output at different sizes",
     })
     expect_length(unique(images), 12)
   }
-  native <- l_template(
+  native <- gc_template(
     grid::segmentsGrob(
       x0 = 0.5,
       x1 = 0.5,
       y0 = 0.14,
       y1 = 0.72,
-      arrow = grid::arrow(length = l_unit(3, "mm"), type = "closed"),
+      arrow = grid::arrow(length = gc_unit(3, "mm"), type = "closed"),
       gp = grid::gpar(col = "#203C43", fill = "#203C43", lwd = 1.5)
     ),
-    l_text(
+    gc_text(
       "N",
       x = 0.5,
       y = 0.92,
@@ -360,7 +360,7 @@ test_that("all presets have distinct nonblank raster output at different sizes",
     vp = grid::viewport(angle = 17)
   )
   expect_identical(
-    capture(l_north_arrow("minimal", angle = 17), 80, 120),
+    capture(gc_north_arrow("minimal", angle = 17), 80, 120),
     capture(native, 80, 120)
   )
   expect_identical(grDevices::dev.cur(), caller)
@@ -378,7 +378,7 @@ test_that("north arrow galleries have stable default and customized output", {
   for (styled in c(FALSE, TRUE)) {
     vdiffr::expect_doppelganger(
       if (styled) "north-arrows-customized" else "north-arrows-default",
-      l_as_grob(north_arrow_gallery(styled)),
+      gc_as_grob(north_arrow_gallery(styled)),
       writer = writer
     )
   }

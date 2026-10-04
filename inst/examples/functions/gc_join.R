@@ -1,17 +1,17 @@
-first <- lplot::l_rect(
-  width = lplot::l_unit(55, "mm"),
-  height = lplot::l_unit(35, "mm"),
+first <- ggcarto::gc_rect(
+  width = ggcarto::gc_unit(55, "mm"),
+  height = ggcarto::gc_unit(35, "mm"),
   fill = "#95CEC0",
   col = NA
 )
-second <- lplot::l_rect(
-  width = lplot::l_unit(55, "mm"),
-  height = lplot::l_unit(35, "mm"),
+second <- ggcarto::gc_rect(
+  width = ggcarto::gc_unit(55, "mm"),
+  height = ggcarto::gc_unit(35, "mm"),
   fill = "#194E70",
   col = NA
 )
 
-result <- lplot::l_join(
+result <- ggcarto::gc_join(
   list(first, second),
   flow = "row",
   gap = 16,
@@ -19,4 +19,4 @@ result <- lplot::l_join(
   background = "white"
 )
 
-lplot::l_render(result)
+ggcarto::gc_render(result)

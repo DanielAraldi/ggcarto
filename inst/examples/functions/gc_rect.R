@@ -1,4 +1,4 @@
-result <- lplot::l_rect(
+result <- ggcarto::gc_rect(
   width = 0.6,
   height = 0.3,
   fill = "#95CEC0",
@@ -6,4 +6,4 @@ result <- lplot::l_rect(
   lwd = 2
 )
 
-lplot::l_render(lplot::l_place(result, width = "100%", height = "100%"))
+ggcarto::gc_render(ggcarto::gc_place(result, width = "100%", height = "100%"))

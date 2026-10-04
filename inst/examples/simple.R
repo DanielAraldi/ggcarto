@@ -28,21 +28,21 @@ map_simple_scene <- function(
       legend.position = "bottom"
     )
 
-  title <- lplot::l_get_element(plot, "title")
-  legend <- lplot::l_get_element(plot, "legend")
+  title <- ggcarto::gc_get_element(plot, "title")
+  legend <- ggcarto::gc_get_element(plot, "legend")
   map <- plot +
     ggplot2::labs(title = NULL) +
     ggplot2::theme(legend.position = "none")
 
-  lplot::l_viewport(
+  ggcarto::gc_viewport(
     list(
-      lplot::l_place(
+      ggcarto::gc_place(
         title,
         left = 0,
         top = 0,
         id = "title"
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         map,
         left = 0,
         right = 0,
@@ -50,7 +50,7 @@ map_simple_scene <- function(
         bottom = 64,
         id = "map"
       ),
-      lplot::l_place(
+      ggcarto::gc_place(
         legend,
         x = "50%",
         bottom = 0,
