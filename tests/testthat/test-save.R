@@ -217,6 +217,20 @@ test_that("export validation rejects unsupported formats and ambiguous paths", {
   expect_error(l_save(1), class = "lplot_unsupported_source")
 })
 
+test_that("export requires an explicit destination directory", {
+  working <- tempfile()
+  dir.create(working)
+  on.exit(unlink(working, recursive = TRUE))
+  original <- setwd(working)
+  on.exit(setwd(original), add = TRUE, after = FALSE)
+  condition <- expect_error(
+    l_save(export_scene(), "png", filename = "map"),
+    class = "lplot_error"
+  )
+  expect_identical(condition$property, "dir")
+  expect_length(list.files(working, all.files = TRUE, no.. = TRUE), 0L)
+})
+
 test_that("an export cannot replace a directory even with overwrite enabled", {
   skip_if_not_installed("ragg")
   directory <- tempfile()

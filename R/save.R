@@ -9,7 +9,8 @@
 #' @param type Single case-insensitive format: `"jpg"`, `"jpeg"`, `"png"`,
 #'   `"svg"` or `"webp"`. JPG and JPEG use the same encoder.
 #' @param dir Destination directory, created recursively when necessary.
-#'   Defaults to the working directory; do not include the filename here.
+#'   Required: there is no default, so nothing is written unless the caller
+#'   chooses a location, such as `tempdir()`. Do not include the filename here.
 #' @param filename Basename without directory components. The selected extension
 #'   is appended if absent. A supplied extension must match `type`, with JPG and
 #'   JPEG treated as interchangeable.
@@ -83,7 +84,7 @@
 l_save <- function(
   plot,
   type = "png",
-  dir = ".",
+  dir,
   filename = "plot",
   width = 800,
   height = 600,
@@ -93,6 +94,12 @@ l_save <- function(
   overwrite = FALSE
 ) {
   node <- as_l_node(plot)
+  if (missing(dir)) {
+    l_abort(
+      "dir must be supplied; for example, use dir = tempdir().",
+      property = "dir"
+    )
+  }
   type <- export_type(type)
   filename <- export_filename(type, dir, filename)
   settings <- export_settings(

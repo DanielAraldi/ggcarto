@@ -7,7 +7,7 @@
 l_save(
   plot,
   type = "png",
-  dir = ".",
+  dir,
   filename = "plot",
   width = 800,
   height = 600,
@@ -25,7 +25,8 @@ A filename, screenshot or resolved \code{l_layout} is not an accepted source.}
 \code{"svg"} or \code{"webp"}. JPG and JPEG use the same encoder.}
 
 \item{dir}{Destination directory, created recursively when necessary.
-Defaults to the working directory; do not include the filename here.}
+Required: there is no default, so nothing is written unless the caller
+chooses a location, such as \code{tempdir()}. Do not include the filename here.}
 
 \item{filename}{Basename without directory components. The selected extension
 is appended if absent. A supplied extension must match \code{type}, with JPG and

@@ -17,9 +17,9 @@ at different sizes without rebuilding its placement rules.
 - **Optional features:** sf for cartographic frames, scales, insets and true-north
   calculations; ragg for PNG/JPEG, svglite for SVG, and ragg plus webp for WebP.
   Graphical north arrows and compass roses do not require sf.
-- **Source and examples:** implementation in [R/](R/), generated help in
-  [man/](man/), runnable scripts in [inst/examples/](inst/examples/) and tests in
-  [tests/testthat/](tests/testthat/).
+- **Source and examples:** implementation in [R/](https://github.com/DanielAraldi/lplot/tree/main/R), generated help in
+  [man/](https://github.com/DanielAraldi/lplot/tree/main/man), runnable scripts in [inst/examples/](https://github.com/DanielAraldi/lplot/tree/main/inst/examples) and tests in
+  [tests/testthat/](https://github.com/DanielAraldi/lplot/tree/main/tests/testthat).
 
 Start with [Install and Try](#install-and-try) and [Core Workflow](#core-workflow).
 The [function reference](#independent-function-examples) covers all 25 exported
@@ -64,7 +64,7 @@ grid::grid.draw(scene)
 l_resolve(scene, width = 1024, height = 768)$root$children[[2]]$box
 ```
 
-An executable terrain composition is in [inst/examples/terrain.R](inst/examples/terrain.R):
+An executable terrain composition is in [inst/examples/terrain.R](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/terrain.R):
 
 ```r
 source(system.file("examples", "terrain.R", package = "lplot"))
@@ -224,7 +224,7 @@ l_render(scene)
 ## Independent Function Examples
 
 There is one standalone script for each exported function in
-[inst/examples/functions/](inst/examples/functions/). Each focuses on its named
+[inst/examples/functions/](https://github.com/DanielAraldi/lplot/tree/main/inst/examples/functions). Each focuses on its named
 function, using `l_text()` and `l_rect()` to prepare content, `l_unit()` for native
 grid dimensions and `l_render()` to draw where applicable. Every script supplies
 its own inputs without shared utilities, other example scripts or downloads.
@@ -260,31 +260,31 @@ object; a **node** adds lplot layout rules; a **layout** contains resolved boxes
 
 | Function / Example                                                   | Main Arguments                                                                             | Returns                                                                  |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| [l_unit()](inst/examples/functions/l_unit.R)                         | `x`, grid `units`, optional `data`                                                         | Native grid `unit`; see [Native Grid Units](#native-grid-units).         |
-| [l_length()](inst/examples/functions/l_length.R)                     | `value`, `unit = "px"` for numbers                                                         | Unresolved `l_length`, such as `"25%"` or `"2cm"`.                       |
-| [l_clamp()](inst/examples/functions/l_clamp.R)                       | `minimum`, `preferred`, `maximum`                                                          | Bounded `l_length` expression.                                           |
-| [l_text()](inst/examples/functions/l_text.R)                         | `label`, `x`, `y`, `gp`, typography in `...`                                               | Native text grob.                                                        |
-| [l_rect()](inst/examples/functions/l_rect.R)                         | `x`, `y`, `width`, `height`, `gp`, fill/outline in `...`                                   | Native rectangle grob.                                                   |
-| [l_template()](inst/examples/functions/l_template.R)                 | Grobs in `...` or `children`, shared `gp`, `vp`                                            | Native `gTree` grouping reusable content.                                |
-| [l_north_rose()](inst/examples/functions/l_north_rose.R)             | `design`, `angle`, `points`, `labels`, colours and typography                              | Compass-rose `gTree`; `points` applies to `stellar`.                     |
-| [l_north_arrow()](inst/examples/functions/l_north_arrow.R)           | `design`, `angle`, `label`, colours, optional `children`                                   | North-arrow `gTree`.                                                     |
-| [l_north_angle()](inst/examples/functions/l_north_angle.R)           | `map`, optional `at`, `step = 0.0001`                                                      | Local true-north angle in degrees; requires sf.                          |
-| [l_frame()](inst/examples/functions/l_frame.R)                       | coord_sf `plot`, `overlays`, `width`, `height`                                             | `l_frame` node retaining extent and CRS; requires sf.                    |
-| [l_scale_bar()](inst/examples/functions/l_scale_bar.R)               | `distance = NULL` for automatic distance, `unit`, `segments`, `subdivisions`, `design`     | `l_scale_bar` node for frame overlays; requires sf when resolved.        |
-| [l_inset()](inst/examples/functions/l_inset.R)                       | `plot`, main-map `reference`, `mode`, highlight style, `overlays`                          | `l_inset` frame in `"locator"` or `"detail"` mode; requires sf.          |
-| [l_style()](inst/examples/functions/l_style.R)                       | `object`, named style overrides in `...`                                                   | Styled node; source unchanged.                                           |
-| [l_registry()](inst/examples/functions/l_registry.R)                 | No arguments                                                                               | `l_registry` containing built-in extraction adapters.                    |
-| [l_register_element()](inst/examples/functions/l_register_element.R) | `type`, `extract`, optional `can_extract`, `measure`, `style`, `registry`                  | Updated registry; retain and pass it explicitly.                         |
-| [l_get_element()](inst/examples/functions/l_get_element.R)           | `plot`, `type`, dimensions, `style`, `which`, `missing`, `registry`                        | `l_element`, or `NULL` with `missing = "null"` when absent.              |
-| [l_without()](inst/examples/functions/l_without.R)                   | ggplot `plot`, component names in `type`                                                   | Copy of the ggplot with those components hidden.                         |
-| [l_place()](inst/examples/functions/l_place.R)                       | `object`, coordinates or insets, dimensions, `anchor`, `z_index`                           | Positioned/constrained node.                                             |
-| [l_viewport()](inst/examples/functions/l_viewport.R)                 | `plots`, dimensions, `padding`, `margin`, `background`, layout properties                  | Viewport/scene node containing children.                                 |
-| [l_join()](inst/examples/functions/l_join.R)                         | `plots`, dimensions, `position`, `gap`, `flow` through `...`                               | Parent viewport; choose `flow = "row"` for side-by-side placement.       |
-| [l_as_grob()](inst/examples/functions/l_as_grob.R)                   | `object`, `dpi`, `debug`                                                                   | Deferred `l_scene_grob` for grid interoperability.                       |
-| [l_render()](inst/examples/functions/l_render.R)                     | `object`, optional `width`/`height`, `dpi`, `newpage`, `debug`                             | Initial `l_layout`, invisibly; also draws the scene.                     |
-| [l_measure()](inst/examples/functions/l_measure.R)                   | `object`, `viewport = list(width = 800, height = 600)`, `dpi`                              | List with `width`, `height`, `intrinsic` and `units = "px"`; no drawing. |
-| [l_resolve()](inst/examples/functions/l_resolve.R)                   | `object`, optional `width`/`height`, `dpi`                                                 | `l_layout` with resolved boxes and diagnostics; no drawing.              |
-| [l_save()](inst/examples/functions/l_save.R)                         | `plot`, `type`, `dir`, `filename`, dimensions, `dpi`, `background`, `quality`, `overwrite` | Absolute output path, invisibly; writes an image.                        |
+| [l_unit()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_unit.R)                         | `x`, grid `units`, optional `data`                                                         | Native grid `unit`; see [Native Grid Units](#native-grid-units).         |
+| [l_length()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_length.R)                     | `value`, `unit = "px"` for numbers                                                         | Unresolved `l_length`, such as `"25%"` or `"2cm"`.                       |
+| [l_clamp()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_clamp.R)                       | `minimum`, `preferred`, `maximum`                                                          | Bounded `l_length` expression.                                           |
+| [l_text()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_text.R)                         | `label`, `x`, `y`, `gp`, typography in `...`                                               | Native text grob.                                                        |
+| [l_rect()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_rect.R)                         | `x`, `y`, `width`, `height`, `gp`, fill/outline in `...`                                   | Native rectangle grob.                                                   |
+| [l_template()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_template.R)                 | Grobs in `...` or `children`, shared `gp`, `vp`                                            | Native `gTree` grouping reusable content.                                |
+| [l_north_rose()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_north_rose.R)             | `design`, `angle`, `points`, `labels`, colours and typography                              | Compass-rose `gTree`; `points` applies to `stellar`.                     |
+| [l_north_arrow()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_north_arrow.R)           | `design`, `angle`, `label`, colours, optional `children`                                   | North-arrow `gTree`.                                                     |
+| [l_north_angle()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_north_angle.R)           | `map`, optional `at`, `step = 0.0001`                                                      | Local true-north angle in degrees; requires sf.                          |
+| [l_frame()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_frame.R)                       | coord_sf `plot`, `overlays`, `width`, `height`                                             | `l_frame` node retaining extent and CRS; requires sf.                    |
+| [l_scale_bar()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_scale_bar.R)               | `distance = NULL` for automatic distance, `unit`, `segments`, `subdivisions`, `design`     | `l_scale_bar` node for frame overlays; requires sf when resolved.        |
+| [l_inset()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_inset.R)                       | `plot`, main-map `reference`, `mode`, highlight style, `overlays`                          | `l_inset` frame in `"locator"` or `"detail"` mode; requires sf.          |
+| [l_style()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_style.R)                       | `object`, named style overrides in `...`                                                   | Styled node; source unchanged.                                           |
+| [l_registry()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_registry.R)                 | No arguments                                                                               | `l_registry` containing built-in extraction adapters.                    |
+| [l_register_element()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_register_element.R) | `type`, `extract`, optional `can_extract`, `measure`, `style`, `registry`                  | Updated registry; retain and pass it explicitly.                         |
+| [l_get_element()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_get_element.R)           | `plot`, `type`, dimensions, `style`, `which`, `missing`, `registry`                        | `l_element`, or `NULL` with `missing = "null"` when absent.              |
+| [l_without()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_without.R)                   | ggplot `plot`, component names in `type`                                                   | Copy of the ggplot with those components hidden.                         |
+| [l_place()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_place.R)                       | `object`, coordinates or insets, dimensions, `anchor`, `z_index`                           | Positioned/constrained node.                                             |
+| [l_viewport()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_viewport.R)                 | `plots`, dimensions, `padding`, `margin`, `background`, layout properties                  | Viewport/scene node containing children.                                 |
+| [l_join()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_join.R)                         | `plots`, dimensions, `position`, `gap`, `flow` through `...`                               | Parent viewport; choose `flow = "row"` for side-by-side placement.       |
+| [l_as_grob()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_as_grob.R)                   | `object`, `dpi`, `debug`                                                                   | Deferred `l_scene_grob` for grid interoperability.                       |
+| [l_render()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_render.R)                     | `object`, optional `width`/`height`, `dpi`, `newpage`, `debug`                             | Initial `l_layout`, invisibly; also draws the scene.                     |
+| [l_measure()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_measure.R)                   | `object`, `viewport = list(width = 800, height = 600)`, `dpi`                              | List with `width`, `height`, `intrinsic` and `units = "px"`; no drawing. |
+| [l_resolve()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_resolve.R)                   | `object`, optional `width`/`height`, `dpi`                                                 | `l_layout` with resolved boxes and diagnostics; no drawing.              |
+| [l_save()](https://github.com/DanielAraldi/lplot/blob/main/inst/examples/functions/l_save.R)                         | `plot`, `type`, `dir`, `filename`, dimensions, `dpi`, `background`, `quality`, `overwrite` | Absolute output path, invisibly; writes an image.                        |
 
 The `l_as_grob()` and `l_template()` examples use `l_place()` to give graphical
 trees an explicit rendering area rather than relying on automatic intrinsic
@@ -309,7 +309,7 @@ treated as additional exported lplot functions.
 
 ## Four Progressive Map Examples
 
-[inst/examples/](inst/examples/) also provides four examples that progress from
+[inst/examples/](https://github.com/DanielAraldi/lplot/tree/main/inst/examples) also provides four examples that progress from
 a minimal map to a composed cartographic report, each in its own file. All use the
 North Carolina counties bundled with the optional `sf` package; no external data
 download is required. `ggplot2` draws the geographic layers and `lplot` composes
@@ -392,7 +392,7 @@ lplot::l_save(map_complex_scene(), type = "png", dir = "exports",
 
 ## Three Cartographic Examples
 
-[inst/examples/](inst/examples/) also contains three independently callable
+[inst/examples/](https://github.com/DanielAraldi/lplot/tree/main/inst/examples) also contains three independently callable
 scenes, each in its own file (`scale.R`, `inset.R`, `join.R`). They use the North
 Carolina county polygons bundled with the optional `sf` package, so no data
 download, API key or network connection is needed after installation. Both map
@@ -620,8 +620,9 @@ l_save(scene, type = "webp", dir = "exports", filename = "map", quality = 90)
 `plot` is an explicit ggplot, grob, element or logical scene. `type` is
 case-insensitive; `jpg` and `jpeg` are aliases. `dir` is a directory, created
 recursively if needed, and `filename` is a basename with an optional matching
-extension. With only the required plot, defaults are PNG, the working directory,
-filename `plot.png`, 800 by 600 logical pixels, 96 dpi and white background.
+extension. `dir` has no default, so nothing is written to the working directory
+unless requested. With only `plot` and `dir`, defaults are PNG, filename
+`plot.png`, 800 by 600 logical pixels, 96 dpi and white background.
 
 The helper returns an absolute path invisibly. Files are not overwritten unless
 `overwrite = TRUE`; the previous file survives a rendering failure. Export uses
@@ -739,7 +740,7 @@ anchors, IDs, coordinates, z-order and collision candidates.
 ## Maintaining API Documentation
 
 All 25 exported functions and four registered S3 methods have English roxygen2
-documentation next to their definitions in [R/](R/). Each help topic includes
+documentation next to their definitions in [R/](https://github.com/DanielAraldi/lplot/tree/main/R). Each help topic includes
 parameters, return values, usage details, related functions and runnable examples.
 
 After editing these comments, regenerate the help files and namespace from the
@@ -749,7 +750,7 @@ package root (install `roxygen2` as a development tool first if needed):
 Rscript -e 'roxygen2::roxygenise(".")'
 ```
 
-The files in [man/](man/) and [NAMESPACE](NAMESPACE) are generated; edit the
+The files in [man/](https://github.com/DanielAraldi/lplot/tree/main/man) and [NAMESPACE](https://github.com/DanielAraldi/lplot/blob/main/NAMESPACE) are generated; edit the
 source comments instead of modifying these outputs by hand, and include the
 regenerated files when submitting changes. roxygen2 is not a runtime dependency.
 Check the generated examples with `R CMD check` before publishing. Passing
@@ -777,7 +778,7 @@ Export tests decode JPEG/PNG/WebP, inspect SVG and check device restoration,
 file safety and dimensions. Run `testthat::test_local(filter = "save")`;
 full codec tests additionally use optional `png` and `jpeg` image readers.
 Real map exports in PNG, JPG, JPEG, SVG and WebP are kept in
-[tests/testthat/\_snaps/save](tests/testthat/_snaps/save). To compare fresh exports
+[tests/testthat/\_snaps/save](https://github.com/DanielAraldi/lplot/tree/main/tests/testthat/_snaps/save). To compare fresh exports
 against these references, run:
 
 ```sh
