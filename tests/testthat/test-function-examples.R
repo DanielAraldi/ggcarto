@@ -102,7 +102,8 @@ test_that("constructor examples draw ggcarto grobs independently", {
   expect_s3_class(example$result, "gTree")
   expect_equal(example$result$children$symbol$vp$angle, 0)
   expect_true(all(
-    c("central-petal", "west-petal", "label") %in% example$drawn_grobs
+    c("central-petal-west", "band-jewel", "west-petal", "label") %in%
+      example$drawn_grobs
   ))
 })
 

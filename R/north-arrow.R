@@ -3,10 +3,12 @@
 #' Build a north arrow from native grid primitives without drawing it. Choose
 #' one of twelve designs or supply your own graphical composition.
 #'
-#' @param design One of `"classic"` (split diamond), `"ornate"` (ornamented
-#'   compass), `"minimal"` (modern shaft), `"fleur_de_lis"`, `"bold"`,
-#'   `"fine_line"`, `"circle"`, `"double"` (two opposing tips), `"triangle"`
-#'   (split triangle), `"cross"`, `"pennant"` or `"art_deco"`.
+#' @param design One of `"classic"` (counterchanged split needle), `"ornate"`
+#'   (ringed compass), `"minimal"` (fletched shaft), `"fleur_de_lis"`, `"bold"`
+#'   (swallowtail block arrow), `"fine_line"` (graduated technical arrow),
+#'   `"circle"` (needle in a ticked ring), `"double"` (two opposing tips),
+#'   `"triangle"` (split triangle), `"cross"`, `"pennant"` or `"art_deco"`.
+#'   Every design except `"fine_line"` uses both `fill` and `fill_secondary`.
 #' @param angle Finite rotation in degrees counterclockwise. Zero points up.
 #'   Rotates the symbol and label together, inside `vp`.
 #' @param label A character string; `NULL` or `""` omits the label.
@@ -202,74 +204,102 @@ gc_north_arrow <- function(
 }
 
 north_arrow_body <- function(design, fill, fill_secondary, arrow) {
+  # Geometry is designed for the recommended 40 by 68 box: radial lengths are
+  # in snpc-like units and vertical offsets are scaled by this aspect ratio.
+  aspect <- 40 / 68
+  centre <- c(0.5, 0.44)
   polygon <- function(x, y, colour = fill, name) {
     grid::polygonGrob(x, y, gp = grid::gpar(fill = colour), name = name)
   }
   line <- function(x, y, name) grid::linesGrob(x, y, name = name)
-  circle <- function(radius, name, y = 0.44) {
+  circle <- function(radius, name, y = centre[[2]], colour = NA) {
     grid::circleGrob(
       x = 0.5,
       y = y,
       r = gc_unit(radius, "snpc"),
-      gp = grid::gpar(fill = NA),
+      gp = grid::gpar(fill = colour),
       name = name
     )
   }
-  diamond <- function(
-    top = 0.78,
-    bottom = 0.12,
-    middle = 0.34,
-    left = 0.23,
-    right = 0.77
+  point <- function(radius, degrees) {
+    theta <- degrees * pi / 180
+    c(
+      centre[[1]] + radius * sin(theta),
+      centre[[2]] + radius * cos(theta) * aspect
+    )
+  }
+  # A compass point split along its axis. Degrees run clockwise from north;
+  # opposite points therefore receive counterchanged fills.
+  kite <- function(
+    degrees,
+    length,
+    width,
+    name,
+    colours = c(fill, fill_secondary)
   ) {
+    tip <- point(length, degrees)
+    left <- point(width, degrees - 90)
+    right <- point(width, degrees + 90)
     list(
-      polygon(c(0.5, left, 0.5), c(top, middle, bottom), name = "west-half"),
       polygon(
-        c(0.5, right, 0.5),
-        c(top, middle, bottom),
-        fill_secondary,
-        name = "east-half"
+        c(tip[[1]], left[[1]], centre[[1]]),
+        c(tip[[2]], left[[2]], centre[[2]]),
+        colours[[1]],
+        paste0(name, "-left")
+      ),
+      polygon(
+        c(tip[[1]], right[[1]], centre[[1]]),
+        c(tip[[2]], right[[2]], centre[[2]]),
+        colours[[2]],
+        paste0(name, "-right")
       )
     )
   }
+  ticks <- function(degrees, inner, outer, name) {
+    from <- vapply(degrees, function(angle) point(inner, angle), numeric(2))
+    to <- vapply(degrees, function(angle) point(outer, angle), numeric(2))
+    grid::segmentsGrob(from[1, ], from[2, ], to[1, ], to[2, ], name = name)
+  }
+  hub <- function(radius = 0.06) {
+    circle(radius, "hub", colour = fill_secondary)
+  }
   switch(
     design,
-    classic = diamond(),
+    classic = c(
+      kite(0, 0.66, 0.26, "north"),
+      kite(180, 0.6, 0.26, "south"),
+      list(hub())
+    ),
     ornate = c(
       list(
-        circle(0.26, "compass-ring"),
-        polygon(
-          c(0.12, 0.5, 0.88, 0.5),
-          c(0.44, 0.53, 0.44, 0.35),
-          fill_secondary,
-          "east-west"
-        ),
-        line(c(0.22, 0.78), c(0.61, 0.27), "diagonal-up"),
-        line(c(0.22, 0.78), c(0.27, 0.61), "diagonal-down")
+        circle(0.46, "outer-ring"),
+        circle(0.38, "inner-ring"),
+        ticks(seq(22.5, 337.5, by = 45), 0.38, 0.46, "ring-ticks")
       ),
-      diamond(
-        top = 0.8,
-        bottom = 0.08,
-        middle = 0.44,
-        left = 0.34,
-        right = 0.66
-      ),
-      list(polygon(
-        c(0.44, 0.5, 0.56, 0.5),
-        c(0.44, 0.48, 0.44, 0.4),
-        fill_secondary,
-        "center-jewel"
-      ))
+      kite(45, 0.4, 0.07, "north-east", c(fill_secondary, fill)),
+      kite(135, 0.4, 0.07, "south-east", c(fill_secondary, fill)),
+      kite(225, 0.4, 0.07, "south-west", c(fill_secondary, fill)),
+      kite(315, 0.4, 0.07, "north-west", c(fill_secondary, fill)),
+      kite(90, 0.48, 0.1, "east"),
+      kite(270, 0.48, 0.1, "west"),
+      kite(0, 0.66, 0.13, "north"),
+      kite(180, 0.6, 0.13, "south"),
+      list(hub(0.05))
     ),
-    minimal = list(grid::segmentsGrob(
-      x0 = 0.5,
-      x1 = 0.5,
-      y0 = 0.14,
-      y1 = 0.72,
-      arrow = arrow,
-      gp = grid::gpar(fill = fill),
-      name = "shaft"
-    )),
+    minimal = list(
+      line(c(0.38, 0.5, 0.62), c(0.06, 0.16, 0.06), "lower-fletching"),
+      line(c(0.38, 0.5, 0.62), c(0.12, 0.22, 0.12), "upper-fletching"),
+      grid::segmentsGrob(
+        x0 = 0.5,
+        x1 = 0.5,
+        y0 = 0.06,
+        y1 = 0.76,
+        arrow = arrow,
+        gp = grid::gpar(fill = fill),
+        name = "shaft"
+      ),
+      circle(0.06, "hub", y = 0.48, colour = fill_secondary)
+    ),
     fleur_de_lis = list(
       grid::xsplineGrob(
         x = c(0.48, 0.38, 0.2, 0.12, 0.23, 0.37, 0.44),
@@ -284,78 +314,142 @@ north_arrow_body <- function(design, fill, fill_secondary, arrow) {
         y = c(0.32, 0.62, 0.66, 0.49, 0.42, 0.54, 0.3),
         shape = c(0, 1, 1, 1, 1, 1, 0),
         open = FALSE,
-        gp = grid::gpar(fill = fill_secondary),
+        gp = grid::gpar(fill = fill),
         name = "east-petal"
       ),
       polygon(
-        c(0.5, 0.38, 0.5, 0.62),
-        c(0.8, 0.58, 0.28, 0.58),
-        name = "central-petal"
+        c(0.5, 0.37, 0.5),
+        c(0.82, 0.58, 0.28),
+        name = "central-petal-west"
       ),
       polygon(
-        c(0.46, 0.36, 0.5, 0.64, 0.54),
-        c(0.3, 0.14, 0.2, 0.14, 0.3),
-        name = "foot"
+        c(0.5, 0.63, 0.5),
+        c(0.82, 0.58, 0.28),
+        fill_secondary,
+        "central-petal-east"
       ),
       polygon(
-        c(0.33, 0.67, 0.67, 0.33),
-        c(0.3, 0.3, 0.35, 0.35),
+        c(0.46, 0.34, 0.5, 0.5),
+        c(0.3, 0.1, 0.18, 0.3),
+        fill_secondary,
+        "foot-west"
+      ),
+      polygon(
+        c(0.54, 0.66, 0.5, 0.5),
+        c(0.3, 0.1, 0.18, 0.3),
+        name = "foot-east"
+      ),
+      polygon(
+        c(0.31, 0.69, 0.69, 0.31),
+        c(0.29, 0.29, 0.36, 0.36),
         fill_secondary,
         "band"
+      ),
+      polygon(
+        c(0.5, 0.45, 0.5, 0.55),
+        c(0.355, 0.325, 0.295, 0.325),
+        name = "band-jewel"
       )
     ),
-    bold = list(polygon(
-      c(0.5, 0.9, 0.64, 0.64, 0.36, 0.36, 0.1),
-      c(0.8, 0.48, 0.48, 0.12, 0.12, 0.48, 0.48),
-      name = "solid-arrow"
-    )),
+    bold = list(
+      polygon(
+        c(0.5, 0.9, 0.66, 0.66, 0.5, 0.34, 0.34, 0.1),
+        c(0.84, 0.5, 0.5, 0.08, 0.18, 0.08, 0.5, 0.5),
+        name = "solid-arrow"
+      ),
+      polygon(
+        c(0.5, 0.76, 0.66, 0.5, 0.34, 0.24),
+        c(0.74, 0.54, 0.54, 0.66, 0.54, 0.54),
+        fill_secondary,
+        "chevron"
+      ),
+      polygon(
+        c(0.47, 0.53, 0.53, 0.47),
+        c(0.26, 0.26, 0.6, 0.6),
+        fill_secondary,
+        "stripe"
+      )
+    ),
     fine_line = list(
-      line(c(0.5, 0.5), c(0.12, 0.78), "shaft"),
-      line(c(0.28, 0.5, 0.72), c(0.61, 0.78, 0.61), "open-tip"),
-      line(c(0.34, 0.66), c(0.18, 0.18), "base-tick"),
-      line(c(0.4, 0.6), c(0.3, 0.3), "mid-tick")
+      line(c(0.5, 0.5), c(0.04, 0.82), "shaft"),
+      line(c(0.28, 0.5, 0.72), c(0.6, 0.82, 0.6), "open-tip"),
+      line(c(0.36, 0.5, 0.64), c(0.58, 0.72, 0.58), "inner-tip"),
+      circle(0.14, "reference-ring"),
+      grid::segmentsGrob(
+        x0 = 0.5 - c(0.06, 0.1, 0.14, 0.18),
+        x1 = 0.5 + c(0.06, 0.1, 0.14, 0.18),
+        y0 = c(0.28, 0.21, 0.14, 0.07),
+        y1 = c(0.28, 0.21, 0.14, 0.07),
+        name = "graduated-ticks"
+      )
     ),
     circle = c(
-      list(circle(0.37, "outer-ring")),
-      diamond(top = 0.76, bottom = 0.2, middle = 0.33, left = 0.3, right = 0.7)
+      list(
+        circle(0.44, "outer-ring"),
+        circle(0.36, "inner-ring"),
+        ticks(seq(0, 315, by = 45), 0.36, 0.44, "ring-ticks")
+      ),
+      kite(0, 0.66, 0.14, "north"),
+      kite(180, 0.34, 0.14, "south"),
+      list(hub(0.05))
     ),
     double = list(
-      line(c(0.5, 0.5), c(0.22, 0.66), "shaft"),
-      polygon(c(0.25, 0.5, 0.75), c(0.54, 0.8, 0.54), name = "north-tip"),
+      line(c(0.5, 0.5), c(0.24, 0.64), "shaft"),
+      line(c(0.3, 0.7), c(0.44, 0.44), "crossbar"),
       polygon(
-        c(0.25, 0.5, 0.75),
-        c(0.34, 0.08, 0.34),
+        c(0.5, 0.76, 0.5, 0.24),
+        c(0.84, 0.56, 0.62, 0.56),
+        name = "north-tip"
+      ),
+      polygon(
+        c(0.5, 0.76, 0.5, 0.24),
+        c(0.04, 0.32, 0.26, 0.32),
         fill_secondary,
         "south-tip"
-      )
+      ),
+      circle(0.12, "hub-ring", colour = fill_secondary),
+      circle(0.04, "hub-dot", colour = fill)
     ),
     triangle = list(
-      polygon(c(0.15, 0.5, 0.5), c(0.16, 0.8, 0.16), name = "west-half"),
+      polygon(c(0.12, 0.5, 0.5), c(0.14, 0.84, 0.14), name = "west-half"),
       polygon(
-        c(0.5, 0.5, 0.85),
-        c(0.16, 0.8, 0.16),
+        c(0.5, 0.5, 0.88),
+        c(0.14, 0.84, 0.14),
         fill_secondary,
         "east-half"
+      ),
+      polygon(
+        c(0.3, 0.5, 0.5),
+        c(0.2, 0.58, 0.2),
+        fill_secondary,
+        "inner-west"
+      ),
+      polygon(c(0.5, 0.5, 0.7), c(0.2, 0.58, 0.2), name = "inner-east"),
+      polygon(
+        c(0.12, 0.88, 0.88, 0.12),
+        c(0.04, 0.04, 0.09, 0.09),
+        name = "base"
       )
     ),
-    cross = list(
-      polygon(
-        c(0.12, 0.5, 0.88, 0.5),
-        c(0.4, 0.49, 0.4, 0.31),
-        fill_secondary,
-        "east-west"
-      ),
-      polygon(
-        c(0.5, 0.37, 0.5, 0.63),
-        c(0.8, 0.4, 0.08, 0.4),
-        name = "north-south"
-      ),
-      line(c(0.5, 0.5), c(0.08, 0.8), "meridian")
+    cross = c(
+      kite(90, 0.44, 0.1, "east", c(fill_secondary, fill)),
+      kite(270, 0.44, 0.1, "west", c(fill_secondary, fill)),
+      list(circle(0.22, "ring")),
+      kite(0, 0.66, 0.12, "north"),
+      kite(180, 0.6, 0.12, "south"),
+      list(hub(0.05))
     ),
     pennant = list(
       line(c(0.5, 0.5), c(0.12, 0.8), "mast"),
       polygon(c(0.5, 0.87, 0.5), c(0.8, 0.8, 0.5), name = "flag"),
-      line(c(0.34, 0.66), c(0.12, 0.12), "base")
+      polygon(
+        c(0.53, 0.73, 0.53),
+        c(0.76, 0.76, 0.6),
+        fill_secondary,
+        "flag-stripe"
+      ),
+      circle(0.04, "knot", y = 0.5, colour = fill_secondary),
+      polygon(c(0.3, 0.7, 0.6, 0.4), c(0.06, 0.06, 0.12, 0.12), name = "plinth")
     ),
     art_deco = list(
       polygon(
@@ -369,9 +463,40 @@ north_arrow_body <- function(design, fill, fill_secondary, arrow) {
         fill_secondary,
         "inset-diamond"
       ),
-      line(c(0.2, 0.2, 0.1), c(0.18, 0.39, 0.39), "west-step"),
-      line(c(0.8, 0.8, 0.9), c(0.18, 0.39, 0.39), "east-step"),
-      line(c(0.26, 0.74), c(0.08, 0.08), "base")
+      polygon(
+        c(0.5, 0.45, 0.5, 0.55),
+        c(0.6, 0.51, 0.44, 0.51),
+        name = "inset-core"
+      ),
+      polygon(
+        c(0.39, 0.42, 0.42, 0.39),
+        c(0.18, 0.18, 0.4, 0.4),
+        fill_secondary,
+        "west-groove"
+      ),
+      polygon(
+        c(0.58, 0.61, 0.61, 0.58),
+        c(0.18, 0.18, 0.4, 0.4),
+        fill_secondary,
+        "east-groove"
+      ),
+      line(
+        c(0.26, 0.2, 0.2, 0.14, 0.14, 0.08),
+        c(0.14, 0.14, 0.28, 0.28, 0.42, 0.42),
+        "west-steps"
+      ),
+      line(
+        c(0.74, 0.8, 0.8, 0.86, 0.86, 0.92),
+        c(0.14, 0.14, 0.28, 0.28, 0.42, 0.42),
+        "east-steps"
+      ),
+      grid::segmentsGrob(
+        x0 = c(0.26, 0.18),
+        x1 = c(0.74, 0.82),
+        y0 = c(0.08, 0.04),
+        y1 = c(0.08, 0.04),
+        name = "base"
+      )
     )
   )
 }
