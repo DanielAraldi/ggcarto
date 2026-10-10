@@ -3,6 +3,7 @@ result <- ggcarto::gc_north_arrow(
   fill = "#197C80",
   fill_secondary = "#F4CD68",
   col = "#293438",
+  lwd = 1,
   angle = 0,
   fontsize = 14,
   name = "custom_north"

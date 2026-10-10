@@ -157,7 +157,7 @@ test_that("minimal arrows accept the full native arrow specification", {
   shaft <- arrow$children$symbol$children$body$children$shaft
   expect_identical(shaft$arrow, tip)
   expect_equal(as.numeric(shaft$x0), 0.5)
-  expect_equal(as.numeric(shaft$y1), 0.72)
+  expect_equal(as.numeric(shaft$y1), 0.76)
   expect_null(
     gc_north_arrow(
       "minimal",
@@ -169,7 +169,10 @@ test_that("minimal arrows accept the full native arrow specification", {
 test_that("pennant uses a right triangular flag without an arrowhead", {
   symbol <- gc_north_arrow("pennant", angle = 25, fill = "red")$children$symbol
   body <- symbol$children$body
-  expect_identical(body$childrenOrder, c("mast", "flag", "base"))
+  expect_identical(
+    body$childrenOrder,
+    c("mast", "flag", "flag-stripe", "knot", "plinth")
+  )
   flag <- body$children$flag
   expect_s3_class(flag, "polygon")
   coordinates <- cbind(as.numeric(flag$x), as.numeric(flag$y))
@@ -191,6 +194,40 @@ test_that("pennant uses a right triangular flag without an arrowhead", {
   expect_identical(flag$gp$fill, "red")
   expect_identical(symbol$children$label$label, "N")
   expect_equal(symbol$vp$angle, 25)
+})
+
+test_that("filled presets layer primary and secondary colours", {
+  fills_of <- function(design) {
+    body <- gc_north_arrow(
+      design,
+      fill = "green",
+      fill_secondary = "yellow"
+    )$children$symbol$children$body
+    vapply(
+      body$children,
+      function(child) as.character(child$gp$fill %||% NA_character_),
+      character(1)
+    )
+  }
+  for (design in setdiff(north_arrow_designs, "fine_line")) {
+    expect_true(all(c("green", "yellow") %in% fills_of(design)), info = design)
+  }
+  expect_true(all(is.na(fills_of("fine_line"))))
+  classic <- fills_of("classic")
+  expect_identical(
+    unname(classic[c(
+      "north-left",
+      "north-right",
+      "south-left",
+      "south-right"
+    )]),
+    c("green", "yellow", "green", "yellow")
+  )
+  body <- gc_north_arrow("classic")$children$symbol$children$body$children
+  north_west <- as.numeric(body[["north-left"]]$x)[[2]]
+  south_west <- as.numeric(body[["south-left"]]$x)[[2]]
+  expect_lt(north_west, 0.5)
+  expect_gt(south_west, 0.5)
 })
 
 test_that("custom bodies retain their geometry, styles and viewports", {
@@ -291,7 +328,10 @@ test_that("every preset integrates with extraction and explicit layout sizes", {
     original <- arrow
     element <- gc_get_element(arrow, "north_arrow", width = 40, height = 68)
     expect_identical(element$content, arrow)
-    scene <- gc_viewport(list(gc_place(element, right = 8, top = 8)), padding = 4)
+    scene <- gc_viewport(
+      list(gc_place(element, right = 8, top = 8)),
+      padding = 4
+    )
     expect_no_warning(layout <- gc_render(scene))
     expect_equal(
       layout$root$children[[1]]$box[c("width", "height")],
@@ -341,13 +381,21 @@ test_that("all presets have distinct nonblank raster output at different sizes",
     expect_length(unique(images), 12)
   }
   native <- gc_template(
+    grid::linesGrob(c(0.38, 0.5, 0.62), c(0.06, 0.16, 0.06)),
+    grid::linesGrob(c(0.38, 0.5, 0.62), c(0.12, 0.22, 0.12)),
     grid::segmentsGrob(
       x0 = 0.5,
       x1 = 0.5,
-      y0 = 0.14,
-      y1 = 0.72,
+      y0 = 0.06,
+      y1 = 0.76,
       arrow = grid::arrow(length = gc_unit(3, "mm"), type = "closed"),
-      gp = grid::gpar(col = "#203C43", fill = "#203C43", lwd = 1.5)
+      gp = grid::gpar(fill = "#203C43")
+    ),
+    grid::circleGrob(
+      x = 0.5,
+      y = 0.48,
+      r = gc_unit(0.06, "snpc"),
+      gp = grid::gpar(fill = "white")
     ),
     gc_text(
       "N",
@@ -357,6 +405,7 @@ test_that("all presets have distinct nonblank raster output at different sizes",
       fontface = "bold",
       col = "#203C43"
     ),
+    gp = grid::gpar(col = "#203C43", lwd = 1.5),
     vp = grid::viewport(angle = 17)
   )
   expect_identical(

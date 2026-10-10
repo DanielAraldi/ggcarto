@@ -27,10 +27,12 @@ gc_north_arrow(
 )
 }
 \arguments{
-\item{design}{One of \code{"classic"} (split diamond), \code{"ornate"} (ornamented
-compass), \code{"minimal"} (modern shaft), \code{"fleur_de_lis"}, \code{"bold"},
-\code{"fine_line"}, \code{"circle"}, \code{"double"} (two opposing tips), \code{"triangle"}
-(split triangle), \code{"cross"}, \code{"pennant"} or \code{"art_deco"}.}
+\item{design}{One of \code{"classic"} (counterchanged split needle), \code{"ornate"}
+(ringed compass), \code{"minimal"} (fletched shaft), \code{"fleur_de_lis"}, \code{"bold"}
+(swallowtail block arrow), \code{"fine_line"} (graduated technical arrow),
+\code{"circle"} (needle in a ticked ring), \code{"double"} (two opposing tips),
+\code{"triangle"} (split triangle), \code{"cross"}, \code{"pennant"} or \code{"art_deco"}.
+Every design except \code{"fine_line"} uses both \code{fill} and \code{fill_secondary}.}
 
 \item{angle}{Finite rotation in degrees counterclockwise. Zero points up.
 Rotates the symbol and label together, inside \code{vp}.}

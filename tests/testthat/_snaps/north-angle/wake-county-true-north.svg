@@ -27,8 +27,11 @@
 </defs>
 <g clip-path='url(#cpNTMuOTZ8NjY2LjA0fDEyLjAwfDU2NC4wMA==)'>
 <path d='M 118.08 504.86 L 53.96 482.20 L 103.27 320.53 L 98.70 311.78 L 130.48 220.48 L 194.39 220.68 L 210.43 160.38 L 247.24 165.80 L 271.25 145.44 L 293.18 102.60 L 295.74 82.02 L 285.79 52.59 L 276.00 52.04 L 255.30 67.85 L 258.67 15.21 L 302.57 12.00 L 423.77 64.57 L 519.90 105.89 L 550.24 146.52 L 578.55 160.10 L 603.87 191.06 L 621.19 185.28 L 655.68 230.55 L 666.04 263.64 L 483.21 385.88 L 297.95 564.00 L 118.08 504.86 Z' style='fill-rule: evenodd; fill: #95CEC0; stroke-width: 0.43; stroke: #203C43; stroke-linecap: butt;' />
-<line x1='90.04' y1='69.60' x2='89.91' y2='34.80' style='stroke-width: 1.12; stroke: #203C43;' />
-<polygon points='94.19,42.15 89.91,34.80 85.69,42.18 ' style='stroke-width: 1.12; stroke: #203C43; fill: #203C43;' />
+<polyline points='82.86,74.43 90.04,68.40 97.26,74.37 ' style='stroke-width: 1.12; stroke: #203C43;' />
+<polyline points='82.85,70.83 90.03,64.80 97.25,70.77 ' style='stroke-width: 1.12; stroke: #203C43;' />
+<line x1='90.06' y1='74.40' x2='89.90' y2='32.40' style='stroke-width: 1.12; stroke: #203C43;' />
+<polygon points='94.18,39.75 89.90,32.40 85.68,39.78 ' style='stroke-width: 1.12; stroke: #203C43; fill: #203C43;' />
+<circle cx='89.97' cy='49.20' r='3.60' style='stroke-width: 1.12; stroke: #203C43; fill: #FFFFFF;' />
 <text transform='translate(89.88,26.59) rotate(-0)' text-anchor='middle' style='font-size: 11.00px; font-weight: bold; fill: #203C43; font-family: sans;' textLength='7.95px' lengthAdjust='spacingAndGlyphs'>N</text>
 <polygon points='630.04,528.00 628.42,524.13 629.96,507.60 ' style='stroke-width: 0.75; stroke: #203C43; fill: #203C43;' />
 <polygon points='630.04,528.00 631.63,524.11 629.96,507.60 ' style='stroke-width: 0.75; stroke: #203C43; fill: #FFFFFF;' />

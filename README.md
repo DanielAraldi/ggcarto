@@ -137,20 +137,24 @@ north <- gc_north_arrow(
 gc_render(gc_place(north, right = 16, top = 16, width = 40, height = 68))
 ```
 
-| Design         | Symbol                                             |
-| -------------- | -------------------------------------------------- |
-| `classic`      | Classic cartographic split diamond (default)       |
-| `ornate`       | Traditional ornamented compass                     |
-| `minimal`      | Modern minimalist shaft and configurable arrowhead |
-| `fleur_de_lis` | Fleur-de-lis with curved side petals               |
-| `bold`         | Bold geometric arrow                               |
-| `fine_line`    | Technical open-tip arrow with reference ticks      |
-| `circle`       | Split arrow with a circle                          |
-| `double`       | Two opposing tips                                  |
-| `triangle`     | Split triangle                                     |
-| `cross`        | Four-point cross                                   |
-| `pennant`      | Right triangular flag on a mast, without arrowhead |
-| `art_deco`     | Stepped art deco arrow                             |
+| Design         | Symbol                                                           |
+| -------------- | ---------------------------------------------------------------- |
+| `classic`      | Counterchanged four-facet needle with a hub (default)            |
+| `ornate`       | Double-ring compass with diagonal, cardinal and north points     |
+| `minimal`      | Shaft with configurable arrowhead, hub and fletching             |
+| `fleur_de_lis` | Fleur-de-lis with split central petal, jewelled band and foot    |
+| `bold`         | Swallowtail block arrow with an inset chevron and stripe         |
+| `fine_line`    | Technical double open tip, reference ring and graduated ticks    |
+| `circle`       | Compass needle inside a ticked double ring                       |
+| `double`       | Notched north and south tips around a two-tone hub               |
+| `triangle`     | Split triangle with a counterchanged inner triangle and base     |
+| `cross`        | Counterchanged four-point cross over a ring                      |
+| `pennant`      | Striped right triangular flag on a mast and plinth, no arrowhead |
+| `art_deco`     | Stepped art deco arrow with inset diamond, grooves and steps     |
+
+Filled designs combine `fill` and `fill_secondary`; contrasting colours give
+the strongest result. Detailed designs read best at `lwd` near 0.8–1 in a box
+of at least 40 by 68 logical pixels.
 
 `angle = 0` points up; positive angles rotate counterclockwise. This is a
 graphical constructor, not a CRS calculator. For true north, supply an angle
