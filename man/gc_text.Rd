@@ -24,7 +24,8 @@ gc_text(
 \item{label}{Text to display, including character vectors and mathematical
 expressions such as \code{expression(alpha^2)}. Use \code{"\\n"} for explicit lines.}
 
-\item{x, y}{Numeric coordinates in \code{default.units}, or \code{\link[=gc_unit]{gc_unit()}} / \code{\link[grid:unit]{grid::unit()}}
+\item{x, y}{Numeric coordinates in \code{default.units}, or \code{\link[=gc_unit]{gc_unit()}} /
+\code{\link[grid:unit]{grid::unit()}}
 objects.
 Vectors are supported according to \code{\link[grid:grid.rect]{grid::rectGrob()}} recycling rules.}
 
@@ -38,7 +39,8 @@ overriding the corresponding component of \code{just}. Zero means left/bottom,
 \item{rot}{Text rotation in degrees; for example, 90 gives vertical text.}
 
 \item{check.overlap}{Logical; if \code{TRUE}, grid may omit overlapping labels
-within this grob at draw time, in input order. It does not reposition labels
+within this grob at draw time, in input order. It does not reposition
+labels
 or detect collisions with other ggcarto nodes.}
 
 \item{default.units}{Grid unit used for numeric geometry, by default \code{"npc"}.
@@ -53,8 +55,10 @@ graphical parameters. Unspecified child properties inherit from this group.}
 \item{vp}{Optional grid viewport, viewport name or viewport path. A viewport
 controls local coordinates, dimensions, justification, scales and clipping.}
 
-\item{...}{Uniquely named \code{\link[grid:gpar]{grid::gpar()}} parameters overriding \code{gp}, including
-\code{col}, \code{fontsize}, \code{fontfamily}, \code{fontface}, \code{lineheight}, \code{alpha} and \code{cex}.
+\item{...}{Uniquely named \code{\link[grid:gpar]{grid::gpar()}} parameters overriding \code{gp},
+including
+\code{col}, \code{fontsize}, \code{fontfamily}, \code{fontface}, \code{lineheight}, \code{alpha} and
+\code{cex}.
 Use grid names, not \code{\link[=gc_style]{gc_style()}} names such as \code{color} or \code{font_size}.}
 }
 \value{
@@ -67,7 +71,8 @@ expressions and vectorized labels. No drawing or device creation occurs
 until the grob is rendered.
 }
 \details{
-\code{fontsize} is numeric, in points. \code{fontface} accepts values such as \code{"plain"},
+\code{fontsize} is numeric, in points. \code{fontface} accepts values such as
+\code{"plain"},
 \code{"bold"}, \code{"italic"} and \code{"bold.italic"}. A \code{fontface} shortcut overrides a
 \code{font} already stored in \code{gp}, and vice versa. Font availability and glyph
 metrics depend on the output device. Graphical parameters are not mutated.
@@ -99,5 +104,6 @@ formula <- gc_text(expression(alpha^2 + beta^2), fontsize = 12)
 grid::is.grob(formula)
 }
 \seealso{
-\code{\link[=gc_unit]{gc_unit()}}, \code{\link[grid:grid.text]{grid::textGrob()}}, \code{\link[grid:gpar]{grid::gpar()}}, \code{\link[=gc_get_element]{gc_get_element()}}, \code{\link[=gc_style]{gc_style()}}
+\code{\link[=gc_unit]{gc_unit()}}, \code{\link[grid:grid.text]{grid::textGrob()}}, \code{\link[grid:gpar]{grid::gpar()}}, \code{\link[=gc_get_element]{gc_get_element()}},
+\code{\link[=gc_style]{gc_style()}}
 }

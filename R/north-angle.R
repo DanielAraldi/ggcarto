@@ -9,7 +9,7 @@ north_transform <- function(points, crs) {
     }
   )
   coordinates <- sf::st_coordinates(transformed)
-  if (any(sf::st_is_empty(transformed)) || any(!is.finite(coordinates))) {
+  if (any(sf::st_is_empty(transformed)) || !all(is.finite(coordinates))) {
     gc_abort(
       "The north reference is outside the projection domain.",
       "north_projection"
@@ -105,7 +105,7 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
   }
   if (
     !is.null(extent) &&
-      (any(!is.finite(extent)) ||
+      (!all(is.finite(extent)) ||
         extent[["xmin"]] >= extent[["xmax"]] ||
         extent[["ymin"]] >= extent[["ymax"]])
   ) {
@@ -145,7 +145,7 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
       !is.numeric(at) ||
         !is.null(dim(at)) ||
         length(at) != 2L ||
-        any(!is.finite(at))
+        !all(is.finite(at))
     ) {
       gc_abort(
         "at must be c(longitude, latitude) or one sf POINT.",
@@ -156,7 +156,10 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
   }
   if (abs(location[[1L]]) > 180 || abs(location[[2L]]) + step >= 90) {
     gc_abort(
-      "Longitude must be within [-180, 180] and latitude samples must avoid the poles.",
+      paste0(
+        "Longitude must be within [-180, 180] and ",
+        "latitude samples must avoid the poles."
+      ),
       property = "at"
     )
   }
@@ -169,7 +172,7 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
   projected <- north_transform(samples, crs)
   south <- projected[2L, ] - projected[1L, ]
   north <- projected[3L, ] - projected[2L, ]
-  if (sum(south * north) <= 0 || any(!is.finite(c(south, north)))) {
+  if (sum(south * north) <= 0 || !all(is.finite(c(south, north)))) {
     gc_abort(
       "True north is undefined or discontinuous at this reference.",
       "north_projection"

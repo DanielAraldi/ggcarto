@@ -1,4 +1,4 @@
-test_that("recorded renders resolve joined viewports on larger and smaller devices", {
+test_that("recorded renders resolve joined viewports on resized devices", {
   scene <- gc_join(list(
     gc_place(
       gc_viewport(background = "red"),
@@ -29,25 +29,30 @@ test_that("recorded renders resolve joined viewports on larger and smaller devic
       {
         expect_no_warning(grDevices::replayPlot(recording))
         grid::seekViewport("root-viewport", recording = FALSE)
-        expect_equal(
+        expect_identical(
           grid::convertWidth(grid::unit(1, "npc"), "inches", valueOnly = TRUE),
           size[[1]]
         )
-        expect_equal(
+        expect_identical(
           grid::convertHeight(grid::unit(1, "npc"), "inches", valueOnly = TRUE),
           size[[2]]
         )
         grid::seekViewport("root/2-viewport", recording = FALSE)
         expect_equal(
           grid::convertWidth(grid::unit(1, "npc"), "inches", valueOnly = TRUE),
-          size[[1]] * 0.44
+          size[[1]] * 0.44,
+          tolerance = testthat::testthat_tolerance()
         )
         right <- grid::deviceLoc(
           grid::unit(1, "npc"),
           grid::unit(0, "npc"),
           valueOnly = TRUE
         )$x
-        expect_equal(right, size[[1]] * 0.98)
+        expect_equal(
+          right,
+          size[[1]] * 0.98,
+          tolerance = testthat::testthat_tolerance()
+        )
         grid::upViewport(0, recording = FALSE)
       },
       finally = grDevices::dev.off()
@@ -55,7 +60,7 @@ test_that("recorded renders resolve joined viewports on larger and smaller devic
   }
 })
 
-test_that("replay preserves explicit dimensions and resolves auto axes inside the caller", {
+test_that("replay keeps explicit dimensions and resolves auto axes in caller", {
   scene <- gc_viewport(list(gc_place(
     grid::rectGrob(),
     width = "50%",
@@ -84,10 +89,13 @@ test_that("replay preserves explicit dimensions and resolves auto axes inside th
             case$arguments
           )
         )
-        expect_equal(snapshot$context$dpi, 144)
-        expect_equal(snapshot$context$width, case$arguments$width %||% 384)
-        expect_equal(snapshot$context$height, case$arguments$height %||% 288)
-        expect_equal(grid::current.viewport()$name, "caller")
+        expect_identical(snapshot$context$dpi, 144)
+        expect_identical(snapshot$context$width, case$arguments$width %||% 384)
+        expect_identical(
+          snapshot$context$height,
+          case$arguments$height %||% 288
+        )
+        expect_identical(grid::current.viewport()$name, "caller")
         grid::upViewport()
         grDevices::recordPlot()
       },
@@ -98,12 +106,12 @@ test_that("replay preserves explicit dimensions and resolves auto axes inside th
       {
         expect_no_warning(grDevices::replayPlot(recording))
         grid::seekViewport("root-viewport", recording = FALSE)
-        expect_equal(
+        expect_identical(
           grid::convertWidth(grid::unit(1, "npc"), "inches", valueOnly = TRUE) *
             96,
           case$expected[[1]]
         )
-        expect_equal(
+        expect_identical(
           grid::convertHeight(
             grid::unit(1, "npc"),
             "inches",
@@ -119,7 +127,7 @@ test_that("replay preserves explicit dimensions and resolves auto axes inside th
   }
 })
 
-test_that("terrain replay fills the resized device without changing child declarations", {
+test_that("terrain replay fills the resized device, keeping child specs", {
   examples <- new.env(parent = globalenv())
   sys.source(
     system.file("examples", "terrain.R", package = "ggcarto"),
@@ -141,7 +149,7 @@ test_that("terrain replay fills the resized device without changing child declar
     {
       expect_no_warning(grDevices::replayPlot(recording))
       grid::seekViewport("root-viewport", recording = FALSE)
-      expect_equal(
+      expect_identical(
         grid::convertWidth(grid::unit(1, "npc"), "inches", valueOnly = TRUE) *
           96,
         900
@@ -153,7 +161,7 @@ test_that("terrain replay fills the resized device without changing child declar
         valueOnly = TRUE
       )$x *
         96
-      expect_equal(right, 900 * 0.98)
+      expect_identical(right, 900 * 0.98)
       grid::upViewport(0, recording = FALSE)
     },
     finally = grDevices::dev.off()
@@ -186,7 +194,7 @@ test_that("terrain example fits compact plotting devices without overflow", {
           credits$box[["y"]] + credits$box[["height"]],
           available[["height"]]
         )
-        expect_equal(credits$node$overflow, "visible")
+        expect_identical(credits$node$overflow, "visible")
       },
       finally = grDevices::dev.off()
     )
@@ -205,16 +213,16 @@ test_that("rendering uses the actual device and restores viewport state", {
     height = 256
   )
   layout <- gc_render(scene, newpage = FALSE)
-  expect_equal(layout$context$width, 384)
-  expect_equal(layout$context$height, 288)
-  expect_equal(layout$root$children[[1]]$box[["width"]], 192)
-  expect_equal(grid::current.viewport()$name, "caller")
+  expect_identical(layout$context$width, 384)
+  expect_identical(layout$context$height, 288)
+  expect_identical(layout$root$children[[1]]$box[["width"]], 192)
+  expect_identical(grid::current.viewport()$name, "caller")
   expect_no_error(grid::grid.draw(scene))
   expect_no_error(grid::grid.draw(gc_as_grob(scene)))
-  expect_equal(grid::current.viewport()$name, "caller")
+  expect_identical(grid::current.viewport()$name, "caller")
 })
 
-test_that("compiled drawing order, clipping, backgrounds and debug overlays are explicit", {
+test_that("draw order, clipping, backgrounds and debug overlays are explicit", {
   top <- gc_place(
     grid::rectGrob(),
     width = 40,
@@ -236,7 +244,7 @@ test_that("compiled drawing order, clipping, backgrounds and debug overlays are 
     100
   )
   tree <- compile_node(layout$root)
-  expect_equal(tree$children[[2]]$childrenOrder, c("bottom", "top"))
+  expect_identical(tree$children[[2]]$childrenOrder, c("bottom", "top"))
   expect_true(tree$children[[2]]$children[[1]]$vp$clip)
   expect_gt(
     length(compile_node(layout$root, debug = TRUE)$children),
@@ -275,4 +283,23 @@ test_that("title, legend and nested plots render without rasterizing", {
   on.exit(grDevices::dev.off())
   expect_no_warning(gc_render(final))
   expect_no_error(grid::grid.draw(gc_as_grob(final)))
+})
+
+test_that("content scaling covers absolute units, gtables and gTree children", {
+  rectangle <- grid::rectGrob(
+    width = grid::unit(10, "mm"),
+    height = grid::unit(0.5, "npc"),
+    gp = grid::gpar(lwd = 2)
+  )
+  scaled <- scale_content(rectangle, 2)
+  expect_identical(as.numeric(scaled$width), 20)
+  expect_identical(grid::unitType(scaled$width), "mm")
+  expect_identical(as.numeric(scaled$height), 0.5)
+  expect_identical(scaled$gp$lwd, 4)
+  label <- grid::textGrob("Label", gp = grid::gpar(fontsize = 10))
+  table <- gtable::gtable(grid::unit(1, "null"), grid::unit(1, "null"))
+  table <- gtable::gtable_add_grob(table, label, 1, 1)
+  expect_identical(scale_content(table, 2)$grobs[[1]]$gp$fontsize, 20)
+  tree <- grid::gTree(children = grid::gList(label))
+  expect_identical(scale_content(tree, 2)$children[[1]]$gp$fontsize, 20)
 })

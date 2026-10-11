@@ -7,7 +7,8 @@
 \method{print}{gc_length}(x, ...)
 }
 \arguments{
-\item{x}{An \code{gc_length} object, usually created by \code{\link[=gc_length]{gc_length()}} or \code{\link[=gc_clamp]{gc_clamp()}}.}
+\item{x}{An \code{gc_length} object, usually created by \code{\link[=gc_length]{gc_length()}} or
+\code{\link[=gc_clamp]{gc_clamp()}}.}
 
 \item{...}{Additional arguments required by the generic; currently unused.}
 }

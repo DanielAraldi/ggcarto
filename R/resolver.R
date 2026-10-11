@@ -1,7 +1,7 @@
 has_coordinates <- function(node) {
   any(vapply(
     node[c("x", "y", "top", "right", "bottom", "left")],
-    function(value) !is.null(value),
+    Negate(is.null),
     logical(1)
   ))
 }
@@ -66,7 +66,7 @@ resolve_border <- function(border, context, node) {
   }
   if (
     !is.list(border) ||
-      any(!names(border) %in% c("color", "colour", "width", "line_type"))
+      !all(names(border) %in% c("color", "colour", "width", "line_type"))
   ) {
     gc_abort(
       "border must be a color or a list of color, width and line_type.",
@@ -132,11 +132,14 @@ measure_content <- function(node, grob, context) {
   }
   if (
     length(dimensions) != 2L ||
-      any(!is.finite(dimensions)) ||
+      !all(is.finite(dimensions)) ||
       any(dimensions < 0)
   ) {
     gc_abort(
-      "Measurer must return finite, nonnegative width and height in logical pixels.",
+      paste0(
+        "Measurer must return finite, nonnegative width ",
+        "and height in logical pixels."
+      ),
       "invalid_measurement",
       node$id
     )
@@ -434,7 +437,10 @@ validate_resolved <- function(resolved, context) {
       )
   ) {
     gc_warn(
-      "Intrinsic content exceeds its box; no implicit clipping or text reflow is applied.",
+      paste0(
+        "Intrinsic content exceeds its box; no implicit ",
+        "clipping or text reflow is applied."
+      ),
       "overflow",
       resolved$id,
       "content"
@@ -462,7 +468,10 @@ resolve_children <- function(parent, context) {
   if (gap < 0) {
     gc_abort("gap cannot be negative.", node = parent$id, property = "gap")
   }
-  children <- lapply(parent$node$children, function(child) {
+  children <- vector("list", length(parent$node$children))
+  names(children) <- names(parent$node$children)
+  for (index in seq_along(parent$node$children)) {
+    child <- parent$node$children[[index]]
     original <- child
     flow <- parent$node$flow
     automatic <- !has_coordinates(child)
@@ -483,13 +492,13 @@ resolve_children <- function(parent, context) {
     if (flow %in% c("row", "column") && automatic) {
       dimension <- if (flow == "row") "width" else "height"
       sides <- if (flow == "row") c("left", "right") else c("top", "bottom")
-      cursor <<- cursor +
+      cursor <- cursor +
         result$box[[dimension]] +
         sum(result$margin[sides]) +
         gap
     }
-    result
-  })
+    children[[index]] <- result
+  }
   if (
     any(vapply(
       children,
@@ -585,7 +594,8 @@ root_context <- function(node, width, height, dpi) {
 #' The root content box accounts for padding and borders; child coordinates
 #' are local to their parent's content box. Implicit node IDs are assigned
 #' deterministically. Conflicting constraints raise errors. Unresolved box
-#' overflow and collision placement emit `ggcarto_overflow` and `ggcarto_collision`
+#' overflow and collision placement emit `ggcarto_overflow` and
+#' `ggcarto_collision`
 #' warnings rather than being silently repaired or clipped.
 #'
 #' Measurement uses the current graphics device's font metrics. If no device
@@ -659,7 +669,8 @@ gc_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
 #'
 #' @param object An ggcarto element, scene node, ggplot or grid grob.
 #' @param viewport A list with positive numeric `width` and `height` in logical
-#'   pixels. Optional `root_width` and `root_height` control root-relative units;
+#'   pixels. Optional `root_width` and `root_height` control root-relative
+#'   units;
 #'   otherwise each defaults to its corresponding local dimension.
 #' @inheritParams gc_resolve
 #'

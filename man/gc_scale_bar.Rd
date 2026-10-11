@@ -25,7 +25,8 @@ gc_scale_bar(
 \item{distance}{Positive distance in \code{unit}, or \code{NULL} to choose a 1, 2 or 5
 times a power of ten automatically.}
 
-\item{unit}{Display unit: \code{"km"}, \code{"m"}, \code{"ft"} (international feet) or \code{"mi"}.}
+\item{unit}{Display unit: \code{"km"}, \code{"m"}, \code{"ft"} (international feet) or
+\code{"mi"}.}
 
 \item{max_fraction}{Maximum fraction of the panel width for automatic
 distance selection, greater than zero and at most one. Explicit distances
@@ -35,7 +36,8 @@ ignore this preference but cannot exceed the displayed map width.}
 
 \item{subdivisions}{Number of tick subdivisions per interval, from 1 to 20.}
 
-\item{design}{\code{"bar"} for alternating filled segments or \code{"ticks"} for a line.}
+\item{design}{\code{"bar"} for alternating filled segments or \code{"ticks"} for a
+line.}
 
 \item{height}{Logical border-box height. The default is 9 mm.}
 

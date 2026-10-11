@@ -4,7 +4,8 @@
 #' independent graphics device. Export dimensions do not depend on the Plots
 #' pane or on the size of the current device.
 #'
-#' @param plot An explicit ggplot, grid grob, `gc_element` or `gc_viewport`/scene.
+#' @param plot An explicit ggplot, grid grob, `gc_element` or
+#'   `gc_viewport`/scene.
 #'   A filename, screenshot or resolved `gc_layout` is not an accepted source.
 #' @param type Single case-insensitive format: `"jpg"`, `"jpeg"`, `"png"`,
 #'   `"svg"` or `"webp"`. JPG and JPEG use the same encoder.
@@ -17,7 +18,8 @@
 #' @param width,height Positive numeric dimensions in logical pixels. Defaults
 #'   are 800 by 600, independent of the scene's root reference dimensions.
 #' @param dpi Positive raster density. Raster output is
-#'   `round(width * dpi / 96)` by `round(height * dpi / 96)` pixels. SVG dimensions
+#'   `round(width * dpi / 96)` by `round(height * dpi / 96)` pixels. SVG
+#'   dimensions
 #'   are `width / 96` by `height / 96` inches, independent of DPI.
 #' @param background Single valid device background color. PNG, SVG and WebP
 #'   allow `"transparent"`; JPEG requires an opaque color. Opaque scene
@@ -29,7 +31,8 @@
 #'
 #' @section Optional codecs:
 #' PNG and JPEG require **ragg**, SVG requires **svglite**, and WebP requires
-#' **ragg** and **webp**. Missing packages raise `ggcarto_missing_dependency` with
+#' **ragg** and **webp**. Missing packages raise `ggcarto_missing_dependency`
+#' with
 #' installation guidance; no packages are installed automatically. SVG preserves
 #' vector content, but source raster layers remain embedded raster images.
 #'
@@ -61,7 +64,9 @@
 #'   side effects.
 #' @seealso [gc_render()], [gc_viewport()], [gc_resolve()]
 #' @examples
-#' scene <- gc_viewport(list(gc_place(gc_text("Map export"), left = 12, top = 12)))
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_text("Map export"), left = 12, top = 12)
+#' ))
 #' if (requireNamespace("ragg", quietly = TRUE)) {
 #'   file <- gc_save(scene,
 #'     type = "png", dir = tempdir(),
@@ -103,7 +108,13 @@ gc_save <- function(
   type <- export_type(type)
   filename <- export_filename(type, dir, filename)
   settings <- export_settings(
-    type, width, height, dpi, background, quality, overwrite
+    type,
+    width,
+    height,
+    dpi,
+    background,
+    quality,
+    overwrite
   )
   require_export_codecs(type)
   destination <- export_destination(dir, filename, overwrite)
@@ -207,7 +218,7 @@ export_settings <- function(
   pixel_height <- round(height * dpi / 96)
   if (
     type != "svg" &&
-      (any(!is.finite(c(pixel_width, pixel_height))) ||
+      (!all(is.finite(c(pixel_width, pixel_height))) ||
         min(pixel_width, pixel_height) < 1 ||
         pixel_width * pixel_height > 1e8)
   ) {
@@ -247,6 +258,7 @@ require_export_codecs <- function(type) {
   }
   for (package in packages) {
     if (!requireNamespace(package, quietly = TRUE)) {
+      # nocov start: reachable only when an export codec is not installed
       gc_abort(
         paste0(
           "Exporting ",
@@ -259,6 +271,7 @@ require_export_codecs <- function(type) {
         ),
         "missing_dependency"
       )
+      # nocov end
     }
   }
   invisible(NULL)
@@ -367,7 +380,11 @@ publish_export <- function(temporary, destination) {
       file.info(temporary)$size == 0 ||
       !file.rename(temporary, destination)
   ) {
-    gc_abort("Could not publish the exported image.", "export", property = "dir")
+    gc_abort(
+      "Could not publish the exported image.",
+      "export",
+      property = "dir"
+    )
   }
   invisible(destination)
 }

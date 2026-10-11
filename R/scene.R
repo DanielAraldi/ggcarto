@@ -16,7 +16,7 @@ normalize_edges <- function(value = 0) {
     value <- list(value)
   }
   if (!is.null(names(value))) {
-    if (any(!names(value) %in% sides) || anyDuplicated(names(value))) {
+    if (!all(names(value) %in% sides) || anyDuplicated(names(value))) {
       gc_abort("Invalid edge names.")
     }
     edges <- stats::setNames(rep(list(gc_length(0)), 4L), sides)
@@ -148,7 +148,7 @@ update_node <- function(node, properties) {
   if (
     length(properties) &&
       (is.null(names(properties)) ||
-        any(!nzchar(names(properties))) ||
+        !all(nzchar(names(properties))) ||
         anyDuplicated(names(properties)))
   ) {
     gc_abort("Properties must have unique names.")
@@ -236,7 +236,7 @@ validate_node <- function(node) {
   }
   if (
     !is.null(node$candidates) &&
-      (!is.character(node$candidates) || any(!node$candidates %in% anchors))
+      (!is.character(node$candidates) || !all(node$candidates %in% anchors))
   ) {
     gc_abort(
       "Collision candidates must be valid anchors.",
@@ -248,11 +248,13 @@ validate_node <- function(node) {
 
 #' Position and constrain a graphics object in a scene
 #'
-#' Wrap a ggplot or grob as a scene node, or return an existing node with updated
+#' Wrap a ggplot or grob as a scene node, or return an existing node with
+#' updated
 #' logical placement properties. No drawing or device-dependent conversion
 #' occurs, and the input object is not modified.
 #'
-#' @param object A ggplot, grid grob, extracted `gc_element`, or existing ggcarto
+#' @param object A ggplot, grid grob, extracted `gc_element`, or existing
+#'   ggcarto
 #'   scene node. A ggplot's effective theme is captured when it becomes a node.
 #' @param x,y Optional anchor coordinates measured from the top-left of the
 #'   containing content box. Positive `y` points down. Values use [gc_length()].
@@ -359,7 +361,7 @@ assign_scene_ids <- function(node, path = "root") {
     node$id <- path
   }
   node$children <- lapply(seq_along(node$children), function(index) {
-    assign_scene_ids(node$children[[index]], paste0(path, "/", index))
+    assign_scene_ids(node$children[[index]], file.path(path, index))
   })
   node
 }
@@ -384,7 +386,8 @@ scene_ids <- function(node) {
 #' @param padding,margin One to four logical edge lengths, or a named list with
 #'   `top`, `right`, `bottom`, `left` entries. Padding is inside the box; margin
 #'   is outside. Unnamed shorthand follows CSS order: all; vertical/horizontal;
-#'   top/horizontal/bottom; or top/right/bottom/left. Missing named sides are zero.
+#'   top/horizontal/bottom; or top/right/bottom/left. Missing named sides are
+#'   zero.
 #' @param background Optional background fill color. `NULL` leaves it unset.
 #' @param responsive Logical; permits collision-driven shrinking of this node
 #'   when minimum dimensions are supplied. Logical units always resolve anew.
@@ -529,7 +532,7 @@ gc_join <- function(
 #' count. Unlike printing a ggplot, printing an ggcarto node does not draw it.
 #'
 #' @param x An `gc_node` or subclass, such as an `gc_element` or `gc_viewport`.
-#' @param ... Additional arguments required by the generic; currently unused.
+#' @inheritParams print.gc_length
 #' @details Dimensions are printed as stored declarations, not as resolved
 #'   measurements. An unassigned node ID is shown explicitly. Use [gc_resolve()]
 #'   to inspect calculated boxes and [gc_render()] to display the scene.

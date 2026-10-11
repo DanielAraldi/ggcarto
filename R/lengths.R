@@ -14,7 +14,8 @@
 #' One logical pixel is 1/96 inch and one point is 1/72 inch. Device DPI affects
 #' raster density, not the definition of these lengths. Percentages use the
 #' containing content box on the relevant axis. `vw` and `vh` are percentages
-#' of the root width and height; `vmin` and `vmax` use their minimum and maximum.
+#' of the root width and height; `vmin` and `vmax` use their minimum and
+#' maximum.
 #'
 #' Strings accept nested `min()`, `max()` and `clamp()` expressions. Parsing
 #' does not evaluate R code. `auto` is not allowed inside an expression. A
@@ -26,7 +27,8 @@
 #' elements and available space for plots, panels and viewports. It is not a
 #' request for text wrapping. These values are not [grid::unit()] objects.
 #'
-#' @returns An S3 `gc_length` object containing an unresolved value or expression.
+#' @returns An S3 `gc_length` object containing an unresolved value or
+#'   expression.
 #'   An existing `gc_length` is returned unchanged.
 #' @seealso [gc_clamp()], [gc_place()], [gc_resolve()]
 #' @examples
@@ -100,7 +102,10 @@ gc_length <- function(value = "auto", unit = "px") {
   matched <- regmatches(
     value,
     regexec(
-      "^([+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?)(px|%|pt|mm|cm|in|vw|vh|vmin|vmax)$",
+      paste0(
+        "^([+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?)",
+        "(px|%|pt|mm|cm|in|vw|vh|vmin|vmax)$"
+      ),
       value,
       perl = TRUE
     )
@@ -136,7 +141,7 @@ split_length_arguments <- function(text) {
     gc_abort("Unbalanced length expression.")
   }
   arguments <- c(arguments, substr(text, start, nchar(text)))
-  if (any(!nzchar(trimws(arguments)))) {
+  if (!all(nzchar(trimws(arguments)))) {
     gc_abort("Empty argument in length expression.")
   }
   arguments
@@ -189,10 +194,7 @@ format_length <- function(length) {
   paste0(
     length$kind,
     "(",
-    paste(
-      vapply(length$arguments, format_length, character(1)),
-      collapse = ", "
-    ),
+    toString(vapply(length$arguments, format_length, character(1))),
     ")"
   )
 }
@@ -202,7 +204,8 @@ format_length <- function(length) {
 #' Display the stored value or nested expression in a compact form. Printing
 #' does not convert units, create a device or draw graphics.
 #'
-#' @param x An `gc_length` object, usually created by [gc_length()] or [gc_clamp()].
+#' @param x An `gc_length` object, usually created by [gc_length()] or
+#'   [gc_clamp()].
 #' @param ... Additional arguments required by the generic; currently unused.
 #' @returns `x`, invisibly and unchanged. The formatted declaration is written
 #'   to the console as a side effect.

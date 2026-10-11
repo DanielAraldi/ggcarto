@@ -1,9 +1,11 @@
 require_cartography <- function() {
   if (!requireNamespace("sf", quietly = TRUE)) {
+    # nocov start: reachable only when sf is not installed
     gc_abort(
       "Cartographic functions require the optional sf package.",
       "missing_dependency"
     )
+    # nocov end
   }
 }
 
@@ -44,7 +46,10 @@ map_panel_context <- function(plot) {
   built <- ggplot2::ggplot_build(plot)
   panels <- built$layout$panel_params
   if (length(panels) != 1L) {
-    gc_abort("Cartographic frames require exactly one panel.", property = "plot")
+    gc_abort(
+      "Cartographic frames require exactly one panel.",
+      property = "plot"
+    )
   }
   panel <- panels[[1L]]
   crs <- sf::st_crs(panel$crs)
@@ -52,7 +57,7 @@ map_panel_context <- function(plot) {
   if (
     is.na(crs) ||
       length(ranges) != 4L ||
-      any(!is.finite(ranges)) ||
+      !all(is.finite(ranges)) ||
       diff(panel$x_range) <= 0 ||
       diff(panel$y_range) <= 0
   ) {
@@ -86,7 +91,8 @@ map_panel_context <- function(plot) {
 #'   including padding, border, background and positioning constraints.
 #'
 #' @details
-#' Requires the optional sf package. The source plot and its theme are preserved.
+#' Requires the optional sf package. The source plot and its theme are
+#' preserved.
 #' Titles, legends and axes are not included in the extracted panel; extract
 #' them separately with [gc_get_element()]. The actual built panel ranges,
 #' including coord_sf expansion, define the extent, not the data bounding box.
@@ -97,7 +103,8 @@ map_panel_context <- function(plot) {
 #'
 #' @returns An `gc_frame` inheriting from `gc_viewport` and `gc_node`, with a
 #'   `map_context` containing the displayed extent, CRS and aspect ratio.
-#' @seealso [gc_scale_bar()], [gc_inset()], [gc_viewport()], [gc_place()], [gc_get_element()]
+#' @seealso [gc_scale_bar()], [gc_inset()], [gc_viewport()], [gc_place()],
+#'   [gc_get_element()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {
 #'   area <- sf::st_as_sfc(sf::st_bbox(c(
@@ -166,7 +173,10 @@ gc_frame <- function(
 map_metres_per_unit <- function(context) {
   if (isTRUE(sf::st_is_longlat(context$crs))) {
     gc_abort(
-      "Scale bars require a projected CRS; angular coordinates are not distances.",
+      paste0(
+        "Scale bars require a projected CRS; angular ",
+        "coordinates are not distances."
+      ),
       "unsupported_crs"
     )
   }
@@ -283,7 +293,10 @@ bind_scale_bar <- function(node, context) {
   map <- context$map_panel
   if (is.null(map)) {
     gc_abort(
-      "Place gc_scale_bar() directly in the overlays of gc_frame() or gc_inset().",
+      paste0(
+        "Place gc_scale_bar() directly in the overlays ",
+        "of gc_frame() or gc_inset()."
+      ),
       "unbound_scale",
       node$id
     )
@@ -297,7 +310,10 @@ bind_scale_bar <- function(node, context) {
       node$collision %in% c("shrink", "avoid-and-shrink")
   ) {
     gc_abort(
-      "Scale width is geographic; do not override width, constrain it or shrink it.",
+      paste0(
+        "Scale width is geographic; do not override ",
+        "width, constrain it or shrink it."
+      ),
       "scale_constraint",
       node$id,
       "width"
@@ -349,13 +365,15 @@ bind_scale_bar <- function(node, context) {
 #'
 #' @param distance Positive distance in `unit`, or `NULL` to choose a 1, 2 or 5
 #'   times a power of ten automatically.
-#' @param unit Display unit: `"km"`, `"m"`, `"ft"` (international feet) or `"mi"`.
+#' @param unit Display unit: `"km"`, `"m"`, `"ft"` (international feet) or
+#'   `"mi"`.
 #' @param max_fraction Maximum fraction of the panel width for automatic
 #'   distance selection, greater than zero and at most one. Explicit distances
 #'   ignore this preference but cannot exceed the displayed map width.
 #' @param segments Number of labeled main intervals, from 1 to 20.
 #' @param subdivisions Number of tick subdivisions per interval, from 1 to 20.
-#' @param design `"bar"` for alternating filled segments or `"ticks"` for a line.
+#' @param design `"bar"` for alternating filled segments or `"ticks"` for a
+#'   line.
 #' @param height Logical border-box height. The default is 9 mm.
 #' @param col,fill,fill_secondary Outline/text and alternating segment colors.
 #' @param lwd Positive grid line width.

@@ -65,7 +65,7 @@ test_that("all twelve north arrow presets are lazy native grobs", {
     expect_s3_class(arrow, "gTree")
     expect_identical(arrow$name, "north")
     symbol <- arrow$children$symbol
-    expect_equal(symbol$vp$angle, 0)
+    expect_identical(symbol$vp$angle, 0)
     expect_identical(symbol$childrenOrder, c("body", "label"))
     expect_identical(symbol$children$label$label, "N")
     expect_gt(length(symbol$children$body$children), 0)
@@ -85,7 +85,7 @@ test_that("all twelve north arrow presets are lazy native grobs", {
   expect_identical(grDevices::dev.list(), devices)
 })
 
-test_that("all presets support styling and independently positioned rotated labels", {
+test_that("all presets support styling and independently rotated labels", {
   group <- grid::gpar(alpha = 0.7, col = "red", lwd = 4, linejoin = "bevel")
   label_style <- grid::gpar(col = "blue", fontface = "italic", fontsize = 15)
   original_group <- group
@@ -110,20 +110,20 @@ test_that("all presets support styling and independently positioned rotated labe
       vp = viewport
     )
     expect_identical(arrow$vp, viewport)
-    expect_equal(arrow$gp$alpha, 0.7)
-    expect_equal(arrow$gp$lwd, 0.8)
-    expect_equal(arrow$gp$col, "black")
-    expect_equal(arrow$gp$linejoin, "bevel")
+    expect_identical(arrow$gp$alpha, 0.7)
+    expect_identical(arrow$gp$lwd, 0.8)
+    expect_identical(arrow$gp$col, "black")
+    expect_identical(arrow$gp$linejoin, "bevel")
     symbol <- arrow$children$symbol
-    expect_equal(symbol$vp$angle, -30)
+    expect_identical(symbol$vp$angle, -30)
     label <- symbol$children$label
     expect_identical(label$label, "North")
     expect_identical(label$x, gc_unit(12, "mm"))
     expect_identical(label$y, gc_unit(0.88, "npc"))
-    expect_equal(label$gp$fontsize, 15)
-    expect_equal(label$gp$col, "blue")
-    expect_equal(label$gp$fontfamily, "serif")
-    expect_equal(unname(label$gp$font), 3L)
+    expect_identical(label$gp$fontsize, 15)
+    expect_identical(label$gp$col, "blue")
+    expect_identical(label$gp$fontfamily, "serif")
+    expect_identical(unname(label$gp$font), 3L)
     fills <- vapply(
       symbol$children$body$children,
       function(child) {
@@ -156,8 +156,8 @@ test_that("minimal arrows accept the full native arrow specification", {
   arrow <- gc_north_arrow("minimal", arrow = tip)
   shaft <- arrow$children$symbol$children$body$children$shaft
   expect_identical(shaft$arrow, tip)
-  expect_equal(as.numeric(shaft$x0), 0.5)
-  expect_equal(as.numeric(shaft$y1), 0.76)
+  expect_identical(as.numeric(shaft$x0), 0.5)
+  expect_identical(as.numeric(shaft$y1), 0.76)
   expect_null(
     gc_north_arrow(
       "minimal",
@@ -176,15 +176,15 @@ test_that("pennant uses a right triangular flag without an arrowhead", {
   flag <- body$children$flag
   expect_s3_class(flag, "polygon")
   coordinates <- cbind(as.numeric(flag$x), as.numeric(flag$y))
-  expect_equal(coordinates, cbind(c(0.5, 0.87, 0.5), c(0.8, 0.8, 0.5)))
-  expect_equal(
+  expect_identical(coordinates, cbind(c(0.5, 0.87, 0.5), c(0.8, 0.8, 0.5)))
+  expect_identical(
     sum(
       (coordinates[2, ] - coordinates[1, ]) *
         (coordinates[3, ] - coordinates[1, ])
     ),
     0
   )
-  expect_equal(
+  expect_identical(
     coordinates[1, ],
     c(
       as.numeric(body$children$mast$x)[[2]],
@@ -193,7 +193,7 @@ test_that("pennant uses a right triangular flag without an arrowhead", {
   )
   expect_identical(flag$gp$fill, "red")
   expect_identical(symbol$children$label$label, "N")
-  expect_equal(symbol$vp$angle, 25)
+  expect_identical(symbol$vp$angle, 25)
 })
 
 test_that("filled presets layer primary and secondary colours", {
@@ -242,7 +242,7 @@ test_that("custom bodies retain their geometry, styles and viewports", {
   for (children in list(list(child), grid::gList(child))) {
     arrow <- gc_north_arrow(children = children, angle = 45, col = "black")
     expect_identical(arrow$children$symbol$children$body$children$custom, child)
-    expect_equal(arrow$children$symbol$vp$angle, 45)
+    expect_identical(arrow$children$symbol$vp$angle, 45)
   }
   expect_identical(child, original)
   expect_length(
@@ -315,7 +315,9 @@ test_that("invalid north arrow inputs fail at construction", {
   expect_error(gc_north_arrow(children = 1), class = "ggcarto_error")
   expect_error(gc_north_arrow(gp = list("red")), class = "ggcarto_error")
   expect_error(
-    gc_north_arrow(label_gp = list(col = "red", col = "blue")),
+    gc_north_arrow(
+      label_gp = stats::setNames(list("red", "blue"), c("col", "col"))
+    ),
     class = "ggcarto_error"
   )
 })
@@ -333,7 +335,7 @@ test_that("every preset integrates with extraction and explicit layout sizes", {
       padding = 4
     )
     expect_no_warning(layout <- gc_render(scene))
-    expect_equal(
+    expect_identical(
       layout$root$children[[1]]$box[c("width", "height")],
       c(width = 40, height = 68)
     )
@@ -343,7 +345,7 @@ test_that("every preset integrates with extraction and explicit layout sizes", {
   }
 })
 
-test_that("all presets have distinct nonblank raster output at different sizes", {
+test_that("all presets have distinct nonblank raster output at two sizes", {
   skip_if_not_installed("ragg")
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()

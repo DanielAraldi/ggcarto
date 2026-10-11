@@ -12,10 +12,12 @@ gc_as_grob(object, dpi = 96, debug = FALSE)
 \item{dpi}{Positive output-density metadata; logical pixels remain 1/96 inch.}
 
 \item{debug}{Logical; whether drawing should add layout diagnostic overlays
-for boxes, content areas, margins, intrinsic bounds, anchors and candidates.}
+for boxes, content areas, margins, intrinsic bounds, anchors and
+candidates.}
 }
 \value{
-A \code{gc_scene_grob}, also a grid \code{gTree} and \code{grob}, storing the logical
+A \code{gc_scene_grob}, also a grid \code{gTree} and \code{grob}, storing the
+logical
 scene and drawing options. Its children are prepared at drawing time.
 }
 \description{
@@ -30,11 +32,14 @@ viewport to control its space when embedding it in another grid composition.
 
 The wrapper does not implement custom \code{widthDetails} or \code{heightDetails}
 methods. External systems that request intrinsic dimensions may therefore
-need an explicit viewport. Use \code{\link[=gc_measure]{gc_measure()}} or \code{\link[=gc_resolve]{gc_resolve()}} for ggcarto size
+need an explicit viewport. Use \code{\link[=gc_measure]{gc_measure()}} or \code{\link[=gc_resolve]{gc_resolve()}} for ggcarto
+size
 inspection; do not assume automatic sizing in every third-party grob layout.
 }
 \examples{
-scene <- gc_viewport(list(gc_place(gc_text("Deferred layout"), left = 10, top = 10)))
+scene <- gc_viewport(list(
+  gc_place(gc_text("Deferred layout"), left = 10, top = 10)
+))
 grob <- gc_as_grob(scene)
 grid::is.grob(grob)
 grid::grid.newpage()

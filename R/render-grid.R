@@ -30,7 +30,7 @@ scale_content <- function(grob, factor) {
     value <- grob[[property]]
     if (grid::is.unit(value)) {
       relative <- grid::unitType(value) %in% c("npc", "native", "null", "snpc")
-      if (any(!relative)) {
+      if (!all(relative)) {
         value[!relative] <- value[!relative] * factor
       }
       grob[[property]] <- value
@@ -188,7 +188,8 @@ compile_node <- function(resolved, debug = FALSE, ancestor_clips = FALSE) {
 #' @param object An ggcarto scene, viewport, element, ggplot or grid grob.
 #' @param dpi Positive output-density metadata; logical pixels remain 1/96 inch.
 #' @param debug Logical; whether drawing should add layout diagnostic overlays
-#'   for boxes, content areas, margins, intrinsic bounds, anchors and candidates.
+#'   for boxes, content areas, margins, intrinsic bounds, anchors and
+#'   candidates.
 #'
 #' @details
 #' This is an interoperability wrapper, not a frozen image or precomputed
@@ -198,14 +199,18 @@ compile_node <- function(resolved, debug = FALSE, ancestor_clips = FALSE) {
 #'
 #' The wrapper does not implement custom `widthDetails` or `heightDetails`
 #' methods. External systems that request intrinsic dimensions may therefore
-#' need an explicit viewport. Use [gc_measure()] or [gc_resolve()] for ggcarto size
+#' need an explicit viewport. Use [gc_measure()] or [gc_resolve()] for ggcarto
+#' size
 #' inspection; do not assume automatic sizing in every third-party grob layout.
 #'
-#' @returns A `gc_scene_grob`, also a grid `gTree` and `grob`, storing the logical
+#' @returns A `gc_scene_grob`, also a grid `gTree` and `grob`, storing the
+#'   logical
 #'   scene and drawing options. Its children are prepared at drawing time.
 #' @seealso [gc_render()], [grid::grid.draw()], [grid::makeContent()]
 #' @examples
-#' scene <- gc_viewport(list(gc_place(gc_text("Deferred layout"), left = 10, top = 10)))
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_text("Deferred layout"), left = 10, top = 10)
+#' ))
 #' grob <- gc_as_grob(scene)
 #' grid::is.grob(grob)
 #' grid::grid.newpage()
@@ -239,7 +244,9 @@ gc_as_grob <- function(object, dpi = 96, debug = FALSE) {
 #'   and logical scene are not mutated.
 #' @seealso [gc_as_grob()], [gc_resolve()], [grid::makeContent()]
 #' @examples
-#' scene <- gc_viewport(list(gc_place(gc_text("Prepared by grid"), left = 10, top = 10)))
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_text("Prepared by grid"), left = 10, top = 10)
+#' ))
 #' grid::grid.newpage()
 #' grob <- gc_as_grob(scene)
 #' prepared <- grid::makeContent(grob)

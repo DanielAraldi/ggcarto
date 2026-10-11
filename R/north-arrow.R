@@ -45,7 +45,8 @@
 #' not measure bounds, shrink content or override parent clipping.
 #'
 #' This function does not infer a CRS or calculate true or magnetic north.
-#' Supply `angle` from [gc_north_angle()] for your map and reference location when
+#' Supply `angle` from [gc_north_angle()] for your map and reference location
+#' when
 #' geographic orientation is needed. Additional rotation in `vp` is cumulative.
 #' Custom children should point up before rotation and use the same local
 #' coordinate system. They can contain arbitrary grid geometry, including
@@ -54,7 +55,8 @@
 #'
 #' @returns A native grid `gTree`, suitable for [grid::grid.draw()],
 #'   [gc_template()], [gc_get_element()], [gc_place()] and [gc_save()].
-#' @seealso [gc_north_angle()], [gc_template()], [gc_text()], [gc_unit()], [grid::arrow()]
+#' @seealso [gc_north_angle()], [gc_template()], [gc_text()], [gc_unit()],
+#'   [grid::arrow()]
 #' @examples
 #' north <- gc_north_arrow("classic", fill = "#197C80", angle = 12)
 #' scene <- gc_viewport(list(
@@ -114,7 +116,7 @@ gc_north_arrow <- function(
       !design %in% designs
   ) {
     gc_abort(
-      paste0("design must be one of: ", paste(designs, collapse = ", "), "."),
+      paste0("design must be one of: ", toString(designs), "."),
       property = "design"
     )
   }

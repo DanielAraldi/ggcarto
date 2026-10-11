@@ -118,7 +118,8 @@ native_adapter <- function(type) {
 #' `plot_background` and `panel_background`.
 #'
 #' Direct grobs additionally support `north_arrow`, `north_rose`, `scale_bar`,
-#' `map_frame`, `credits`, `annotation`, `inset` and `custom`. These names classify
+#' `map_frame`, `credits`, `annotation`, `inset` and `custom`. These names
+#' classify
 #' supplied grobs; they do not construct geographic symbols, scales or insets.
 #' Native adapters also accept direct grobs without extracting subcomponents.
 #'
@@ -127,13 +128,18 @@ native_adapter <- function(type) {
 #' lookup, global registration or required cowplot adapter.
 #'
 #' @returns A named list with classes `gc_registry` and `list`. Each entry holds
-#'   extraction, acceptance, optional measurement and optional styling callbacks,
+#'   extraction, acceptance, optional measurement and optional styling
+#'   callbacks,
 #'   plus an internal native-adapter flag.
 #' @seealso [gc_register_element()], [gc_get_element()]
 #' @examples
 #' registry <- gc_registry()
 #' names(registry)
-#' note <- gc_get_element(gc_text("Survey credits"), "credits", registry = registry)
+#' note <- gc_get_element(
+#'   gc_text("Survey credits"),
+#'   "credits",
+#'   registry = registry
+#' )
 #' print(note)
 #' @export
 gc_registry <- function() {
@@ -272,7 +278,8 @@ gc_register_element <- function(
 #' @param responsive Logical permission for collision-driven shrinking.
 #'   This does not disable resolution of logical units on subsequent draws.
 #' @param collision Collision policy: `"none"`, `"avoid"`, `"shrink"` or
-#'   `"avoid-and-shrink"`. See [gc_place()] for movement and shrinking conditions.
+#'   `"avoid-and-shrink"`. See [gc_place()] for movement and shrinking
+#'   conditions.
 #' @param priority Finite numeric priority for collision placement. Larger
 #'   values are handled first.
 #' @param registry Explicit `gc_registry`, normally from [gc_registry()] or
@@ -306,7 +313,8 @@ gc_register_element <- function(
 #' `ggcarto_invalid_extractor`. These inherit from `ggcarto_error`.
 #'
 #' @returns An `gc_element` inheriting from `gc_node`, or `NULL` when permitted
-#'   absence is requested. The node retains its source, adapter and declarations.
+#'   absence is requested. The node retains its source, adapter and
+#'   declarations.
 #' @seealso [gc_without()], [gc_style()], [gc_register_element()], [gc_place()]
 #' @examples
 #' plot <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) +
@@ -448,12 +456,15 @@ gc_without <- function(plot, type) {
   if (!inherits(plot, "ggplot")) {
     gc_abort("gc_without() requires a ggplot.", "unsupported_source")
   }
-  if (!is.character(type) || any(!type %in% native_types)) {
+  if (!is.character(type) || !all(type %in% native_types)) {
     gc_abort("Unknown element type in gc_without().")
   }
   if ("panel" %in% type) {
     gc_abort(
-      "Removing data panels is not supported; compose extracted elements instead."
+      paste0(
+        "Removing data panels is not supported; compose ",
+        "extracted elements instead."
+      )
     )
   }
   result <- plot

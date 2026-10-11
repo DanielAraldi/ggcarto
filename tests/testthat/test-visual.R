@@ -35,7 +35,7 @@ test_that("the same scene resolves on differently sized visual viewports", {
   }
 })
 
-test_that("custom cartographic symbols and collision fallback render natively", {
+test_that("custom map symbols and collision fallback render natively", {
   skip_if_not_installed("vdiffr")
   arrow <- grid::grobTree(
     grid::polygonGrob(

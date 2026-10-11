@@ -40,7 +40,8 @@ initial properties, before style overrides; see \code{\link[=gc_place]{gc_place(
 This does not disable resolution of logical units on subsequent draws.}
 
 \item{collision}{Collision policy: \code{"none"}, \code{"avoid"}, \code{"shrink"} or
-\code{"avoid-and-shrink"}. See \code{\link[=gc_place]{gc_place()}} for movement and shrinking conditions.}
+\code{"avoid-and-shrink"}. See \code{\link[=gc_place]{gc_place()}} for movement and shrinking
+conditions.}
 
 \item{priority}{Finite numeric priority for collision placement. Larger
 values are handled first.}
@@ -63,7 +64,8 @@ are not forwarded to the extraction callback.}
 }
 \value{
 An \code{gc_element} inheriting from \code{gc_node}, or \code{NULL} when permitted
-absence is requested. The node retains its source, adapter and declarations.
+absence is requested. The node retains its source, adapter and
+declarations.
 }
 \description{
 Extract a component from an explicit ggplot source or wrap a supplied grob

@@ -49,7 +49,7 @@ rose_gallery <- function(...) {
   gc_viewport(children, background = "white")
 }
 
-test_that("all twelve compass roses construct without drawing or opening devices", {
+test_that("all twelve compass roses construct without opening devices", {
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()
   for (design in rose_designs) {
@@ -70,7 +70,7 @@ test_that("point-count designs contain the requested number of split tips", {
     design <- rose_designs[[match(count, c(4, 8, 16, 32))]]
     body <- gc_north_rose(design)$children$rose$children$body
     expect_length(body$children, count * 2)
-    expect_equal(
+    expect_identical(
       as.numeric(body$children[[1]]$y)[[3]],
       0.5 + if (count == 4) 0.33 else 0.34
     )
@@ -81,15 +81,15 @@ test_that("point-count designs contain the requested number of split tips", {
   }
 })
 
-test_that("every design renders nonblank and distinct through ggcarto at two sizes", {
+test_that("every design renders nonblank and distinct at two sizes", {
   skip_if_not_installed("ragg")
   for (size in list(c(120, 120), c(240, 160))) {
     images <- lapply(rose_designs, function(design) {
       capture_rose(gc_north_rose(design, labels = FALSE), size)
     })
     for (index in seq_along(images)) {
-      expect_true(
-        any(!tolower(images[[index]]) %in% c("white", "#ffffff")),
+      expect_false(
+        all(tolower(images[[index]]) %in% c("white", "#ffffff")),
         info = rose_designs[[index]]
       )
     }
@@ -214,34 +214,34 @@ test_that("styling and outer viewports are preserved without input mutation", {
   expect_identical(list(gp, label_gp, viewport), original)
   expect_identical(rose$vp, viewport)
   expect_identical(rose$name, "styled-rose")
-  expect_equal(rose$gp$col, "black")
-  expect_equal(rose$gp$lwd, 2)
-  expect_equal(rose$gp$alpha, 0.8)
-  expect_equal(rose$gp$lty, "dashed")
-  expect_equal(rose$children$rose$vp$angle, 25)
+  expect_identical(rose$gp$col, "black")
+  expect_identical(rose$gp$lwd, 2)
+  expect_identical(rose$gp$alpha, 0.8)
+  expect_identical(rose$gp$lty, "dashed")
+  expect_identical(rose$children$rose$vp$angle, 25)
   expect_identical(rose$children$rose$vp$width, grid::unit(1, "snpc"))
   expect_identical(rose$children$rose$vp$height, grid::unit(1, "snpc"))
   labels <- rose$children$rose$children$labels
-  expect_equal(labels$gp$col, "blue")
-  expect_equal(labels$gp$fontsize, 14)
-  expect_equal(unname(labels$gp$font), 3L)
-  expect_equal(labels$gp$fontfamily, "mono")
+  expect_identical(labels$gp$col, "blue")
+  expect_identical(labels$gp$fontsize, 14)
+  expect_identical(unname(labels$gp$font), 3L)
+  expect_identical(labels$gp$fontfamily, "mono")
   body <- rose$children$rose$children$body
-  expect_equal(body$children[[1]]$gp$fill, "red")
-  expect_equal(body$children[[2]]$gp$fill, "gold")
-  expect_equal(
+  expect_identical(body$children[[1]]$gp$fill, "red")
+  expect_identical(body$children[[2]]$gp$fill, "gold")
+  expect_identical(
     gc_north_rose("minimal", lwd = 2)$children$rose$children$body$gp$lwd,
     1.3
   )
-  expect_equal(
+  expect_identical(
     gc_north_rose("ornamental")$children$rose$children$labels$gp$fontfamily,
     "serif"
   )
-  expect_equal(
+  expect_identical(
     gc_north_rose(
       label_gp = list(font = 4)
     )$children$rose$children$labels$gp$font,
-    4
+    4L
   )
 })
 
@@ -271,8 +271,16 @@ test_that("malformed rose settings produce errors at construction", {
     lwd = list(0, -1, Inf, NA, "1"),
     fontsize = list(0, -1, Inf, NA),
     fontfamily = list(NA_character_, c("serif", "mono"), 1),
-    gp = list("red", list("red"), list(col = "red", col = "blue")),
-    label_gp = list("red", list("red"), list(col = "red", col = "blue"))
+    gp = list(
+      "red",
+      list("red"),
+      stats::setNames(list("red", "blue"), c("col", "col"))
+    ),
+    label_gp = list(
+      "red",
+      list("red"),
+      stats::setNames(list("red", "blue"), c("col", "col"))
+    )
   )
   for (property in names(invalid)) {
     for (value in invalid[[property]]) {
@@ -313,11 +321,11 @@ test_that("all rose presets integrate with semantic extraction and layout", {
     expect_identical(element$metadata$design, design)
     scene <- gc_viewport(list(gc_place(element, right = 10, top = 10)))
     layout <- gc_resolve(scene, width = 400, height = 240)
-    expect_equal(
+    expect_identical(
       layout$root$children[[1]]$box,
       c(x = 270, y = 10, width = 120, height = 120)
     )
-    expect_true(grid::is.grob(prepared(element)))
+    expect_s3_class(prepared(element), "grob")
     expect_identical(rose, original)
   }
 })
@@ -396,7 +404,7 @@ test_that("default and customized roses have stable visual galleries", {
   )
 })
 
-test_that("compass roses export as native SVG without changing the caller device", {
+test_that("compass roses export as native SVG, keeping the caller device", {
   skip_if_not_installed("svglite")
   directory <- tempfile("north-rose-export-")
   on.exit(unlink(directory, recursive = TRUE), add = TRUE)

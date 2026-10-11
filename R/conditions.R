@@ -14,7 +14,12 @@ gc_abort <- function(
       node = node,
       property = property
     ),
-    class = c(paste0("ggcarto_", subclass), "ggcarto_error", "error", "condition")
+    class = c(
+      paste0("ggcarto_", subclass),
+      "ggcarto_error",
+      "error",
+      "condition"
+    )
   ))
 }
 

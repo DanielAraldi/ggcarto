@@ -29,7 +29,8 @@ this value does not redefine lengths or change the current device.}
 Use \code{FALSE} to draw inside a caller-supplied viewport on the current page.}
 
 \item{debug}{Logical; whether drawing should add layout diagnostic overlays
-for boxes, content areas, margins, intrinsic bounds, anchors and candidates.}
+for boxes, content areas, margins, intrinsic bounds, anchors and
+candidates.}
 }
 \value{
 The initial resolved \code{gc_layout}, invisibly. The visible side effect

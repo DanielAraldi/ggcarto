@@ -31,7 +31,8 @@ numeric properties remain logical pixels.}
 \item{padding, margin}{One to four logical edge lengths, or a named list with
 \code{top}, \code{right}, \code{bottom}, \code{left} entries. Padding is inside the box; margin
 is outside. Unnamed shorthand follows CSS order: all; vertical/horizontal;
-top/horizontal/bottom; or top/right/bottom/left. Missing named sides are zero.}
+top/horizontal/bottom; or top/right/bottom/left. Missing named sides are
+zero.}
 
 \item{background}{Optional background fill color. \code{NULL} leaves it unset.}
 

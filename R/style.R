@@ -30,7 +30,8 @@ text_types <- c(
 #' * Native legends additionally accept `legend.direction` (`"horizontal"`
 #'   or `"vertical"`), `legend.key_width` and `legend.key_height`.
 #' * Elements accept presentation properties `background`, `border`, `padding`,
-#'   `margin`, `alpha` and `opacity`. Opacity values must be between zero and one;
+#'   `margin`, `alpha` and `opacity`. Opacity values must be between zero and
+#'   one;
 #'   `opacity` takes precedence over `alpha` when both are present.
 #' * Whole plots and viewports accept only `background`, `border`, `padding`
 #'   and `margin`, not typography or alpha overrides.
@@ -55,9 +56,13 @@ text_types <- c(
 #'
 #' @returns A styled `gc_node`, retaining any element or viewport subclasses.
 #'   With no overrides, returns the normalized node unchanged.
-#' @seealso [gc_get_element()], [gc_text()], [gc_measure()], [gc_register_element()]
+#' @seealso [gc_get_element()], [gc_text()], [gc_measure()],
+#'   [gc_register_element()]
 #' @examples
-#' original <- gc_get_element(gc_text("Survey area", fontsize = 10), "annotation")
+#' original <- gc_get_element(
+#'   gc_text("Survey area", fontsize = 10),
+#'   "annotation"
+#' )
 #' styled <- gc_style(original,
 #'   color = "#194E70",
 #'   font_size = "clamp(10pt, 2vmin, 18pt)", background = "white", padding = 4
@@ -76,7 +81,7 @@ gc_style <- function(object, ...) {
   }
   if (
     is.null(names(style)) ||
-      any(!nzchar(names(style))) ||
+      !all(nzchar(names(style))) ||
       anyDuplicated(names(style))
   ) {
     gc_abort("Styles must be uniquely named.")
@@ -136,7 +141,7 @@ gc_style <- function(object, ...) {
         "Unsupported style for ",
         type,
         ": ",
-        paste(invalid, collapse = ", ")
+        toString(invalid)
       ),
       property = "style"
     )

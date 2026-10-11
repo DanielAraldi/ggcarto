@@ -12,7 +12,7 @@ map_footprint <- function(source, destination) {
   geographic <- sf::st_transform(polygon, 4326, partial = FALSE)
   longitude <- sf::st_coordinates(geographic)[, "X"]
   longitude <- (longitude + 180) %% 360 - 180
-  if (any(!is.finite(longitude)) || any(abs(diff(longitude)) > 180)) {
+  if (!all(is.finite(longitude)) || any(abs(diff(longitude)) > 180)) {
     gc_abort(
       "Inset footprints crossing the antimeridian are not supported.",
       "inset_projection"
@@ -28,7 +28,7 @@ map_footprint <- function(source, destination) {
     }
   )
   coordinates <- sf::st_coordinates(transformed)
-  if (any(sf::st_is_empty(transformed)) || any(!is.finite(coordinates))) {
+  if (any(sf::st_is_empty(transformed)) || !all(is.finite(coordinates))) {
     gc_abort(
       "The inset footprint falls outside the target projection.",
       "inset_projection"
@@ -101,7 +101,8 @@ footprint_node <- function(footprint, context, col, fill, lwd) {
 #' detail-mode parent highlighting requires insertion in the main frame.
 #' No connector lines or automatic cartographic feature selection are added.
 #'
-#' @returns An `gc_inset` inheriting from `gc_frame`, `gc_viewport` and `gc_node`.
+#' @returns An `gc_inset` inheriting from `gc_frame`, `gc_viewport` and
+#'   `gc_node`.
 #'   `reference_context` stores the main extent and CRS; `footprint` holds the
 #'   transformed sf polygon when highlighting is enabled. Inputs are unchanged.
 #' @seealso [gc_frame()], [gc_scale_bar()], [gc_place()]

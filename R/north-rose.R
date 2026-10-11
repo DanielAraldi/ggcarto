@@ -18,9 +18,10 @@ north_rose_polar <- function(angle, radius) {
 }
 
 north_rose_body <- function(design, points, fill, fill_secondary) {
-  shapes <- list()
+  collected <- new.env(parent = emptyenv())
+  collected$shapes <- list()
   add <- function(grob) {
-    shapes[[length(shapes) + 1L]] <<- grob
+    collected$shapes[[length(collected$shapes) + 1L]] <- grob
   }
   polygon <- function(angle, radius, colour, name) {
     position <- north_rose_polar(angle, radius)
@@ -167,7 +168,7 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
       star(4, c(0.36, 0.30, 0.32, 0.30), inner = 0.10, prefix = "cardinal")
     }
   )
-  shapes
+  collected$shapes
 }
 
 #' Create customizable compass roses
@@ -194,7 +195,6 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #'   Use `NA` for unfilled shapes. Line-only parts do not use fills.
 #' @param lwd Positive grid line width. The `"minimal"` preset uses 65 percent
 #'   of this value. Font sizes and line widths do not scale with the viewport.
-#' @param fontsize Positive label font size in points.
 #' @param fontface,fontfamily Native grid font face and family. When `NULL`,
 #'   `fontfamily` uses `"serif"` for `"nautical"` and `"ornamental"`, and the
 #'   device default family for the other presets.
@@ -204,7 +204,8 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #' @param label_gp Label-specific graphical overrides, including colour and
 #'   typography, as a [grid::gpar()] or uniquely named list.
 #' @param name Optional grid grob name, distinct from a scene node ID.
-#' @param vp Optional outer grid viewport, viewport name or viewport path.
+#' @inheritParams gc_scale_bar
+#' @inheritParams gc_north_arrow
 #'
 #' @details
 #' The rose occupies a centered square with side equal to the shorter dimension
@@ -222,7 +223,8 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #' `"asymmetric"` combines broad cardinal tips with smaller intercardinal
 #' diamonds and an emphasized north tip.
 #'
-#' Supply explicit sizes with [gc_place()] or [gc_get_element()]: a generic gTree
+#' Supply explicit sizes with [gc_place()] or [gc_get_element()]: a generic
+#' gTree
 #' has no automatic child bounding-box measurement. Start with a 120 by 120
 #' logical-pixel box and enlarge it for dense or long labels. Text is not
 #' automatically shrunk, wrapped or collision-checked, and parent clipping is
@@ -231,12 +233,15 @@ north_rose_body <- function(design, points, fill, fill_secondary) {
 #'
 #' This is graphical content, not a geographic calculation. It does not inspect
 #' a map, calculate true north or apply magnetic declination. Supply an angle
-#' computed by [gc_north_angle()] for the map and reference location when required.
+#' computed by [gc_north_angle()] for the map and reference location when
+#' required.
 #' No spatial packages are needed to construct or render the rose.
 #'
-#' @returns A native grid `gTree`, usable with [grid::grid.draw()], [gc_template()],
+#' @returns A native grid `gTree`, usable with [grid::grid.draw()],
+#'   [gc_template()],
 #'   [gc_place()], [gc_get_element()] and [gc_save()].
-#' @seealso [gc_north_angle()], [gc_template()], [gc_unit()], [gc_place()], [gc_get_element()]
+#' @seealso [gc_north_angle()], [gc_template()], [gc_unit()], [gc_place()],
+#'   [gc_get_element()]
 #' @examples
 #' rose <- gc_north_rose("eight_point", fill = "#197C80")
 #' scene <- gc_viewport(list(
@@ -272,7 +277,7 @@ gc_north_rose <- function(
     gc_abort(
       paste(
         "design must be one of:",
-        paste(north_rose_designs, collapse = ", ")
+        toString(north_rose_designs)
       ),
       property = "design"
     )

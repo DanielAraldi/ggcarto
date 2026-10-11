@@ -42,7 +42,12 @@ map_complex_scene <- function() {
     distance_m = 50000,
     overlays = list(
       map_locator(counties, plot),
-      ggcarto::gc_place(map_north_arrow(focus), right = 12, top = 12, z_index = 30)
+      ggcarto::gc_place(
+        map_north_arrow(focus),
+        right = 12,
+        top = 12,
+        z_index = 30
+      )
     )
   )
   map <- ggcarto::gc_viewport(list(
@@ -133,10 +138,11 @@ map_complex_scene <- function() {
       ),
       ggcarto::gc_place(
         ggcarto::gc_text(
-          paste(
-            "Fonte: sf::nc | NAD83 / North Carolina (m) | Escala em distancia projetada",
-            "Indicadores incluem o total de cada condado que intersecta o recorte.",
-            sep = "\n"
+          paste0(
+            "Fonte: sf::nc | NAD83 / North Carolina (m) | ",
+            "Escala em distancia projetada\n",
+            "Indicadores incluem o total de cada condado ",
+            "que intersecta o recorte."
           ),
           fontsize = 8,
           col = "#50666C"

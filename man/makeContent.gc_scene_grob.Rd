@@ -30,7 +30,9 @@ The method uses \code{\link[=gc_resolve]{gc_resolve()}} and can emit its layout 
 content but does not itself draw it or start a new page.
 }
 \examples{
-scene <- gc_viewport(list(gc_place(gc_text("Prepared by grid"), left = 10, top = 10)))
+scene <- gc_viewport(list(
+  gc_place(gc_text("Prepared by grid"), left = 10, top = 10)
+))
 grid::grid.newpage()
 grob <- gc_as_grob(scene)
 prepared <- grid::makeContent(grob)
