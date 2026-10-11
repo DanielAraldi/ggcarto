@@ -86,7 +86,16 @@ local({
   )
   print(data.frame(package = suggested, available = visible))
   if (mode == "no-suggests") {
-    stopifnot(!any(visible))
+    # Suggests that are also hard dependencies of Imports (e.g. withr via
+    # ggplot2) are always installed, so they cannot be absent.
+    transitive <- tools::package_dependencies(
+      required,
+      db = installed.packages(),
+      which = hard_fields,
+      recursive = TRUE
+    )
+    transitive <- unique(unlist(transitive, use.names = FALSE))
+    stopifnot(!any(visible[!suggested %in% transitive]))
   }
   print(sessionInfo())
   writeLines(capture.output(sessionInfo()), "session-info.txt")

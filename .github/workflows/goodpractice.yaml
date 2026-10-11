@@ -45,7 +45,20 @@ jobs:
             any::lintr
             any::cyclocomp
             any::spelling
+            any::tinytex
           needs: check
+
+      - uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Install LaTeX packages
+        shell: Rscript {0}
+        run: |
+          tinytex::tlmgr_install(c(
+            "inconsolata",
+            "helvetic",
+            "ec",
+            "makeindex"
+          ))
 
       - name: Run goodpractice
         env:
