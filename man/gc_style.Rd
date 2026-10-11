@@ -50,7 +50,8 @@ Use \code{\link[=gc_measure]{gc_measure()}} and \code{\link[=gc_resolve]{gc_reso
 \item Native legends additionally accept \code{legend.direction} (\code{"horizontal"}
 or \code{"vertical"}), \code{legend.key_width} and \code{legend.key_height}.
 \item Elements accept presentation properties \code{background}, \code{border}, \code{padding},
-\code{margin}, \code{alpha} and \code{opacity}. Opacity values must be between zero and one;
+\code{margin}, \code{alpha} and \code{opacity}. Opacity values must be between zero and
+one;
 \code{opacity} takes precedence over \code{alpha} when both are present.
 \item Whole plots and viewports accept only \code{background}, \code{border}, \code{padding}
 and \code{margin}, not typography or alpha overrides.
@@ -58,7 +59,10 @@ and \code{margin}, not typography or alpha overrides.
 }
 
 \examples{
-original <- gc_get_element(gc_text("Survey area", fontsize = 10), "annotation")
+original <- gc_get_element(
+  gc_text("Survey area", fontsize = 10),
+  "annotation"
+)
 styled <- gc_style(original,
   color = "#194E70",
   font_size = "clamp(10pt, 2vmin, 18pt)", background = "white", padding = 4
@@ -69,5 +73,6 @@ viewport <- gc_style(gc_viewport(), background = "#EDF3F5", padding = "2mm")
 print(viewport)
 }
 \seealso{
-\code{\link[=gc_get_element]{gc_get_element()}}, \code{\link[=gc_text]{gc_text()}}, \code{\link[=gc_measure]{gc_measure()}}, \code{\link[=gc_register_element]{gc_register_element()}}
+\code{\link[=gc_get_element]{gc_get_element()}}, \code{\link[=gc_text]{gc_text()}}, \code{\link[=gc_measure]{gc_measure()}},
+\code{\link[=gc_register_element]{gc_register_element()}}
 }

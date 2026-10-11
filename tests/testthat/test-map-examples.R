@@ -15,7 +15,7 @@ load_map_examples <- function() {
   environment
 }
 
-test_that("simple maps work without utilities and extract only title and legend", {
+test_that("simple maps need no utilities and extract only title and legend", {
   skip_if_not_installed("sf")
   examples <- new.env(parent = baseenv())
   sys.source(
@@ -46,13 +46,13 @@ test_that("simple maps work without utilities and extract only title and legend"
   expect_identical(legend$source$labels$title, "Nascimentos por condado")
   expect_identical(legend$source$theme$legend.position, "bottom")
   scale <- ggplot2::ggplot_build(legend$source)$plot$scales$get_scales("fill")
-  expect_equal(scale$get_limits(), range(counties$custom))
+  expect_identical(scale$get_limits(), range(counties$custom))
   expect_identical(scale$name, "Total")
   original <- examples$map_simple_scene(counties)
   original_scale <- ggplot2::ggplot_build(
     original$children[[3]]$source
   )$plot$scales$get_scales("fill")
-  expect_equal(original_scale$get_limits(), range(counties$BIR74))
+  expect_identical(original_scale$get_limits(), range(counties$BIR74))
 })
 
 test_that("simple maps let ggplot2 preserve coordinates on different devices", {
@@ -82,7 +82,7 @@ test_that("simple maps let ggplot2 preserve coordinates on different devices", {
   }
 })
 
-test_that("map templates reuse geometry and accept content and colour overrides", {
+test_that("map templates reuse geometry and accept content/colour overrides", {
   skip_if_not_installed("sf")
   examples <- load_map_examples()
   scene <- examples$map_template_scene(
@@ -100,7 +100,7 @@ test_that("map templates reuse geometry and accept content and colour overrides"
   }
   expect_identical(templates[[1]]$children$title$label, "Nascimentos | 1979")
   expect_identical(templates[[3]]$children$title$label, "100")
-  expect_equal(
+  expect_identical(
     scene$children[[2]]$content$data$value,
     examples$map_counties()$BIR79
   )
@@ -114,9 +114,13 @@ test_that("sf examples compute density from projected polygon areas", {
   scene <- examples$map_sf_scene(geographic)
   data <- scene$children[[2]]$content$data
   expect_s3_class(data, "sf")
-  expect_equal(sf::st_crs(data)$epsg, 32119)
-  expect_equal(data$area_km2, as.numeric(sf::st_area(counties)) / 1e6)
-  expect_equal(data$value, 100 * counties$BIR74 / data$area_km2)
+  expect_identical(sf::st_crs(data)$epsg, 32119L)
+  expect_equal(
+    data$area_km2,
+    as.numeric(sf::st_area(counties)) / 1e6,
+    tolerance = testthat::testthat_tolerance()
+  )
+  expect_identical(data$value, 100 * counties$BIR74 / data$area_km2)
   expect_true(all(is.finite(data$value)))
   expect_identical(scene$metadata$field, "births_per_100_km2")
 })
@@ -127,11 +131,11 @@ test_that("complex maps align geographic overlays and regional indicators", {
   scene <- examples$map_complex_scene()
   frame <- scene$children[[2]]$children[[1]]$children[[1]]
   expect_s3_class(frame, "gc_frame")
-  expect_equal(frame$map_context$extent, scene$metadata$focus)
+  expect_identical(frame$map_context$extent, scene$metadata$focus)
   overlays <- frame$children[[1]]$children
   expect_s3_class(overlays[[3]], "gc_inset")
-  expect_equal(overlays[[3]]$reference_context$extent, scene$metadata$focus)
-  expect_equal(sf::st_bbox(overlays[[3]]$footprint), scene$metadata$focus)
+  expect_identical(overlays[[3]]$reference_context$extent, scene$metadata$focus)
+  expect_identical(sf::st_bbox(overlays[[3]]$footprint), scene$metadata$focus)
   expect_s3_class(overlays[[2]], "gc_scale_bar")
   expect_true(is.finite(overlays[[4]]$metadata$angle))
   counties <- examples$map_counties()
@@ -154,13 +158,13 @@ test_that("complex maps align geographic overlays and regional indicators", {
   )
   ranking <- indicators[[3]]$content$data
   expect_length(ranking$BIR74, 5)
-  expect_equal(
+  expect_identical(
     ranking$BIR74,
     head(sort(counties$BIR74[selected], decreasing = TRUE), 5)
   )
 })
 
-test_that("new map compositions render without overlaps in their layout bands", {
+test_that("map compositions render without overlaps in their layout bands", {
   skip_if_not_installed("sf")
   examples <- load_map_examples()
   for (name in c("map_template_scene", "map_sf_scene", "map_complex_scene")) {
@@ -192,8 +196,8 @@ test_that("new map compositions render without overlaps in their layout bands", 
             frame <- children[[2]]$children[[1]]$children[[1]]
             panel <- frame$children[[1]]
             scale <- panel$children[[2]]
-            expect_equal(scale$scale_bar$distance_m, 50000)
-            expect_equal(
+            expect_identical(scale$scale_bar$distance_m, 50000)
+            expect_identical(
               scale$box[["width"]] / panel$box[["width"]],
               scale$scale_bar$distance_m / scale$scale_bar$extent_width_m
             )
@@ -237,7 +241,7 @@ test_that("map examples resolve and render with a metrically aligned scale", {
         panel <- frame$children[[1]]
         scale <- panel$children[[2]]
         expect_s3_class(scale$node, "gc_scale_bar")
-        expect_equal(
+        expect_identical(
           scale$scale_bar$distance_m,
           if (name == "map_inset_scene") 50000 else 200000
         )
@@ -246,10 +250,15 @@ test_that("map examples resolve and render with a metrically aligned scale", {
           (extent[["xmax"]] - extent[["xmin"]]) /
             (extent[["ymax"]] - extent[["ymin"]])
         )
-        expect_equal(panel$box[["width"]] / panel$box[["height"]], ratio)
+        expect_equal(
+          panel$box[["width"]] / panel$box[["height"]],
+          ratio,
+          tolerance = testthat::testthat_tolerance()
+        )
         expect_equal(
           scale$box[["width"]] / panel$box[["width"]],
-          scale$scale_bar$distance_m / scale$scale_bar$extent_width_m
+          scale$scale_bar$distance_m / scale$scale_bar$extent_width_m,
+          tolerance = testthat::testthat_tolerance()
         )
       }
     }
@@ -284,7 +293,7 @@ test_that("joined map credits fit compact plotting devices without overflow", {
             legend$box[["y"]] + legend$box[["height"]],
             credits$box[["y"]]
           )
-          expect_equal(credits$node$overflow, "visible")
+          expect_identical(credits$node$overflow, "visible")
         }
       },
       finally = grDevices::dev.off()
@@ -293,7 +302,7 @@ test_that("joined map credits fit compact plotting devices without overflow", {
   expect_identical(scene, original)
 })
 
-test_that("locator highlights the exact projected extent and north is georeferenced", {
+test_that("locator highlights the projected extent; north is georeferenced", {
   skip_if_not_installed("sf")
   examples <- load_map_examples()
   scene <- examples$map_inset_scene()
@@ -303,32 +312,32 @@ test_that("locator highlights the exact projected extent and north is georeferen
   locator <- panel$children[[3]]
   arrow <- panel$children[[4]]
   expect_s3_class(locator, "gc_inset")
-  expect_equal(locator$reference_context$extent, extent)
-  expect_equal(sf::st_bbox(locator$footprint), extent)
+  expect_identical(locator$reference_context$extent, extent)
+  expect_identical(sf::st_bbox(locator$footprint), extent)
   expect_length(locator$map_plot$layers, 1)
-  expect_equal(locator$left, gc_length(10))
-  expect_equal(locator$top, gc_length(10))
+  expect_identical(locator$left, gc_length(10))
+  expect_identical(locator$top, gc_length(10))
   panel_source <- frame$map_plot
   ranges <- ggplot2::ggplot_build(panel_source)$layout$panel_params[[1]]
-  expect_equal(
+  expect_identical(
     as.numeric(ranges$x_range),
     as.numeric(extent[c("xmin", "xmax")])
   )
-  expect_equal(
+  expect_identical(
     as.numeric(ranges$y_range),
     as.numeric(extent[c("ymin", "ymax")])
   )
-  expect_equal(sf::st_crs(extent)$epsg, 32119)
+  expect_identical(sf::st_crs(extent)$epsg, 32119L)
   expect_true(is.finite(arrow$metadata$angle))
   expect_lt(abs(arrow$metadata$angle), 5)
-  expect_equal(arrow$type, "north_arrow")
+  expect_identical(arrow$type, "north_arrow")
   symbol <- arrow$content$children$symbol
-  expect_equal(symbol$vp$angle, arrow$metadata$angle)
+  expect_identical(symbol$vp$angle, arrow$metadata$angle)
   expect_s3_class(symbol$children$body$children$shaft, "segments")
-  expect_equal(symbol$children$label$gp$col, "black")
+  expect_identical(symbol$children$label$gp$col, "black")
 })
 
-test_that("joined maps use the same spatial and colour scales without flattening", {
+test_that("joined maps share spatial and colour scales without flattening", {
   skip_if_not_installed("sf")
   examples <- load_map_examples()
   scene <- examples$map_join_scene()
@@ -340,8 +349,8 @@ test_that("joined maps use the same spatial and colour scales without flattening
     frame$map_plot$scales$get_scales("fill")$limits
   })
   expect_identical(limits[[1]], limits[[2]])
-  expect_equal(limits[[1]][[1]], 0)
-  expect_equal(limits[[1]][[2]], 40000)
+  expect_identical(limits[[1]][[1]], 0)
+  expect_identical(limits[[1]][[2]], 40000)
   original <- scene$children[[2]]$children
   moved <- gc_place(scene$children[[2]], left = "10%", top = "50%")
   expect_identical(moved$children, original)

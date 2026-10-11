@@ -17,7 +17,8 @@ complete list and supported aliases.}
 
 \item{data}{Optional auxiliary data required by some units, passed unchanged
 to \code{\link[grid:unit]{grid::unit()}}. Supply text or an expression for string-based units, a
-grob or \code{\link[grid:gPath]{grid::gPath()}} for grob-based units, or a list for multiple values,
+grob or \code{\link[grid:gPath]{grid::gPath()}} for grob-based units, or a list for multiple
+values,
 following grid's recycling rules. Defaults to \code{NULL}.}
 }
 \value{
@@ -43,7 +44,8 @@ the bottom-left corner and \verb{(1, 1)} is the top-right corner of the viewport
 The \code{"null"} unit is meaningful for relative sizing in \code{\link[grid:grid.layout]{grid::grid.layout()}}.
 
 These are not ggcarto layout lengths. Use \code{\link[=gc_length]{gc_length()}} or layout strings for
-\code{\link[=gc_place]{gc_place()}} and \code{\link[=gc_viewport]{gc_viewport()}} constraints. For example, \code{gc_unit(0.5, "npc")}
+\code{\link[=gc_place]{gc_place()}} and \code{\link[=gc_viewport]{gc_viewport()}} constraints. For example,
+\code{gc_unit(0.5, "npc")}
 describes half a native grid viewport, whereas \code{gc_length("50\%")} describes
 half the relevant ggcarto parent dimension. CSS-like \code{"px"}, \code{"\%"}, \code{"vw"},
 \code{"auto"} and \code{"clamp(...)"} are not grid unit names. Invalid input raises

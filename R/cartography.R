@@ -1,9 +1,11 @@
 require_cartography <- function() {
   if (!requireNamespace("sf", quietly = TRUE)) {
+    # nocov start: reachable only when sf is not installed
     gc_abort(
       "Cartographic functions require the optional sf package.",
       "missing_dependency"
     )
+    # nocov end
   }
 }
 
@@ -12,22 +14,18 @@ same_map_context <- function(first, second) {
     isTRUE(all.equal(as.numeric(first$extent), as.numeric(second$extent)))
 }
 
+cartographic_colour_index <- function(value) {
+  !is.numeric(value) || is.na(value) || is.finite(value)
+}
+
+cartographic_colour_valid <- function(value) {
+  is_colour_value(value) &&
+    cartographic_colour_index(value) &&
+    colour_parses(value)
+}
+
 cartographic_colour <- function(value, property) {
-  valid <- length(value) == 1L &&
-    (is.character(value) || is.numeric(value) || identical(value, NA))
-  if (valid && is.numeric(value) && !is.na(value) && !is.finite(value)) {
-    valid <- FALSE
-  }
-  if (valid) {
-    valid <- tryCatch(
-      {
-        grDevices::col2rgb(value)
-        TRUE
-      },
-      error = function(error) FALSE
-    )
-  }
-  if (!valid) {
+  if (!cartographic_colour_valid(value)) {
     gc_abort(
       paste(property, "must be a single grid colour or NA."),
       property = property
@@ -44,21 +42,32 @@ map_panel_context <- function(plot) {
   built <- ggplot2::ggplot_build(plot)
   panels <- built$layout$panel_params
   if (length(panels) != 1L) {
-    gc_abort("Cartographic frames require exactly one panel.", property = "plot")
+    gc_abort(
+      "Cartographic frames require exactly one panel.",
+      property = "plot"
+    )
   }
   panel <- panels[[1L]]
   crs <- sf::st_crs(panel$crs)
+  extent <- map_panel_extent(panel, crs)
+  aspect <- built$plot$coordinates$aspect(panel)
+  scalar_number(aspect, "map aspect", positive = TRUE)
+  list(extent = extent, crs = crs, aspect_ratio = 1 / aspect)
+}
+
+valid_panel_ranges <- function(panel) {
   ranges <- c(panel$x_range, panel$y_range)
-  if (
-    is.na(crs) ||
-      length(ranges) != 4L ||
-      any(!is.finite(ranges)) ||
-      diff(panel$x_range) <= 0 ||
-      diff(panel$y_range) <= 0
-  ) {
+  length(ranges) == 4L &&
+    all(is.finite(ranges)) &&
+    diff(panel$x_range) > 0 &&
+    diff(panel$y_range) > 0
+}
+
+map_panel_extent <- function(panel, crs) {
+  if (is.na(crs) || !valid_panel_ranges(panel)) {
     gc_abort("The map needs a known CRS and finite, increasing panel ranges.")
   }
-  extent <- sf::st_bbox(
+  sf::st_bbox(
     c(
       xmin = panel$x_range[[1L]],
       ymin = panel$y_range[[1L]],
@@ -67,9 +76,6 @@ map_panel_context <- function(plot) {
     ),
     crs = crs
   )
-  aspect <- built$plot$coordinates$aspect(panel)
-  scalar_number(aspect, "map aspect", positive = TRUE)
-  list(extent = extent, crs = crs, aspect_ratio = 1 / aspect)
 }
 
 #' Frame a geographic panel and its cartographic overlays
@@ -86,7 +92,8 @@ map_panel_context <- function(plot) {
 #'   including padding, border, background and positioning constraints.
 #'
 #' @details
-#' Requires the optional sf package. The source plot and its theme are preserved.
+#' Requires the optional sf package. The source plot and its theme are
+#' preserved.
 #' Titles, legends and axes are not included in the extracted panel; extract
 #' them separately with [gc_get_element()]. The actual built panel ranges,
 #' including coord_sf expansion, define the extent, not the data bounding box.
@@ -97,7 +104,8 @@ map_panel_context <- function(plot) {
 #'
 #' @returns An `gc_frame` inheriting from `gc_viewport` and `gc_node`, with a
 #'   `map_context` containing the displayed extent, CRS and aspect ratio.
-#' @seealso [gc_scale_bar()], [gc_inset()], [gc_viewport()], [gc_place()], [gc_get_element()]
+#' @seealso [gc_scale_bar()], [gc_inset()], [gc_viewport()], [gc_place()],
+#'   [gc_get_element()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {
 #'   area <- sf::st_as_sfc(sf::st_bbox(c(
@@ -166,7 +174,10 @@ gc_frame <- function(
 map_metres_per_unit <- function(context) {
   if (isTRUE(sf::st_is_longlat(context$crs))) {
     gc_abort(
-      "Scale bars require a projected CRS; angular coordinates are not distances.",
+      paste0(
+        "Scale bars require a projected CRS; angular ",
+        "coordinates are not distances."
+      ),
       "unsupported_crs"
     )
   }
@@ -195,7 +206,7 @@ map_metres_per_unit <- function(context) {
   factor
 }
 
-scale_bar_grob <- function(specification, distance, width, context) {
+scale_bar_labels <- function(specification, distance, width, context) {
   positions <- seq(0, 1, length.out = specification$segments + 1L)
   values <- positions * distance
   labels <- format(signif(values, 8), trim = TRUE, scientific = FALSE)
@@ -233,30 +244,39 @@ scale_bar_grob <- function(specification, distance, width, context) {
       "scale_labels"
     )
   }
+  label_grobs
+}
+
+scale_bar_segments <- function(specification) {
+  lapply(seq_len(specification$segments), function(index) {
+    gc_rect(
+      x = (index - 0.5) / specification$segments,
+      y = 0.28,
+      width = 1 / specification$segments,
+      height = 0.24,
+      fill = if (index %% 2L) {
+        specification$fill
+      } else {
+        specification$fill_secondary
+      },
+      col = specification$col,
+      lwd = specification$lwd,
+      name = paste0("scale-segment-", index)
+    )
+  })
+}
+
+scale_bar_body <- function(specification) {
+  line_gp <- grid::gpar(col = specification$col, lwd = specification$lwd)
   if (specification$design == "bar") {
-    body <- lapply(seq_len(specification$segments), function(index) {
-      gc_rect(
-        x = (index - 0.5) / specification$segments,
-        y = 0.28,
-        width = 1 / specification$segments,
-        height = 0.24,
-        fill = if (index %% 2L) {
-          specification$fill
-        } else {
-          specification$fill_secondary
-        },
-        col = specification$col,
-        lwd = specification$lwd,
-        name = paste0("scale-segment-", index)
-      )
-    })
+    body <- scale_bar_segments(specification)
   } else {
     body <- list(grid::segmentsGrob(
       x0 = 0,
       x1 = 1,
       y0 = 0.28,
       y1 = 0.28,
-      gp = grid::gpar(col = specification$col, lwd = specification$lwd),
+      gp = line_gp,
       name = "scale-line"
     ))
   }
@@ -272,51 +292,72 @@ scale_bar_grob <- function(specification, distance, width, context) {
       x1 = ticks,
       y0 = 0.16,
       y1 = ifelse(major, 0.4, 0.28),
-      gp = grid::gpar(col = specification$col, lwd = specification$lwd),
+      gp = line_gp,
       name = "scale-ticks"
     )
   }
-  gc_template(children = c(body, label_grobs), name = "scale-bar")
+  body
 }
 
-bind_scale_bar <- function(node, context) {
-  map <- context$map_panel
+scale_bar_grob <- function(specification, distance, width, context) {
+  label_grobs <- scale_bar_labels(specification, distance, width, context)
+  gc_template(
+    children = c(scale_bar_body(specification), label_grobs),
+    name = "scale-bar"
+  )
+}
+
+scale_unit_metres <- c(m = 1, km = 1000, ft = 0.3048, mi = 1609.344)
+
+scale_width_constrained <- function(node) {
+  constraints <- c(
+    width = node$width$kind != "auto",
+    min_width = !is.null(node$min_width),
+    max_width = !is.null(node$max_width),
+    aspect_ratio = !is.null(node$aspect_ratio),
+    insets = !is.null(node$left) && !is.null(node$right),
+    shrink = node$collision %in% c("shrink", "avoid-and-shrink")
+  )
+  any(constraints)
+}
+
+check_scale_binding <- function(node, map) {
   if (is.null(map)) {
     gc_abort(
-      "Place gc_scale_bar() directly in the overlays of gc_frame() or gc_inset().",
+      paste0(
+        "Place gc_scale_bar() directly in the overlays ",
+        "of gc_frame() or gc_inset()."
+      ),
       "unbound_scale",
       node$id
     )
   }
-  if (
-    node$width$kind != "auto" ||
-      !is.null(node$min_width) ||
-      !is.null(node$max_width) ||
-      !is.null(node$aspect_ratio) ||
-      (!is.null(node$left) && !is.null(node$right)) ||
-      node$collision %in% c("shrink", "avoid-and-shrink")
-  ) {
+  if (scale_width_constrained(node)) {
     gc_abort(
-      "Scale width is geographic; do not override width, constrain it or shrink it.",
+      paste0(
+        "Scale width is geographic; do not override ",
+        "width, constrain it or shrink it."
+      ),
       "scale_constraint",
       node$id,
       "width"
     )
   }
-  specification <- node$scale_specification
-  metres_per_unit <- c(m = 1, km = 1000, ft = 0.3048, mi = 1609.344)
+  invisible(node)
+}
+
+scale_bar_distance <- function(specification, map, node) {
+  unit_metres <- scale_unit_metres[[specification$unit]]
   extent_metres <- as.numeric(map$extent[["xmax"]] - map$extent[["xmin"]]) *
     map_metres_per_unit(map)
-  maximum <- extent_metres *
-    specification$max_fraction /
-    metres_per_unit[[specification$unit]]
+  maximum <- extent_metres * specification$max_fraction / unit_metres
   distance <- specification$distance
   if (is.null(distance)) {
     magnitude <- 10^floor(log10(maximum))
     candidates <- c(1, 2, 5, 10) * magnitude
     distance <- max(candidates[candidates <= maximum * (1 + 1e-12)])
   }
-  fraction <- distance * metres_per_unit[[specification$unit]] / extent_metres
+  fraction <- distance * unit_metres / extent_metres
   if (!is.finite(fraction) || fraction <= 0 || fraction > 1) {
     gc_abort(
       "The scale distance must be positive and no wider than the map extent.",
@@ -324,7 +365,16 @@ bind_scale_bar <- function(node, context) {
       node$id
     )
   }
-  width <- context$width * fraction
+  list(distance = distance, extent_metres = extent_metres, fraction = fraction)
+}
+
+bind_scale_bar <- function(node, context) {
+  map <- context$map_panel
+  check_scale_binding(node, map)
+  specification <- node$scale_specification
+  scale <- scale_bar_distance(specification, map, node)
+  distance <- scale$distance
+  width <- context$width * scale$fraction
   padding <- resolve_edges(node$padding, context, node, "padding")
   border <- resolve_border(node$border, context, node)
   node$width <- gc_length(
@@ -334,11 +384,53 @@ bind_scale_bar <- function(node, context) {
   node$scale_info <- list(
     distance = distance,
     unit = specification$unit,
-    distance_m = distance * metres_per_unit[[specification$unit]],
-    extent_width_m = extent_metres,
+    distance_m = distance * scale_unit_metres[[specification$unit]],
+    extent_width_m = scale$extent_metres,
     width = width
   )
   node
+}
+
+check_scale_count <- function(value, property) {
+  scalar_number(value, property, positive = TRUE)
+  if (value != floor(value) || value > 20) {
+    gc_abort(paste(property, "must be an integer from 1 to 20."))
+  }
+  invisible(value)
+}
+
+check_scale_bar <- function(
+  distance,
+  unit,
+  max_fraction,
+  segments,
+  subdivisions,
+  design,
+  lwd,
+  fontsize,
+  fontfamily
+) {
+  if (!is.null(distance)) {
+    scalar_number(distance, "distance", positive = TRUE)
+  }
+  if (!is_choice(unit, c("km", "m", "ft", "mi"))) {
+    gc_abort("unit must be km, m, ft or mi.", property = "unit")
+  }
+  scalar_number(max_fraction, "max_fraction", positive = TRUE)
+  if (max_fraction > 1) {
+    gc_abort("max_fraction cannot exceed one.")
+  }
+  check_scale_count(segments, "segments")
+  check_scale_count(subdivisions, "subdivisions")
+  if (!is_choice(design, c("bar", "ticks"))) {
+    gc_abort("design must be bar or ticks.", property = "design")
+  }
+  scalar_number(fontsize, "fontsize", positive = TRUE)
+  scalar_number(lwd, "lwd", positive = TRUE)
+  if (!is_single_string(fontfamily)) {
+    gc_abort("fontfamily must be a single string.", property = "fontfamily")
+  }
+  invisible(NULL)
 }
 
 #' Construct a map-bound projected-distance scale bar
@@ -349,13 +441,15 @@ bind_scale_bar <- function(node, context) {
 #'
 #' @param distance Positive distance in `unit`, or `NULL` to choose a 1, 2 or 5
 #'   times a power of ten automatically.
-#' @param unit Display unit: `"km"`, `"m"`, `"ft"` (international feet) or `"mi"`.
+#' @param unit Display unit: `"km"`, `"m"`, `"ft"` (international feet) or
+#'   `"mi"`.
 #' @param max_fraction Maximum fraction of the panel width for automatic
 #'   distance selection, greater than zero and at most one. Explicit distances
 #'   ignore this preference but cannot exceed the displayed map width.
 #' @param segments Number of labeled main intervals, from 1 to 20.
 #' @param subdivisions Number of tick subdivisions per interval, from 1 to 20.
-#' @param design `"bar"` for alternating filled segments or `"ticks"` for a line.
+#' @param design `"bar"` for alternating filled segments or `"ticks"` for a
+#'   line.
 #' @param height Logical border-box height. The default is 9 mm.
 #' @param col,fill,fill_secondary Outline/text and alternating segment colors.
 #' @param lwd Positive grid line width.
@@ -410,38 +504,20 @@ gc_scale_bar <- function(
   fontfamily = "",
   ...
 ) {
-  if (!is.null(distance)) {
-    scalar_number(distance, "distance", positive = TRUE)
-  }
-  if (
-    length(unit) != 1L || is.na(unit) || !unit %in% c("km", "m", "ft", "mi")
-  ) {
-    gc_abort("unit must be km, m, ft or mi.", property = "unit")
-  }
-  scalar_number(max_fraction, "max_fraction", positive = TRUE)
-  if (max_fraction > 1) {
-    gc_abort("max_fraction cannot exceed one.")
-  }
-  for (property in c("segments", "subdivisions")) {
-    value <- get(property)
-    scalar_number(value, property, positive = TRUE)
-    if (value != floor(value) || value > 20) {
-      gc_abort(paste(property, "must be an integer from 1 to 20."))
-    }
-  }
-  if (length(design) != 1L || is.na(design) || !design %in% c("bar", "ticks")) {
-    gc_abort("design must be bar or ticks.", property = "design")
-  }
-  scalar_number(fontsize, "fontsize", positive = TRUE)
-  scalar_number(lwd, "lwd", positive = TRUE)
-  if (
-    !is.character(fontfamily) || length(fontfamily) != 1L || is.na(fontfamily)
-  ) {
-    gc_abort("fontfamily must be a single string.", property = "fontfamily")
-  }
-  for (property in c("col", "fill", "fill_secondary")) {
-    cartographic_colour(get(property), property)
-  }
+  check_scale_bar(
+    distance,
+    unit,
+    max_fraction,
+    segments,
+    subdivisions,
+    design,
+    lwd,
+    fontsize,
+    fontfamily
+  )
+  cartographic_colour(col, "col")
+  cartographic_colour(fill, "fill")
+  cartographic_colour(fill_secondary, "fill_secondary")
   node <- new_l_node("element", grid::nullGrob(), "scale_bar", height = height)
   node$adapter <- list(measure = function(element, context) {
     c(width = element$scale_info$width, height = 9 * 96 / 25.4)

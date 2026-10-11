@@ -20,7 +20,8 @@ gc_rect(
 )
 }
 \arguments{
-\item{x, y}{Numeric coordinates in \code{default.units}, or \code{\link[=gc_unit]{gc_unit()}} / \code{\link[grid:unit]{grid::unit()}}
+\item{x, y}{Numeric coordinates in \code{default.units}, or \code{\link[=gc_unit]{gc_unit()}} /
+\code{\link[grid:unit]{grid::unit()}}
 objects.
 Vectors are supported according to \code{\link[grid:grid.rect]{grid::rectGrob()}} recycling rules.}
 
@@ -91,5 +92,6 @@ outline <- gc_rect(
 grid::is.grob(outline)
 }
 \seealso{
-\code{\link[=gc_unit]{gc_unit()}}, \code{\link[=gc_text]{gc_text()}}, \code{\link[=gc_template]{gc_template()}}, \code{\link[grid:grid.rect]{grid::rectGrob()}}, \code{\link[grid:gpar]{grid::gpar()}}
+\code{\link[=gc_unit]{gc_unit()}}, \code{\link[=gc_text]{gc_text()}}, \code{\link[=gc_template]{gc_template()}}, \code{\link[grid:grid.rect]{grid::rectGrob()}},
+\code{\link[grid:gpar]{grid::gpar()}}
 }

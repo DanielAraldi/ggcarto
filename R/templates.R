@@ -1,16 +1,12 @@
+is_gpar_list <- function(parameters) {
+  is.list(parameters) &&
+    (!length(parameters) ||
+      (has_unique_names(parameters) && !anyNA(names(parameters))))
+}
+
 template_gpar <- function(gp = NULL, overrides = list()) {
   for (parameters in list(gp, overrides)) {
-    if (is.null(parameters)) {
-      next
-    }
-    if (
-      !is.list(parameters) ||
-        (length(parameters) &&
-          (is.null(names(parameters)) ||
-            anyNA(names(parameters)) ||
-            any(!nzchar(names(parameters))) ||
-            anyDuplicated(names(parameters))))
-    ) {
+    if (!is.null(parameters) && !is_gpar_list(parameters)) {
       gc_abort(
         "Graphical parameters must be a gpar or a uniquely named list.",
         property = "gp"
@@ -41,7 +37,8 @@ template_gpar <- function(gp = NULL, overrides = list()) {
 #'   complete list and supported aliases.
 #' @param data Optional auxiliary data required by some units, passed unchanged
 #'   to [grid::unit()]. Supply text or an expression for string-based units, a
-#'   grob or [grid::gPath()] for grob-based units, or a list for multiple values,
+#'   grob or [grid::gPath()] for grob-based units, or a list for multiple
+#'   values,
 #'   following grid's recycling rules. Defaults to `NULL`.
 #'
 #' @details
@@ -58,7 +55,8 @@ template_gpar <- function(gp = NULL, overrides = list()) {
 #' The `"null"` unit is meaningful for relative sizing in [grid::grid.layout()].
 #'
 #' These are not ggcarto layout lengths. Use [gc_length()] or layout strings for
-#' [gc_place()] and [gc_viewport()] constraints. For example, `gc_unit(0.5, "npc")`
+#' [gc_place()] and [gc_viewport()] constraints. For example,
+#' `gc_unit(0.5, "npc")`
 #' describes half a native grid viewport, whereas `gc_length("50%")` describes
 #' half the relevant ggcarto parent dimension. CSS-like `"px"`, `"%"`, `"vw"`,
 #' `"auto"` and `"clamp(...)"` are not grid unit names. Invalid input raises
@@ -96,7 +94,8 @@ gc_unit <- function(x, units, data = NULL) {
 #'   earlier children. These arguments are content, not graphical parameters.
 #' @param children Optional list or [grid::gList()] of grobs appended after the
 #'   children supplied in `...`. An empty template is allowed. Each supplied
-#'   child must be a grob; strings, `NULL`, ggplots and ggcarto nodes are not grobs.
+#'   child must be a grob; strings, `NULL`, ggplots and ggcarto nodes are not
+#'   grobs.
 #' @param name Optional character name for the grid grob. This is distinct from
 #'   a scene node's `id` in [gc_place()].
 #' @param gp `NULL`, a [grid::gpar()] object, or a uniquely named list of grid
@@ -179,7 +178,8 @@ gc_template <- function(
 #' parameters. The default rectangle is centered and fills its current grid
 #' viewport. Construction does not draw or open a graphics device.
 #'
-#' @param x,y Numeric coordinates in `default.units`, or [gc_unit()] / [grid::unit()]
+#' @param x,y Numeric coordinates in `default.units`, or [gc_unit()] /
+#'   [grid::unit()]
 #'   objects.
 #'   Vectors are supported according to [grid::rectGrob()] recycling rules.
 #' @param width,height Rectangle dimensions as numbers in `default.units` or
@@ -214,7 +214,8 @@ gc_template <- function(
 #'
 #' @returns A native grid `rect` grob, suitable for [gc_template()] or direct
 #'   use with [gc_place()] and [grid::grid.draw()].
-#' @seealso [gc_unit()], [gc_text()], [gc_template()], [grid::rectGrob()], [grid::gpar()]
+#' @seealso [gc_unit()], [gc_text()], [gc_template()], [grid::rectGrob()],
+#'   [grid::gpar()]
 #' @examples
 #' swatches <- gc_rect(
 #'   x = c(0.25, 0.75), width = 0.4, height = 0.7,
@@ -270,14 +271,18 @@ gc_rect <- function(
 #' @inheritParams gc_rect
 #' @param rot Text rotation in degrees; for example, 90 gives vertical text.
 #' @param check.overlap Logical; if `TRUE`, grid may omit overlapping labels
-#'   within this grob at draw time, in input order. It does not reposition labels
+#'   within this grob at draw time, in input order. It does not reposition
+#'   labels
 #'   or detect collisions with other ggcarto nodes.
-#' @param ... Uniquely named [grid::gpar()] parameters overriding `gp`, including
-#'   `col`, `fontsize`, `fontfamily`, `fontface`, `lineheight`, `alpha` and `cex`.
+#' @param ... Uniquely named [grid::gpar()] parameters overriding `gp`,
+#'   including
+#'   `col`, `fontsize`, `fontfamily`, `fontface`, `lineheight`, `alpha` and
+#'   `cex`.
 #'   Use grid names, not [gc_style()] names such as `color` or `font_size`.
 #'
 #' @details
-#' `fontsize` is numeric, in points. `fontface` accepts values such as `"plain"`,
+#' `fontsize` is numeric, in points. `fontface` accepts values such as
+#' `"plain"`,
 #' `"bold"`, `"italic"` and `"bold.italic"`. A `fontface` shortcut overrides a
 #' `font` already stored in `gp`, and vice versa. Font availability and glyph
 #' metrics depend on the output device. Graphical parameters are not mutated.
@@ -294,7 +299,8 @@ gc_rect <- function(
 #'
 #' @returns A native grid `text` grob. [gc_measure()] can inspect its intrinsic
 #'   size, and [gc_template()] can combine it with other graphical primitives.
-#' @seealso [gc_unit()], [grid::textGrob()], [grid::gpar()], [gc_get_element()], [gc_style()]
+#' @seealso [gc_unit()], [grid::textGrob()], [grid::gpar()], [gc_get_element()],
+#'   [gc_style()]
 #' @examples
 #' note <- gc_text("Source: survey\nLocal coordinates",
 #'   x = 0, just = "left",

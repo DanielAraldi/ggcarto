@@ -8,7 +8,8 @@ gc_registry()
 }
 \value{
 A named list with classes \code{gc_registry} and \code{list}. Each entry holds
-extraction, acceptance, optional measurement and optional styling callbacks,
+extraction, acceptance, optional measurement and optional styling
+callbacks,
 plus an internal native-adapter flag.
 }
 \description{
@@ -22,7 +23,8 @@ Native ggplot types are \code{title}, \code{subtitle}, \code{caption}, \code{tag
 \code{plot_background} and \code{panel_background}.
 
 Direct grobs additionally support \code{north_arrow}, \code{north_rose}, \code{scale_bar},
-\code{map_frame}, \code{credits}, \code{annotation}, \code{inset} and \code{custom}. These names classify
+\code{map_frame}, \code{credits}, \code{annotation}, \code{inset} and \code{custom}. These names
+classify
 supplied grobs; they do not construct geographic symbols, scales or insets.
 Native adapters also accept direct grobs without extracting subcomponents.
 
@@ -33,7 +35,11 @@ lookup, global registration or required cowplot adapter.
 \examples{
 registry <- gc_registry()
 names(registry)
-note <- gc_get_element(gc_text("Survey credits"), "credits", registry = registry)
+note <- gc_get_element(
+  gc_text("Survey credits"),
+  "credits",
+  registry = registry
+)
 print(note)
 }
 \seealso{

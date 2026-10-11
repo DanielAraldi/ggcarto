@@ -15,7 +15,8 @@ containing a number and unit, \code{"auto"}, or a supported length expression.}
 already a string or an \code{gc_length}.}
 }
 \value{
-An S3 \code{gc_length} object containing an unresolved value or expression.
+An S3 \code{gc_length} object containing an unresolved value or
+expression.
 An existing \code{gc_length} is returned unchanged.
 }
 \description{
@@ -27,7 +28,8 @@ it is evaluated in context by the layout resolver at render time.
 One logical pixel is 1/96 inch and one point is 1/72 inch. Device DPI affects
 raster density, not the definition of these lengths. Percentages use the
 containing content box on the relevant axis. \code{vw} and \code{vh} are percentages
-of the root width and height; \code{vmin} and \code{vmax} use their minimum and maximum.
+of the root width and height; \code{vmin} and \code{vmax} use their minimum and
+maximum.
 
 Strings accept nested \code{min()}, \code{max()} and \code{clamp()} expressions. Parsing
 does not evaluate R code. \code{auto} is not allowed inside an expression. A

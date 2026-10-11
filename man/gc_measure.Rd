@@ -10,7 +10,8 @@ gc_measure(object, viewport = list(width = 800, height = 600), dpi = 96)
 \item{object}{An ggcarto element, scene node, ggplot or grid grob.}
 
 \item{viewport}{A list with positive numeric \code{width} and \code{height} in logical
-pixels. Optional \code{root_width} and \code{root_height} control root-relative units;
+pixels. Optional \code{root_width} and \code{root_height} control root-relative
+units;
 otherwise each defaults to its corresponding local dimension.}
 
 \item{dpi}{Positive output-density metadata. Logical pixels remain 1/96 inch;

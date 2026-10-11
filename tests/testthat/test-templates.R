@@ -23,7 +23,7 @@ test_that("gc_unit preserves the grid signature and unit construction", {
     gc_unit(c(1, 2, 3, 4), c("cm", "mm")),
     grid::unit(c(1, 2, 3, 4), c("cm", "mm"))
   )
-  expect_true(grid::is.unit(gc_unit(5, "mm")))
+  expect_s3_class(gc_unit(5, "mm"), "unit")
   expect_false(inherits(gc_unit(5, "mm"), "gc_length"))
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
@@ -42,7 +42,10 @@ test_that("gc_unit forwards auxiliary data without changing grid semantics", {
     list(1, "grobheight", data = grid::gPath("unit-label")),
     list(c(1, 2), c("grobwidth", "grobheight"), data = list(label, label))
   )) {
-    expect_identical(do.call(gc_unit, arguments), do.call(grid::unit, arguments))
+    expect_identical(
+      do.call(gc_unit, arguments),
+      do.call(grid::unit, arguments)
+    )
   }
   expect_identical(label, original)
   expect_identical(grDevices::dev.cur(), caller)
@@ -79,7 +82,7 @@ test_that("gc_unit defers conversion to the current viewport", {
   grDevices::pdf(NULL, width = 8, height = 6)
   on.exit(grDevices::dev.off(), add = TRUE)
 
-  expect_equal(
+  expect_identical(
     grid::convertWidth(gc_unit(25.4, "mm"), "inches", valueOnly = TRUE),
     1
   )
@@ -89,12 +92,18 @@ test_that("gc_unit defers conversion to the current viewport", {
       height = grid::unit(2, "inches"),
       xscale = c(0, 100)
     ))
-    expect_equal(
+    expect_identical(
       grid::convertWidth(relative, "inches", valueOnly = TRUE),
       width / 2
     )
-    expect_equal(grid::convertHeight(relative, "inches", valueOnly = TRUE), 1)
-    expect_equal(grid::convertX(native, "inches", valueOnly = TRUE), width / 2)
+    expect_identical(
+      grid::convertHeight(relative, "inches", valueOnly = TRUE),
+      1
+    )
+    expect_identical(
+      grid::convertX(native, "inches", valueOnly = TRUE),
+      width / 2
+    )
     grid::popViewport()
   }
   expect_identical(relative, original)
@@ -120,7 +129,7 @@ test_that("gc_unit leaves invalid-input errors to grid", {
     if (inherits(expected, "missingArgError")) {
       expect_s3_class(actual, "missingArgError")
     } else {
-      expect_identical(class(actual), class(expected))
+      expect_s3_class(actual, class(expected), exact = TRUE)
     }
     expect_identical(conditionMessage(actual), conditionMessage(expected))
   }
@@ -142,7 +151,7 @@ test_that("primitive defaults match native grid constructors", {
   expect_identical(grDevices::dev.list(), devices)
 })
 
-test_that("primitives retain native geometry, vectorization and text controls", {
+test_that("primitives keep native geometry, vectorization and text controls", {
   viewport <- grid::viewport(angle = 15, name = "local")
   rectangle_args <- list(
     x = c(2, 4),
@@ -194,10 +203,10 @@ test_that("graphical shortcuts override gp without mutating it", {
   original <- theme
   label <- gc_text("Note", gp = theme, col = "blue", fontface = "italic")
   expect_identical(theme, original)
-  expect_equal(label$gp$col, "blue")
-  expect_equal(label$gp$fontsize, 9)
-  expect_equal(unname(label$gp$font), 3L)
-  expect_equal(
+  expect_identical(label$gp$col, "blue")
+  expect_identical(label$gp$fontsize, 9)
+  expect_identical(unname(label$gp$font), 3L)
+  expect_identical(
     unname(gc_text("Note", gp = list(fontface = "italic"), font = 2)$gp$font),
     2L
   )
@@ -228,14 +237,17 @@ test_that("graphical shortcuts override gp without mutating it", {
     gc_text("Note", gp = parameters)$gp,
     do.call(grid::gpar, parameters)
   )
-  expect_identical(gc_rect(gp = list(fill = "red"))$gp, grid::gpar(fill = "red"))
+  expect_identical(
+    gc_rect(gp = list(fill = "red"))$gp,
+    grid::gpar(fill = "red")
+  )
   expect_identical(
     gc_template(gp = parameters)$gp,
     do.call(grid::gpar, parameters)
   )
 })
 
-test_that("templates retain child order, nesting and native viewport controls", {
+test_that("templates keep child order, nesting and native viewport controls", {
   background <- gc_rect(name = "background", fill = "white")
   label <- gc_text("N", name = "label")
   nested <- gc_template(grid::segmentsGrob(name = "segment"), name = "nested")
@@ -271,7 +283,7 @@ test_that("templates retain child order, nesting and native viewport controls", 
   )
 })
 
-test_that("invalid children and malformed graphical parameter lists are rejected", {
+test_that("invalid children and malformed gpar lists are rejected", {
   expect_error(gc_template(1), class = "ggcarto_unsupported_source")
   expect_error(gc_template(gc_viewport()), class = "ggcarto_unsupported_source")
   expect_error(gc_template(children = "label"), class = "ggcarto_error")
@@ -282,7 +294,7 @@ test_that("invalid children and malformed graphical parameter lists are rejected
   for (bad in list(
     "red",
     list("red"),
-    list(col = "red", col = "blue"),
+    stats::setNames(list("red", "blue"), c("col", "col")),
     stats::setNames(list("red"), NA_character_)
   )) {
     expect_error(gc_text("Label", gp = bad), class = "ggcarto_error")
@@ -307,11 +319,15 @@ test_that("invalid children and malformed graphical parameter lists are rejected
     ),
     class = "ggcarto_error"
   )
-  expect_error(gc_rect(col = "red", col = "blue"), class = "ggcarto_error")
+  expect_error(
+    # nolint next: duplicate_argument_linter.
+    gc_rect(col = "red", col = "blue"),
+    class = "ggcarto_error"
+  )
   expect_error(gc_text("Label", font = 2, fontface = "italic"))
 })
 
-test_that("templates enter extraction and layout through the existing grob path", {
+test_that("templates enter extraction and layout through the grob path", {
   template <- gc_template(
     gc_rect(fill = "white", col = "black"),
     gc_text("N", fontsize = 12, fontface = "bold")
@@ -328,12 +344,12 @@ test_that("templates enter extraction and layout through the existing grob path"
     height = 120
   )
   expect_s3_class(gc_resolve(scene, width = 200, height = 120), "gc_layout")
-  expect_true(grid::is.grob(prepared(element)))
+  expect_s3_class(prepared(element), "grob")
   expect_gt(gc_measure(gc_text("Measured", fontsize = 12))$width, 0)
   expect_identical(template, original)
 })
 
-test_that("template themes render like native grid and preserve child overrides", {
+test_that("template themes render like grid and preserve child overrides", {
   skip_if_not_installed("ragg")
   caller <- grDevices::dev.cur()
   devices <- grDevices::dev.list()

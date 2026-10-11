@@ -18,7 +18,8 @@ gc_save(
 )
 }
 \arguments{
-\item{plot}{An explicit ggplot, grid grob, \code{gc_element} or \code{gc_viewport}/scene.
+\item{plot}{An explicit ggplot, grid grob, \code{gc_element} or
+\code{gc_viewport}/scene.
 A filename, screenshot or resolved \code{gc_layout} is not an accepted source.}
 
 \item{type}{Single case-insensitive format: \code{"jpg"}, \code{"jpeg"}, \code{"png"},
@@ -36,7 +37,8 @@ JPEG treated as interchangeable.}
 are 800 by 600, independent of the scene's root reference dimensions.}
 
 \item{dpi}{Positive raster density. Raster output is
-\code{round(width * dpi / 96)} by \code{round(height * dpi / 96)} pixels. SVG dimensions
+\code{round(width * dpi / 96)} by \code{round(height * dpi / 96)} pixels. SVG
+dimensions
 are \code{width / 96} by \code{height / 96} inches, independent of DPI.}
 
 \item{background}{Single valid device background color. PNG, SVG and WebP
@@ -62,7 +64,8 @@ pane or on the size of the current device.
 \section{Optional codecs}{
 
 PNG and JPEG require \strong{ragg}, SVG requires \strong{svglite}, and WebP requires
-\strong{ragg} and \strong{webp}. Missing packages raise \code{ggcarto_missing_dependency} with
+\strong{ragg} and \strong{webp}. Missing packages raise \code{ggcarto_missing_dependency}
+with
 installation guidance; no packages are installed automatically. SVG preserves
 vector content, but source raster layers remain embedded raster images.
 }
@@ -95,7 +98,9 @@ device with \code{\link[=gc_render]{gc_render()}} when that format is required.
 }
 
 \examples{
-scene <- gc_viewport(list(gc_place(gc_text("Map export"), left = 12, top = 12)))
+scene <- gc_viewport(list(
+  gc_place(gc_text("Map export"), left = 12, top = 12)
+))
 if (requireNamespace("ragg", quietly = TRUE)) {
   file <- gc_save(scene,
     type = "png", dir = tempdir(),

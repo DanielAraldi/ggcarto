@@ -44,20 +44,40 @@ find_grobs <- function(grob, pattern) {
 
 is_empty_grob <- function(grob) inherits(grob, c("zeroGrob", "null"))
 
+nonempty_grobs <- function(table) {
+  !vapply(table$grobs, is_empty_grob, logical(1))
+}
+
+panel_backgrounds <- function(table, matches) {
+  for (index in which(matches)) {
+    backgrounds <- find_grobs(table$grobs[[index]], "^panel\\.background")
+    table$grobs[[index]] <- if (length(backgrounds)) {
+      backgrounds[[1L]]
+    } else {
+      grid::nullGrob()
+    }
+  }
+  table
+}
+
+is_whole_number <- function(value) {
+  is.numeric(value) &&
+    length(value) == 1L &&
+    !is.na(value) &&
+    value == as.integer(value)
+}
+
+is_selection <- function(which, count) {
+  is_whole_number(which) && which >= 1 && which <= count
+}
+
 extract_native <- function(plot, type, which = NULL) {
   table <- ggplot2::ggplotGrob(plot)
-  matches <- grepl(native_patterns[[type]], table$layout$name)
-  matches <- matches & !vapply(table$grobs, is_empty_grob, logical(1))
+  matches <- grepl(native_patterns[[type]], table$layout$name) &
+    nonempty_grobs(table)
   if (type == "panel_background") {
-    for (index in which(matches)) {
-      backgrounds <- find_grobs(table$grobs[[index]], "^panel\\.background")
-      table$grobs[[index]] <- if (length(backgrounds)) {
-        backgrounds[[1L]]
-      } else {
-        grid::nullGrob()
-      }
-    }
-    matches <- matches & !vapply(table$grobs, is_empty_grob, logical(1))
+    table <- panel_backgrounds(table, matches)
+    matches <- matches & nonempty_grobs(table)
   }
   indices <- base::which(matches)
   if (!length(indices)) {
@@ -68,14 +88,7 @@ extract_native <- function(plot, type, which = NULL) {
     )
   }
   if (!is.null(which)) {
-    if (
-      !is.numeric(which) ||
-        length(which) != 1L ||
-        is.na(which) ||
-        which != as.integer(which) ||
-        which < 1 ||
-        which > length(indices)
-    ) {
+    if (!is_selection(which, length(indices))) {
       gc_abort("which must select an existing element.", property = "which")
     }
     return(table$grobs[[indices[[which]]]])
@@ -118,7 +131,8 @@ native_adapter <- function(type) {
 #' `plot_background` and `panel_background`.
 #'
 #' Direct grobs additionally support `north_arrow`, `north_rose`, `scale_bar`,
-#' `map_frame`, `credits`, `annotation`, `inset` and `custom`. These names classify
+#' `map_frame`, `credits`, `annotation`, `inset` and `custom`. These names
+#' classify
 #' supplied grobs; they do not construct geographic symbols, scales or insets.
 #' Native adapters also accept direct grobs without extracting subcomponents.
 #'
@@ -127,13 +141,18 @@ native_adapter <- function(type) {
 #' lookup, global registration or required cowplot adapter.
 #'
 #' @returns A named list with classes `gc_registry` and `list`. Each entry holds
-#'   extraction, acceptance, optional measurement and optional styling callbacks,
+#'   extraction, acceptance, optional measurement and optional styling
+#'   callbacks,
 #'   plus an internal native-adapter flag.
 #' @seealso [gc_register_element()], [gc_get_element()]
 #' @examples
 #' registry <- gc_registry()
 #' names(registry)
-#' note <- gc_get_element(gc_text("Survey credits"), "credits", registry = registry)
+#' note <- gc_get_element(
+#'   gc_text("Survey credits"),
+#'   "credits",
+#'   registry = registry
+#' )
 #' print(note)
 #' @export
 gc_registry <- function() {
@@ -222,9 +241,7 @@ gc_register_element <- function(
   extractor = NULL,
   measurer = NULL
 ) {
-  if (
-    !is.character(type) || length(type) != 1L || is.na(type) || !nzchar(type)
-  ) {
+  if (!is_nonempty_string(type)) {
     gc_abort("type must be a nonempty string.")
   }
   if (!inherits(registry, "gc_registry")) {
@@ -233,16 +250,7 @@ gc_register_element <- function(
   extract <- extract %||% extractor
   measure <- measure %||% measurer
   can_extract <- can_extract %||% function(plot, ...) TRUE
-  for (callback in list(extract, can_extract)) {
-    if (!is.function(callback)) {
-      gc_abort("Extraction callbacks must be functions.")
-    }
-  }
-  for (callback in list(measure, style)) {
-    if (!is.null(callback) && !is.function(callback)) {
-      gc_abort("Optional callbacks must be functions.")
-    }
-  }
+  check_callbacks(list(extract, can_extract), list(measure, style))
   registry[[type]] <- list(
     can_extract = can_extract,
     extract = extract,
@@ -253,7 +261,63 @@ gc_register_element <- function(
   registry
 }
 
-#' Extract and normalize a semantic graphical element
+check_callbacks <- function(required, optional) {
+  for (callback in required) {
+    if (!is.function(callback)) {
+      gc_abort("Extraction callbacks must be functions.")
+    }
+  }
+  for (callback in optional) {
+    if (!is.null(callback) && !is.function(callback)) {
+      gc_abort("Optional callbacks must be functions.")
+    }
+  }
+  invisible(NULL)
+}
+
+element_adapter <- function(plot, type, registry) {
+  if (!inherits(registry, "gc_registry")) {
+    gc_abort("registry must be an gc_registry.")
+  }
+  if (!is_single_string(type)) {
+    gc_abort("type must be a string.")
+  }
+  adapter <- registry[[type]]
+  if (is.null(adapter)) {
+    gc_abort(
+      paste0("No extractor registered for '", type, "'."),
+      "missing_extractor"
+    )
+  }
+  if (!isTRUE(adapter$can_extract(plot))) {
+    gc_abort(
+      paste0("Unsupported source for '", type, "'."),
+      "unsupported_source"
+    )
+  }
+  adapter
+}
+
+extract_content <- function(adapter, source, which, missing) {
+  arguments <- list(source)
+  if (!is.null(which)) {
+    arguments$which <- which
+  }
+  tryCatch(
+    with_grid_context(
+      new_layout_context(800, 600),
+      do.call(adapter$extract, arguments)
+    ),
+    ggcarto_missing_element = function(condition) {
+      if (missing == "null") {
+        return(NULL)
+      }
+      stop(condition)
+    }
+  )
+}
+
+#' Extract and normalize#' Extract and normalize a semantic graphical element
 #'
 #' Extract a component from an explicit ggplot source or wrap a supplied grob
 #' as a semantic element. The source and unrelated components are preserved;
@@ -272,7 +336,8 @@ gc_register_element <- function(
 #' @param responsive Logical permission for collision-driven shrinking.
 #'   This does not disable resolution of logical units on subsequent draws.
 #' @param collision Collision policy: `"none"`, `"avoid"`, `"shrink"` or
-#'   `"avoid-and-shrink"`. See [gc_place()] for movement and shrinking conditions.
+#'   `"avoid-and-shrink"`. See [gc_place()] for movement and shrinking
+#'   conditions.
 #' @param priority Finite numeric priority for collision placement. Larger
 #'   values are handled first.
 #' @param registry Explicit `gc_registry`, normally from [gc_registry()] or
@@ -306,7 +371,8 @@ gc_register_element <- function(
 #' `ggcarto_invalid_extractor`. These inherit from `ggcarto_error`.
 #'
 #' @returns An `gc_element` inheriting from `gc_node`, or `NULL` when permitted
-#'   absence is requested. The node retains its source, adapter and declarations.
+#'   absence is requested. The node retains its source, adapter and
+#'   declarations.
 #' @seealso [gc_without()], [gc_style()], [gc_register_element()], [gc_place()]
 #' @examples
 #' plot <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) +
@@ -344,42 +410,9 @@ gc_get_element <- function(
       "unsupported_source"
     )
   }
-  if (!inherits(registry, "gc_registry")) {
-    gc_abort("registry must be an gc_registry.")
-  }
-  if (!is.character(type) || length(type) != 1L || is.na(type)) {
-    gc_abort("type must be a string.")
-  }
-  adapter <- registry[[type]]
-  if (is.null(adapter)) {
-    gc_abort(
-      paste0("No extractor registered for '", type, "'."),
-      "missing_extractor"
-    )
-  }
-  if (!isTRUE(adapter$can_extract(plot))) {
-    gc_abort(
-      paste0("Unsupported source for '", type, "'."),
-      "unsupported_source"
-    )
-  }
+  adapter <- element_adapter(plot, type, registry)
   source <- if (inherits(plot, "ggplot")) capture_plot(plot) else plot
-  arguments <- list(source)
-  if (!is.null(which)) {
-    arguments$which <- which
-  }
-  content <- tryCatch(
-    with_grid_context(
-      new_layout_context(800, 600),
-      do.call(adapter$extract, arguments)
-    ),
-    ggcarto_missing_element = function(condition) {
-      if (missing == "null") {
-        return(NULL)
-      }
-      stop(condition)
-    }
-  )
+  content <- extract_content(adapter, source, which, missing)
   if (is.null(content) && missing == "null") {
     return(NULL)
   }
@@ -448,12 +481,15 @@ gc_without <- function(plot, type) {
   if (!inherits(plot, "ggplot")) {
     gc_abort("gc_without() requires a ggplot.", "unsupported_source")
   }
-  if (!is.character(type) || any(!type %in% native_types)) {
+  if (!is.character(type) || !all(type %in% native_types)) {
     gc_abort("Unknown element type in gc_without().")
   }
   if ("panel" %in% type) {
     gc_abort(
-      "Removing data panels is not supported; compose extracted elements instead."
+      paste0(
+        "Removing data panels is not supported; compose ",
+        "extracted elements instead."
+      )
     )
   }
   result <- plot

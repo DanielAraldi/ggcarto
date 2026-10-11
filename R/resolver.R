@@ -1,7 +1,7 @@
 has_coordinates <- function(node) {
   any(vapply(
     node[c("x", "y", "top", "right", "bottom", "left")],
-    function(value) !is.null(value),
+    Negate(is.null),
     logical(1)
   ))
 }
@@ -66,7 +66,7 @@ resolve_border <- function(border, context, node) {
   }
   if (
     !is.list(border) ||
-      any(!names(border) %in% c("color", "colour", "width", "line_type"))
+      !all(names(border) %in% c("color", "colour", "width", "line_type"))
   ) {
     gc_abort(
       "border must be a color or a list of color, width and line_type.",
@@ -100,43 +100,55 @@ anchor_fraction <- function(anchor) {
   c(x = (index %% 3L) / 2, y = (index %/% 3L) / 2)
 }
 
+adapter_dimensions <- function(node, grob, context) {
+  measured_node <- node
+  measured_node$content <- grob
+  dimensions <- node$adapter$measure(measured_node, context)
+  if (is.list(dimensions)) {
+    dimensions <- unlist(dimensions[c("width", "height")])
+  }
+  if (is.null(names(dimensions)) && length(dimensions) == 2L) {
+    names(dimensions) <- c("width", "height")
+  }
+  dimensions[c("width", "height")]
+}
+
+grob_dimensions <- function(node, grob, context) {
+  dimensions <- measure_grob(grob, context)
+  if (inherits(grob, "gtable") && !identical(node$type, "legend")) {
+    if (any(grid::unitType(grob$widths) == "null")) {
+      dimensions[["width"]] <- context$width
+    }
+    if (any(grid::unitType(grob$heights) == "null")) {
+      dimensions[["height"]] <- context$height
+    }
+  }
+  if (identical(node$type, "x_axis")) {
+    dimensions[["width"]] <- context$width
+  }
+  if (identical(node$type, "y_axis")) dimensions[["height"]] <- context$height
+  dimensions
+}
+
 measure_content <- function(node, grob, context) {
   if (node$kind %in% c("plot", "viewport") || identical(node$type, "panel")) {
     return(c(width = context$width, height = context$height))
   }
-  if (is.function(node$adapter$measure)) {
-    measured_node <- node
-    measured_node$content <- grob
-    dimensions <- node$adapter$measure(measured_node, context)
-    if (is.list(dimensions)) {
-      dimensions <- unlist(dimensions[c("width", "height")])
-    }
-    if (is.null(names(dimensions)) && length(dimensions) == 2L) {
-      names(dimensions) <- c("width", "height")
-    }
-    dimensions <- dimensions[c("width", "height")]
+  dimensions <- if (is.function(node$adapter$measure)) {
+    adapter_dimensions(node, grob, context)
   } else {
-    dimensions <- measure_grob(grob, context)
-    if (inherits(grob, "gtable") && !identical(node$type, "legend")) {
-      if (any(grid::unitType(grob$widths) == "null")) {
-        dimensions[["width"]] <- context$width
-      }
-      if (any(grid::unitType(grob$heights) == "null")) {
-        dimensions[["height"]] <- context$height
-      }
-    }
-    if (identical(node$type, "x_axis")) {
-      dimensions[["width"]] <- context$width
-    }
-    if (identical(node$type, "y_axis")) dimensions[["height"]] <- context$height
+    grob_dimensions(node, grob, context)
   }
   if (
     length(dimensions) != 2L ||
-      any(!is.finite(dimensions)) ||
+      !all(is.finite(dimensions)) ||
       any(dimensions < 0)
   ) {
     gc_abort(
-      "Measurer must return finite, nonnegative width and height in logical pixels.",
+      paste0(
+        "Measurer must return finite, nonnegative width ",
+        "and height in logical pixels."
+      ),
       "invalid_measurement",
       node$id
     )
@@ -177,6 +189,75 @@ size_limits <- function(node, context) {
   result
 }
 
+axis_sides <- function(dimension) {
+  if (dimension == "width") c("left", "right") else c("top", "bottom")
+}
+
+preferred_size <- function(
+  node,
+  dimension,
+  intrinsic,
+  context,
+  margin,
+  padding,
+  border,
+  area
+) {
+  coordinate <- if (dimension == "width") "x" else "y"
+  sides <- axis_sides(dimension)
+  insets <- lapply(sides, function(side) {
+    resolve_property(node[[side]], context, coordinate, node, side)
+  })
+  if (node[[dimension]]$kind != "auto") {
+    return(resolve_property(
+      node[[dimension]],
+      context,
+      coordinate,
+      node,
+      dimension
+    ))
+  }
+  if (all(lengths(insets) > 0L)) {
+    return(context[[dimension]] - sum(unlist(insets)) - sum(margin[sides]))
+  }
+  if (node$kind %in% c("plot", "viewport") || identical(node$type, "panel")) {
+    return(area[[dimension]] - sum(margin[sides]))
+  }
+  intrinsic[[dimension]] + sum(padding[sides]) + 2 * border$width
+}
+
+apply_aspect_ratio <- function(node, dimensions, limits) {
+  ratio <- node$aspect_ratio
+  if (
+    node$width$kind != "auto" &&
+      node$height$kind != "auto" &&
+      abs(dimensions[["width"]] - ratio * dimensions[["height"]]) > 1e-7
+  ) {
+    gc_abort(
+      "Explicit dimensions contradict aspect_ratio.",
+      node = node$id,
+      property = "aspect_ratio"
+    )
+  }
+  preferred <- if (node$width$kind == "auto" && node$height$kind != "auto") {
+    dimensions[["height"]] * ratio
+  } else {
+    dimensions[["width"]]
+  }
+  minimum <- max(limits$min_width, limits$min_height * ratio)
+  maximum <- min(limits$max_width, limits$max_height * ratio)
+  if (minimum > maximum) {
+    gc_abort(
+      "Aspect ratio conflicts with min/max constraints.",
+      node = node$id,
+      property = "aspect_ratio"
+    )
+  }
+  dimensions[["width"]] <- max(minimum, min(preferred, maximum))
+  dimensions[["height"]] <- dimensions[["width"]] / ratio
+  dimensions
+}
+
 resolve_size <- function(
   node,
   intrinsic,
@@ -189,38 +270,16 @@ resolve_size <- function(
   dimensions <- c(width = 0, height = 0)
   limits <- size_limits(node, context)
   for (dimension in names(dimensions)) {
-    coordinate <- if (dimension == "width") "x" else "y"
-    sides <- if (dimension == "width") {
-      c("left", "right")
-    } else {
-      c("top", "bottom")
-    }
-    insets <- lapply(sides, function(side) {
-      resolve_property(node[[side]], context, coordinate, node, side)
-    })
-    automatic <- node[[dimension]]$kind == "auto"
-    stretch <- node$kind %in%
-      c("plot", "viewport") ||
-      identical(node$type, "panel")
-    preferred <- if (stretch) {
-      area[[dimension]] - sum(margin[sides])
-    } else {
-      intrinsic[[dimension]] + sum(padding[sides]) + 2 * border$width
-    }
-    if (automatic && all(lengths(insets) > 0L)) {
-      preferred <- context[[dimension]] -
-        sum(unlist(insets)) -
-        sum(margin[sides])
-    }
-    if (!automatic) {
-      preferred <- resolve_property(
-        node[[dimension]],
-        context,
-        coordinate,
-        node,
-        dimension
-      )
-    }
+    preferred <- preferred_size(
+      node,
+      dimension,
+      intrinsic,
+      context,
+      margin,
+      padding,
+      border,
+      area
+    )
     if (preferred < 0) {
       gc_abort(
         paste0("Negative resolved ", dimension, "."),
@@ -234,34 +293,7 @@ resolve_size <- function(
     )
   }
   if (!is.null(node$aspect_ratio)) {
-    ratio <- node$aspect_ratio
-    if (
-      node$width$kind != "auto" &&
-        node$height$kind != "auto" &&
-        abs(dimensions[["width"]] - ratio * dimensions[["height"]]) > 1e-7
-    ) {
-      gc_abort(
-        "Explicit dimensions contradict aspect_ratio.",
-        node = node$id,
-        property = "aspect_ratio"
-      )
-    }
-    preferred <- if (node$width$kind == "auto" && node$height$kind != "auto") {
-      dimensions[["height"]] * ratio
-    } else {
-      dimensions[["width"]]
-    }
-    minimum <- max(limits$min_width, limits$min_height * ratio)
-    maximum <- min(limits$max_width, limits$max_height * ratio)
-    if (minimum > maximum) {
-      gc_abort(
-        "Aspect ratio conflicts with min/max constraints.",
-        node = node$id,
-        property = "aspect_ratio"
-      )
-    }
-    dimensions[["width"]] <- max(minimum, min(preferred, maximum))
-    dimensions[["height"]] <- dimensions[["width"]] / ratio
+    dimensions <- apply_aspect_ratio(node, dimensions, limits)
   }
   dimensions
 }
@@ -284,12 +316,85 @@ placement_area <- function(node, context, safe_area) {
   area
 }
 
+check_axis_constraints <- function(node, axis, near, far, coordinate) {
+  if (!is.null(coordinate) && (!is.null(near) || !is.null(far))) {
+    sides <- axis_sides(if (axis == "x") "width" else "height")
+    gc_abort(
+      paste0(
+        axis,
+        " cannot be combined with ",
+        paste(sides, collapse = "/"),
+        "."
+      ),
+      "contradictory_constraints",
+      node$id,
+      axis
+    )
+  }
+  invisible(node)
+}
+
+check_opposing_insets <- function(
+  node,
+  dimension,
+  near,
+  far,
+  span,
+  available
+) {
+  if (
+    !is.null(near) &&
+      !is.null(far) &&
+      abs(near + far + span[[1L]] + span[[2L]] - available) > 1e-7
+  ) {
+    gc_abort(
+      paste0("Opposing insets contradict ", dimension, "."),
+      "contradictory_constraints",
+      node$id,
+      dimension
+    )
+  }
+  invisible(node)
+}
+
+axis_position <- function(
+  axis,
+  near,
+  far,
+  coordinate,
+  extent,
+  fraction,
+  margin,
+  context,
+  area
+) {
+  dimension <- if (axis == "x") "width" else "height"
+  sides <- axis_sides(dimension)
+  if (!is.null(coordinate)) {
+    return(
+      coordinate -
+        fraction * extent +
+        (1 - fraction) * margin[[sides[[1L]]]] -
+        fraction * margin[[sides[[2L]]]]
+    )
+  }
+  if (!is.null(near)) {
+    return(near + margin[[sides[[1L]]]])
+  }
+  if (!is.null(far)) {
+    return(context[[dimension]] - far - extent - margin[[sides[[2L]]]])
+  }
+  area[[axis]] +
+    margin[[sides[[1L]]]] +
+    fraction * (area[[dimension]] - sum(margin[sides]) - extent)
+}
+
 resolve_position <- function(node, dimensions, context, margin, area) {
   fraction <- anchor_fraction(node$anchor)
   position <- c(x = 0, y = 0)
   for (axis in c("x", "y")) {
     dimension <- if (axis == "x") "width" else "height"
-    sides <- if (axis == "x") c("left", "right") else c("top", "bottom")
+    sides <- axis_sides(dimension)
     near <- resolve_property(
       node[[sides[[1L]]]],
       context,
@@ -305,47 +410,27 @@ resolve_position <- function(node, dimensions, context, margin, area) {
       sides[[2L]]
     )
     coordinate <- resolve_property(node[[axis]], context, axis, node, axis)
-    if (!is.null(coordinate) && (!is.null(near) || !is.null(far))) {
-      gc_abort(
-        paste0(
-          axis,
-          " cannot be combined with ",
-          paste(sides, collapse = "/"),
-          "."
-        ),
-        "contradictory_constraints",
-        node$id,
-        axis
-      )
-    }
+    check_axis_constraints(node, axis, near, far, coordinate)
     extent <- dimensions[[dimension]]
-    if (
-      !is.null(near) &&
-        !is.null(far) &&
-        abs(near + far + extent + sum(margin[sides]) - context[[dimension]]) >
-          1e-7
-    ) {
-      gc_abort(
-        paste0("Opposing insets contradict ", dimension, "."),
-        "contradictory_constraints",
-        node$id,
-        dimension
-      )
-    }
-    position[[axis]] <- if (!is.null(coordinate)) {
-      coordinate -
-        fraction[[axis]] * extent +
-        (1 - fraction[[axis]]) * margin[[sides[[1L]]]] -
-        fraction[[axis]] * margin[[sides[[2L]]]]
-    } else if (!is.null(near)) {
-      near + margin[[sides[[1L]]]]
-    } else if (!is.null(far)) {
-      context[[dimension]] - far - extent - margin[[sides[[2L]]]]
-    } else {
-      area[[axis]] +
-        margin[[sides[[1L]]]] +
-        fraction[[axis]] * (area[[dimension]] - sum(margin[sides]) - extent)
-    }
+    check_opposing_insets(
+      node,
+      dimension,
+      near,
+      far,
+      c(extent, sum(margin[sides])),
+      context[[dimension]]
+    )
+    position[[axis]] <- axis_position(
+      axis,
+      near,
+      far,
+      coordinate,
+      extent,
+      fraction[[axis]],
+      margin,
+      context,
+      area
+    )
   }
   c(position, dimensions)
 }
@@ -434,13 +519,87 @@ validate_resolved <- function(resolved, context) {
       )
   ) {
     gc_warn(
-      "Intrinsic content exceeds its box; no implicit clipping or text reflow is applied.",
+      paste0(
+        "Intrinsic content exceeds its box; no implicit ",
+        "clipping or text reflow is applied."
+      ),
       "overflow",
       resolved$id,
       "content"
     )
   }
   invisible(resolved)
+}
+
+flow_insets <- function(flow, cursor, safe_area) {
+  list(
+    left = gc_length(
+      if (flow == "row") cursor + safe_area[["left"]] else safe_area[["left"]]
+    ),
+    top = gc_length(
+      if (flow == "column") {
+        cursor + safe_area[["top"]]
+      } else {
+        safe_area[["top"]]
+      }
+    )
+  )
+}
+
+flow_advance <- function(result, flow, gap) {
+  dimension <- if (flow == "row") "width" else "height"
+  result$box[[dimension]] + sum(result$margin[axis_sides(dimension)]) + gap
+}
+
+resolve_flow <- function(parent, context, safe_area, gap) {
+  flow <- parent$node$flow
+  sequential <- flow %in% c("row", "column")
+  cursor <- 0
+  children <- vector("list", length(parent$node$children))
+  names(children) <- names(parent$node$children)
+  for (index in seq_along(parent$node$children)) {
+    original <- parent$node$children[[index]]
+    child <- original
+    automatic <- sequential && !has_coordinates(child)
+    if (automatic) {
+      insets <- flow_insets(flow, cursor, safe_area)
+      child$left <- insets$left
+      child$top <- insets$top
+    }
+    result <- resolve_node(child, context, safe_area)
+    result$node <- original
+    if (automatic) {
+      cursor <- cursor + flow_advance(result, flow, gap)
+    }
+    children[[index]] <- result
+  }
+  children
+}
+
+resolve_descendants <- function(child, context) {
+  validate_resolved(child, context)
+  if (!length(child$node$children)) {
+    return(child)
+  }
+  inner <- content_box(child)
+  if (any(inner[c("width", "height")] <= 0)) {
+    gc_warn(
+      "No positive content area for child nodes.",
+      "overflow",
+      child$id,
+      "padding"
+    )
+    return(child)
+  }
+  child_context <- new_layout_context(
+    inner[["width"]],
+    inner[["height"]],
+    context$dpi,
+    context$root_width,
+    context$root_height
+  )
+  child$children <- resolve_children(child, child_context)
+  child
 }
 
 resolve_children <- function(parent, context) {
@@ -451,7 +610,6 @@ resolve_children <- function(parent, context) {
     parent$node,
     "safe_area"
   )
-  cursor <- 0
   gap <- resolve_property(
     parent$node$gap,
     context,
@@ -462,34 +620,7 @@ resolve_children <- function(parent, context) {
   if (gap < 0) {
     gc_abort("gap cannot be negative.", node = parent$id, property = "gap")
   }
-  children <- lapply(parent$node$children, function(child) {
-    original <- child
-    flow <- parent$node$flow
-    automatic <- !has_coordinates(child)
-    if (flow %in% c("row", "column") && automatic) {
-      child$left <- gc_length(
-        if (flow == "row") cursor + safe_area[["left"]] else safe_area[["left"]]
-      )
-      child$top <- gc_length(
-        if (flow == "column") {
-          cursor + safe_area[["top"]]
-        } else {
-          safe_area[["top"]]
-        }
-      )
-    }
-    result <- resolve_node(child, context, safe_area)
-    result$node <- original
-    if (flow %in% c("row", "column") && automatic) {
-      dimension <- if (flow == "row") "width" else "height"
-      sides <- if (flow == "row") c("left", "right") else c("top", "bottom")
-      cursor <<- cursor +
-        result$box[[dimension]] +
-        sum(result$margin[sides]) +
-        gap
-    }
-    result
-  })
+  children <- resolve_flow(parent, context, safe_area, gap)
   if (
     any(vapply(
       children,
@@ -499,30 +630,7 @@ resolve_children <- function(parent, context) {
   ) {
     children <- resolve_collisions(children, context, safe_area)
   }
-  lapply(children, function(child) {
-    validate_resolved(child, context)
-    inner <- content_box(child)
-    if (length(child$node$children)) {
-      if (any(inner[c("width", "height")] <= 0)) {
-        gc_warn(
-          "No positive content area for child nodes.",
-          "overflow",
-          child$id,
-          "padding"
-        )
-      } else {
-        child_context <- new_layout_context(
-          inner[["width"]],
-          inner[["height"]],
-          context$dpi,
-          context$root_width,
-          context$root_height
-        )
-        child$children <- resolve_children(child, child_context)
-      }
-    }
-    child
-  })
+  lapply(children, resolve_descendants, context = context)
 }
 
 root_context <- function(node, width, height, dpi) {
@@ -585,7 +693,8 @@ root_context <- function(node, width, height, dpi) {
 #' The root content box accounts for padding and borders; child coordinates
 #' are local to their parent's content box. Implicit node IDs are assigned
 #' deterministically. Conflicting constraints raise errors. Unresolved box
-#' overflow and collision placement emit `ggcarto_overflow` and `ggcarto_collision`
+#' overflow and collision placement emit `ggcarto_overflow` and
+#' `ggcarto_collision`
 #' warnings rather than being silently repaired or clipped.
 #'
 #' Measurement uses the current graphics device's font metrics. If no device
@@ -659,7 +768,8 @@ gc_resolve <- function(object, width = NULL, height = NULL, dpi = 96) {
 #'
 #' @param object An ggcarto element, scene node, ggplot or grid grob.
 #' @param viewport A list with positive numeric `width` and `height` in logical
-#'   pixels. Optional `root_width` and `root_height` control root-relative units;
+#'   pixels. Optional `root_width` and `root_height` control root-relative
+#'   units;
 #'   otherwise each defaults to its corresponding local dimension.
 #' @inheritParams gc_resolve
 #'

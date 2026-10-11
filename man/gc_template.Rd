@@ -20,7 +20,8 @@ earlier children. These arguments are content, not graphical parameters.}
 
 \item{children}{Optional list or \code{\link[grid:grid.grob]{grid::gList()}} of grobs appended after the
 children supplied in \code{...}. An empty template is allowed. Each supplied
-child must be a grob; strings, \code{NULL}, ggplots and ggcarto nodes are not grobs.}
+child must be a grob; strings, \code{NULL}, ggplots and ggcarto nodes are not
+grobs.}
 
 \item{name}{Optional character name for the grid grob. This is distinct from
 a scene node's \code{id} in \code{\link[=gc_place]{gc_place()}}.}

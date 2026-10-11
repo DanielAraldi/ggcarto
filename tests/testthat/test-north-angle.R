@@ -8,14 +8,14 @@ test_that("true north uses the symbol convention on known projections", {
   expect_equal(abs(gc_north_angle(3413, c(135, 75))), 180, tolerance = 1e-6)
 })
 
-test_that("projected sf points and bbox centers produce reusable scalar angles", {
+test_that("projected sf points and bbox centers give reusable scalar angles", {
   skip_if_not_installed("sf")
   point <- sf::st_sfc(sf::st_point(c(0, 75)), crs = 4326)
   projected <- sf::st_transform(point, 3413)
   original <- projected
   angle <- gc_north_angle(sf::st_crs(3413), projected)
   expect_equal(angle, 45, tolerance = 1e-6)
-  expect_equal(gc_north_angle(3413, sf::st_sf(geometry = projected)), angle)
+  expect_identical(gc_north_angle(3413, sf::st_sf(geometry = projected)), angle)
   coordinates <- sf::st_coordinates(projected)[1, ]
   extent <- sf::st_bbox(
     c(
@@ -26,15 +26,18 @@ test_that("projected sf points and bbox centers produce reusable scalar angles",
     ),
     crs = sf::st_crs(3413)
   )
-  expect_equal(gc_north_angle(extent), angle)
+  expect_identical(gc_north_angle(extent), angle)
   expect_identical(projected, original)
   expect_type(angle, "double")
   expect_length(angle, 1)
-  expect_equal(gc_north_arrow(angle = angle)$children$symbol$vp$angle, angle)
-  expect_equal(gc_north_rose(angle = angle)$children$rose$vp$angle, angle)
+  expect_identical(
+    gc_north_arrow(angle = angle)$children$symbol$vp$angle,
+    angle
+  )
+  expect_identical(gc_north_rose(angle = angle)$children$rose$vp$angle, angle)
 })
 
-test_that("plots and frames use their displayed extent without opening devices", {
+test_that("plots and frames use their displayed extent without a device", {
   skip_if_not_installed("sf")
   area <- sf::st_as_sfc(sf::st_bbox(
     c(
@@ -52,9 +55,12 @@ test_that("plots and frames use their displayed extent without opening devices",
   device <- grDevices::dev.cur()
   state <- sf::sf_use_s2()
   original <- frame
-  expect_equal(gc_north_angle(plot), gc_north_angle(frame))
-  expect_equal(gc_north_angle(frame), gc_north_angle(frame$map_context$extent))
-  expect_equal(
+  expect_identical(gc_north_angle(plot), gc_north_angle(frame))
+  expect_identical(
+    gc_north_angle(frame),
+    gc_north_angle(frame$map_context$extent)
+  )
+  expect_identical(
     gc_north_angle(frame, c(-79, 35)),
     gc_north_angle(32119, c(-79, 35))
   )
@@ -102,7 +108,7 @@ test_that("north angle rejects unknown references and degenerate locations", {
   )
 })
 
-test_that("local meridian tangents are stable across step sizes and hemispheres", {
+test_that("meridian tangents are stable across step sizes and hemispheres", {
   skip_if_not_installed("sf")
   expect_equal(gc_north_angle(3031, c(45, -75)), -45, tolerance = 1e-6)
   expect_equal(gc_north_angle(3031, c(-45, -75)), 45, tolerance = 1e-6)
@@ -127,7 +133,7 @@ test_that("local meridian tangents are stable across step sizes and hemispheres"
   expect_true(is.finite(gc_north_angle(bound, c(6, 45))))
 })
 
-test_that("insets use their own displayed center rather than the main reference", {
+test_that("insets use their own displayed center, not the main reference", {
   skip_if_not_installed("sf")
   area <- sf::st_as_sfc(sf::st_bbox(
     c(xmin = -60, ymin = 65, xmax = 15, ymax = 80),
@@ -146,7 +152,7 @@ test_that("insets use their own displayed center rather than the main reference"
     datum = NA
   )
   inset <- gc_inset(overview, reference = detail)
-  expect_equal(gc_north_angle(inset), gc_north_angle(overview))
+  expect_identical(gc_north_angle(inset), gc_north_angle(overview))
   expect_gt(abs(gc_north_angle(inset) - gc_north_angle(detail)), 1)
 })
 
@@ -157,11 +163,41 @@ test_that("north angle examples have stable visual output", {
   grDevices::pdf(NULL, width = 8, height = 6)
   on.exit(grDevices::dev.off())
   capture.output(sys.source(
-    system.file("examples", "functions", "gc_north_angle.R", package = "ggcarto"),
+    system.file(
+      "examples",
+      "functions",
+      "gc_north_angle.R",
+      package = "ggcarto"
+    ),
     envir = example
   ))
   vdiffr::expect_doppelganger(
     "wake-county-true-north",
     gc_as_grob(example$scene)
+  )
+})
+
+test_that("north angles reject invalid CRS inputs and reference extents", {
+  skip_if_not_installed("sf")
+  condition <- expect_error(
+    gc_north_angle("not a crs", c(0, 0)),
+    "valid CRS",
+    class = "ggcarto_error"
+  )
+  expect_identical(condition$property, "map")
+  inverted <- sf::st_bbox(
+    c(xmin = 1, ymin = 0, xmax = 0, ymax = 1),
+    crs = sf::st_crs(32119)
+  )
+  condition <- expect_error(
+    gc_north_angle(inverted),
+    "finite increasing bounds",
+    class = "ggcarto_error"
+  )
+  expect_identical(condition$property, "map")
+  points <- sf::st_sfc(sf::st_point(c(0, 10)), crs = 4326)
+  expect_error(
+    north_transform(points, sf::NA_crs_),
+    class = "ggcarto_north_projection"
   )
 })

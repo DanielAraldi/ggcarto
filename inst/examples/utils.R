@@ -153,7 +153,12 @@ map_sheet <- function(plot, frame, heading = "Carolina do Norte") {
         top = 68,
         bottom = 98
       ),
-      ggcarto::gc_place(legend, x = "50%", bottom = 28, anchor = "bottom-center"),
+      ggcarto::gc_place(
+        legend,
+        x = "50%",
+        bottom = 28,
+        anchor = "bottom-center"
+      ),
       ggcarto::gc_place(credit, x = "50%", bottom = 4, anchor = "bottom-center")
     ),
     width = 1000,

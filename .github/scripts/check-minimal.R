@@ -1,5 +1,8 @@
 local({
-  source_dir <- normalizePath(Sys.getenv("GGCARTO_SOURCE", "."), mustWork = TRUE)
+  source_dir <- normalizePath(
+    Sys.getenv("GGCARTO_SOURCE", "."),
+    mustWork = TRUE
+  )
   output_dir <- Sys.getenv("GGCARTO_CHECK_OUTPUT", tempfile("ggcarto-check-"))
   mode <- Sys.getenv("GGCARTO_CHECK_MODE", "no-suggests")
   stopifnot(mode %in% c("no-suggests", "with-tests"))

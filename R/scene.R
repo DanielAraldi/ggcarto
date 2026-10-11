@@ -16,7 +16,7 @@ normalize_edges <- function(value = 0) {
     value <- list(value)
   }
   if (!is.null(names(value))) {
-    if (any(!names(value) %in% sides) || anyDuplicated(names(value))) {
+    if (!all(names(value) %in% sides) || anyDuplicated(names(value))) {
       gc_abort("Invalid edge names.")
     }
     edges <- stats::setNames(rep(list(gc_length(0)), 4L), sides)
@@ -109,61 +109,62 @@ as_l_node <- function(object) {
   )
 }
 
+node_length_properties <- c(
+  "width",
+  "height",
+  "x",
+  "y",
+  "top",
+  "right",
+  "bottom",
+  "left",
+  "min_width",
+  "max_width",
+  "min_height",
+  "max_height",
+  "gap"
+)
+
+node_properties <- c(
+  node_length_properties,
+  "id",
+  "anchor",
+  "margin",
+  "padding",
+  "safe_area",
+  "aspect_ratio",
+  "z_index",
+  "overflow",
+  "responsive",
+  "collision",
+  "priority",
+  "allow_move",
+  "candidates",
+  "background",
+  "border",
+  "flow",
+  "metadata"
+)
+
+normalize_property <- function(property, value) {
+  if (!property %in% node_properties) {
+    gc_abort(paste0("Unknown node property: ", property), property = property)
+  }
+  if (property %in% node_length_properties && !is.null(value)) {
+    value <- gc_length(value)
+  }
+  if (property %in% c("padding", "margin", "safe_area")) {
+    value <- normalize_edges(value)
+  }
+  value
+}
+
 update_node <- function(node, properties) {
-  lengths <- c(
-    "width",
-    "height",
-    "x",
-    "y",
-    "top",
-    "right",
-    "bottom",
-    "left",
-    "min_width",
-    "max_width",
-    "min_height",
-    "max_height",
-    "gap"
-  )
-  allowed <- c(
-    lengths,
-    "id",
-    "anchor",
-    "margin",
-    "padding",
-    "safe_area",
-    "aspect_ratio",
-    "z_index",
-    "overflow",
-    "responsive",
-    "collision",
-    "priority",
-    "allow_move",
-    "candidates",
-    "background",
-    "border",
-    "flow",
-    "metadata"
-  )
-  if (
-    length(properties) &&
-      (is.null(names(properties)) ||
-        any(!nzchar(names(properties))) ||
-        anyDuplicated(names(properties)))
-  ) {
+  if (length(properties) && !has_unique_names(properties)) {
     gc_abort("Properties must have unique names.")
   }
   for (property in names(properties)) {
-    if (!property %in% allowed) {
-      gc_abort(paste0("Unknown node property: ", property), property = property)
-    }
-    value <- properties[[property]]
-    if (property %in% lengths && !is.null(value)) {
-      value <- gc_length(value)
-    }
-    if (property %in% c("padding", "margin", "safe_area")) {
-      value <- normalize_edges(value)
-    }
+    value <- normalize_property(property, properties[[property]])
     if (property == "id") {
       node$id_explicit <- !is.null(value)
     }
@@ -173,18 +174,16 @@ update_node <- function(node, properties) {
   node
 }
 
-validate_node <- function(node) {
-  choices <- list(
-    anchor = anchors,
-    overflow = c("visible", "hidden", "inherit"),
-    collision = c("none", "avoid", "shrink", "avoid-and-shrink"),
-    flow = c("absolute", "row", "column", "stack")
-  )
-  for (property in names(choices)) {
-    value <- node[[property]]
-    if (
-      length(value) != 1L || is.na(value) || !value %in% choices[[property]]
-    ) {
+node_choices <- list(
+  anchor = anchors,
+  overflow = c("visible", "hidden", "inherit"),
+  collision = c("none", "avoid", "shrink", "avoid-and-shrink"),
+  flow = c("absolute", "row", "column", "stack")
+)
+
+check_node_choices <- function(node) {
+  for (property in names(node_choices)) {
+    if (!is_choice(node[[property]], node_choices[[property]])) {
       gc_abort(
         paste0("Invalid ", property, "."),
         node = node$id,
@@ -192,6 +191,10 @@ validate_node <- function(node) {
       )
     }
   }
+  invisible(node)
+}
+
+check_node_dimensions <- function(node) {
   for (property in c(
     "width",
     "height",
@@ -210,6 +213,10 @@ validate_node <- function(node) {
       )
     }
   }
+  invisible(node)
+}
+
+check_node_scalars <- function(node) {
   for (property in c("z_index", "priority")) {
     scalar_number(node[[property]], property)
   }
@@ -217,26 +224,20 @@ validate_node <- function(node) {
     scalar_number(node$aspect_ratio, "aspect_ratio", TRUE)
   }
   for (property in c("responsive", "allow_move")) {
-    if (
-      !is.logical(node[[property]]) ||
-        length(node[[property]]) != 1L ||
-        is.na(node[[property]])
-    ) {
+    if (!is_flag(node[[property]])) {
       gc_abort(paste0(property, " must be TRUE or FALSE."), property = property)
     }
   }
-  if (
-    !is.null(node$id) &&
-      (!is.character(node$id) ||
-        length(node$id) != 1L ||
-        is.na(node$id) ||
-        !nzchar(node$id))
-  ) {
+  invisible(node)
+}
+
+check_node_identity <- function(node) {
+  if (!is.null(node$id) && !is_nonempty_string(node$id)) {
     gc_abort("id must be a nonempty string.", property = "id")
   }
   if (
     !is.null(node$candidates) &&
-      (!is.character(node$candidates) || any(!node$candidates %in% anchors))
+      (!is.character(node$candidates) || !all(node$candidates %in% anchors))
   ) {
     gc_abort(
       "Collision candidates must be valid anchors.",
@@ -246,13 +247,23 @@ validate_node <- function(node) {
   invisible(node)
 }
 
+validate_node <- function(node) {
+  check_node_choices(node)
+  check_node_dimensions(node)
+  check_node_scalars(node)
+  check_node_identity(node)
+  invisible(node)
+}
+
 #' Position and constrain a graphics object in a scene
 #'
-#' Wrap a ggplot or grob as a scene node, or return an existing node with updated
+#' Wrap a ggplot or grob as a scene node, or return an existing node with
+#' updated
 #' logical placement properties. No drawing or device-dependent conversion
 #' occurs, and the input object is not modified.
 #'
-#' @param object A ggplot, grid grob, extracted `gc_element`, or existing ggcarto
+#' @param object A ggplot, grid grob, extracted `gc_element`, or existing
+#'   ggcarto
 #'   scene node. A ggplot's effective theme is captured when it becomes a node.
 #' @param x,y Optional anchor coordinates measured from the top-left of the
 #'   containing content box. Positive `y` points down. Values use [gc_length()].
@@ -359,7 +370,7 @@ assign_scene_ids <- function(node, path = "root") {
     node$id <- path
   }
   node$children <- lapply(seq_along(node$children), function(index) {
-    assign_scene_ids(node$children[[index]], paste0(path, "/", index))
+    assign_scene_ids(node$children[[index]], file.path(path, index))
   })
   node
 }
@@ -384,7 +395,8 @@ scene_ids <- function(node) {
 #' @param padding,margin One to four logical edge lengths, or a named list with
 #'   `top`, `right`, `bottom`, `left` entries. Padding is inside the box; margin
 #'   is outside. Unnamed shorthand follows CSS order: all; vertical/horizontal;
-#'   top/horizontal/bottom; or top/right/bottom/left. Missing named sides are zero.
+#'   top/horizontal/bottom; or top/right/bottom/left. Missing named sides are
+#'   zero.
 #' @param background Optional background fill color. `NULL` leaves it unset.
 #' @param responsive Logical; permits collision-driven shrinking of this node
 #'   when minimum dimensions are supplied. Logical units always resolve anew.
@@ -529,7 +541,7 @@ gc_join <- function(
 #' count. Unlike printing a ggplot, printing an ggcarto node does not draw it.
 #'
 #' @param x An `gc_node` or subclass, such as an `gc_element` or `gc_viewport`.
-#' @param ... Additional arguments required by the generic; currently unused.
+#' @inheritParams print.gc_length
 #' @details Dimensions are printed as stored declarations, not as resolved
 #'   measurements. An unassigned node ID is shown explicitly. Use [gc_resolve()]
 #'   to inspect calculated boxes and [gc_render()] to display the scene.

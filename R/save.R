@@ -4,7 +4,8 @@
 #' independent graphics device. Export dimensions do not depend on the Plots
 #' pane or on the size of the current device.
 #'
-#' @param plot An explicit ggplot, grid grob, `gc_element` or `gc_viewport`/scene.
+#' @param plot An explicit ggplot, grid grob, `gc_element` or
+#'   `gc_viewport`/scene.
 #'   A filename, screenshot or resolved `gc_layout` is not an accepted source.
 #' @param type Single case-insensitive format: `"jpg"`, `"jpeg"`, `"png"`,
 #'   `"svg"` or `"webp"`. JPG and JPEG use the same encoder.
@@ -17,7 +18,8 @@
 #' @param width,height Positive numeric dimensions in logical pixels. Defaults
 #'   are 800 by 600, independent of the scene's root reference dimensions.
 #' @param dpi Positive raster density. Raster output is
-#'   `round(width * dpi / 96)` by `round(height * dpi / 96)` pixels. SVG dimensions
+#'   `round(width * dpi / 96)` by `round(height * dpi / 96)` pixels. SVG
+#'   dimensions
 #'   are `width / 96` by `height / 96` inches, independent of DPI.
 #' @param background Single valid device background color. PNG, SVG and WebP
 #'   allow `"transparent"`; JPEG requires an opaque color. Opaque scene
@@ -29,7 +31,8 @@
 #'
 #' @section Optional codecs:
 #' PNG and JPEG require **ragg**, SVG requires **svglite**, and WebP requires
-#' **ragg** and **webp**. Missing packages raise `ggcarto_missing_dependency` with
+#' **ragg** and **webp**. Missing packages raise `ggcarto_missing_dependency`
+#' with
 #' installation guidance; no packages are installed automatically. SVG preserves
 #' vector content, but source raster layers remain embedded raster images.
 #'
@@ -61,7 +64,9 @@
 #'   side effects.
 #' @seealso [gc_render()], [gc_viewport()], [gc_resolve()]
 #' @examples
-#' scene <- gc_viewport(list(gc_place(gc_text("Map export"), left = 12, top = 12)))
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_text("Map export"), left = 12, top = 12)
+#' ))
 #' if (requireNamespace("ragg", quietly = TRUE)) {
 #'   file <- gc_save(scene,
 #'     type = "png", dir = tempdir(),
@@ -103,7 +108,13 @@ gc_save <- function(
   type <- export_type(type)
   filename <- export_filename(type, dir, filename)
   settings <- export_settings(
-    type, width, height, dpi, background, quality, overwrite
+    type,
+    width,
+    height,
+    dpi,
+    background,
+    quality,
+    overwrite
   )
   require_export_codecs(type)
   destination <- export_destination(dir, filename, overwrite)
@@ -132,12 +143,7 @@ export_type <- function(type) {
 export_filename <- function(type, dir, filename) {
   for (property in c("dir", "filename")) {
     value <- if (property == "dir") dir else filename
-    if (
-      !is.character(value) ||
-        length(value) != 1L ||
-        is.na(value) ||
-        !nzchar(value)
-    ) {
+    if (!is_nonempty_string(value)) {
       gc_abort(
         paste0(property, " must be a nonempty string."),
         property = property
@@ -167,28 +173,8 @@ export_filename <- function(type, dir, filename) {
   filename
 }
 
-export_settings <- function(
-  type,
-  width,
-  height,
-  dpi,
-  background,
-  quality,
-  overwrite
-) {
-  width <- scalar_number(width, "width", TRUE)
-  height <- scalar_number(height, "height", TRUE)
-  dpi <- scalar_number(dpi, "dpi", TRUE)
-  quality <- scalar_number(quality, "quality")
-  if (quality < 0 || quality > 100) {
-    gc_abort("quality must be between 0 and 100.", property = "quality")
-  }
-  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
-    gc_abort("overwrite must be TRUE or FALSE.", property = "overwrite")
-  }
-  if (
-    !is.character(background) || length(background) != 1L || is.na(background)
-  ) {
+check_export_background <- function(type, background) {
+  if (!is_single_string(background)) {
     gc_abort("background must be a color string.", property = "background")
   }
   rgba <- tryCatch(
@@ -203,11 +189,15 @@ export_settings <- function(
       property = "background"
     )
   }
+  invisible(background)
+}
+
+raster_size <- function(type, width, height, dpi) {
   pixel_width <- round(width * dpi / 96)
   pixel_height <- round(height * dpi / 96)
   if (
     type != "svg" &&
-      (any(!is.finite(c(pixel_width, pixel_height))) ||
+      (!all(is.finite(c(pixel_width, pixel_height))) ||
         min(pixel_width, pixel_height) < 1 ||
         pixel_width * pixel_height > 1e8)
   ) {
@@ -225,6 +215,30 @@ export_settings <- function(
       property = "width/height"
     )
   }
+  c(pixel_width, pixel_height)
+}
+
+export_settings <- function(
+  type,
+  width,
+  height,
+  dpi,
+  background,
+  quality,
+  overwrite
+) {
+  width <- scalar_number(width, "width", TRUE)
+  height <- scalar_number(height, "height", TRUE)
+  dpi <- scalar_number(dpi, "dpi", TRUE)
+  quality <- scalar_number(quality, "quality")
+  if (quality < 0 || quality > 100) {
+    gc_abort("quality must be between 0 and 100.", property = "quality")
+  }
+  if (!is_flag(overwrite)) {
+    gc_abort("overwrite must be TRUE or FALSE.", property = "overwrite")
+  }
+  check_export_background(type, background)
+  pixels <- raster_size(type, width, height, dpi)
   list(
     type = type,
     width = width,
@@ -232,8 +246,8 @@ export_settings <- function(
     dpi = dpi,
     background = background,
     quality = quality,
-    pixel_width = pixel_width,
-    pixel_height = pixel_height
+    pixel_width = pixels[[1L]],
+    pixel_height = pixels[[2L]]
   )
 }
 
@@ -247,6 +261,7 @@ require_export_codecs <- function(type) {
   }
   for (package in packages) {
     if (!requireNamespace(package, quietly = TRUE)) {
+      # nocov start: reachable only when an export codec is not installed
       gc_abort(
         paste0(
           "Exporting ",
@@ -259,6 +274,7 @@ require_export_codecs <- function(type) {
         ),
         "missing_dependency"
       )
+      # nocov end
     }
   }
   invisible(NULL)
@@ -288,25 +304,23 @@ export_destination <- function(dir, filename, overwrite) {
   destination
 }
 
-render_export <- function(node, temporary, settings) {
-  caller <- grDevices::dev.cur()
-  device <- NULL
-  on.exit(
-    {
-      if (!is.null(device) && device %in% grDevices::dev.list()) {
-        grDevices::dev.off(device)
-      }
-      if (
-        caller != 1L &&
-          caller %in% grDevices::dev.list() &&
-          grDevices::dev.cur() != caller
-      ) {
-        grDevices::dev.set(caller)
-      }
-    },
-    add = TRUE
-  )
-  capture <- NULL
+restore_export_devices <- function(device, caller) {
+  if (!is.null(device) && device %in% grDevices::dev.list()) {
+    grDevices::dev.off(device)
+  }
+  if (
+    caller != 1L &&
+      caller %in% grDevices::dev.list() &&
+      grDevices::dev.cur() != caller
+  ) {
+    grDevices::dev.set(caller)
+  }
+  invisible(NULL)
+}
+
+# Opens the export device and returns the capture function for WebP, whose
+# bitmap is encoded after drawing, or NULL for devices writing directly.
+open_export_device <- function(temporary, settings) {
   type <- settings$type
   if (type == "svg") {
     svglite::svglite(
@@ -315,7 +329,9 @@ render_export <- function(node, temporary, settings) {
       height = settings$height / 96,
       bg = settings$background
     )
-  } else if (type == "png") {
+    return(NULL)
+  }
+  if (type == "png") {
     ragg::agg_png(
       temporary,
       width = settings$pixel_width,
@@ -323,7 +339,9 @@ render_export <- function(node, temporary, settings) {
       res = settings$dpi,
       background = settings$background
     )
-  } else if (type %in% c("jpg", "jpeg")) {
+    return(NULL)
+  }
+  if (type %in% c("jpg", "jpeg")) {
     ragg::agg_jpeg(
       temporary,
       width = settings$pixel_width,
@@ -332,14 +350,30 @@ render_export <- function(node, temporary, settings) {
       background = settings$background,
       quality = settings$quality
     )
-  } else {
-    capture <- ragg::agg_capture(
-      width = settings$pixel_width,
-      height = settings$pixel_height,
-      res = settings$dpi,
-      background = settings$background
-    )
+    return(NULL)
   }
+  ragg::agg_capture(
+    width = settings$pixel_width,
+    height = settings$pixel_height,
+    res = settings$dpi,
+    background = settings$background
+  )
+}
+
+write_export_webp <- function(bitmap, temporary, settings) {
+  colors <- grDevices::col2rgb(as.vector(t(bitmap)), alpha = TRUE)
+  pixels <- array(
+    as.raw(colors),
+    dim = c(4L, settings$pixel_width, settings$pixel_height)
+  )
+  webp::write_webp(pixels, target = temporary, quality = settings$quality)
+}
+
+render_export <- function(node, temporary, settings) {
+  caller <- grDevices::dev.cur()
+  device <- NULL
+  on.exit(restore_export_devices(device, caller), add = TRUE)
+  capture <- open_export_device(temporary, settings)
   device <- grDevices::dev.cur()
   gc_render(
     node,
@@ -351,12 +385,7 @@ render_export <- function(node, temporary, settings) {
   grDevices::dev.off(device)
   device <- NULL
   if (!is.null(bitmap)) {
-    colors <- grDevices::col2rgb(as.vector(t(bitmap)), alpha = TRUE)
-    pixels <- array(
-      as.raw(colors),
-      dim = c(4L, settings$pixel_width, settings$pixel_height)
-    )
-    webp::write_webp(pixels, target = temporary, quality = settings$quality)
+    write_export_webp(bitmap, temporary, settings)
   }
   invisible(NULL)
 }
@@ -367,7 +396,11 @@ publish_export <- function(temporary, destination) {
       file.info(temporary)$size == 0 ||
       !file.rename(temporary, destination)
   ) {
-    gc_abort("Could not publish the exported image.", "export", property = "dir")
+    gc_abort(
+      "Could not publish the exported image.",
+      "export",
+      property = "dir"
+    )
   }
   invisible(destination)
 }

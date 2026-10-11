@@ -80,104 +80,123 @@ shrink_factors <- function(resolved, context) {
   unique(c(seq(1, minimum, by = -0.05), minimum))
 }
 
-resolve_collisions <- function(children, context, safe_area) {
-  fixed <- vapply(
-    children,
-    function(child) {
-      child$node$collision == "none" ||
-        (has_coordinates(child$node) && !child$node$allow_move)
-    },
-    logical(1)
+collision_fixed <- function(child) {
+  child$node$collision == "none" ||
+    (has_coordinates(child$node) && !child$node$allow_move)
+}
+
+collision_viable <- function(candidate, region, accepted) {
+  box <- collision_box(candidate)
+  fits_area(box, region) &&
+    !any(vapply(
+      accepted,
+      function(other) boxes_overlap(box, collision_box(other)),
+      logical(1)
+    ))
+}
+
+collision_attempt <- function(anchor, scale, box, accepted) {
+  list(anchor = anchor, scale = scale, box = box, accepted = accepted)
+}
+
+collision_candidate <- function(current, base, anchor, factor, context, area) {
+  inner <- content_box(current)
+  dimensions <- current$box[c("width", "height")] -
+    inner[c("width", "height")] * (1 - factor)
+  base$anchor <- anchor
+  current$box <- resolve_position(
+    base,
+    dimensions,
+    context,
+    current$margin,
+    area
   )
+  current$scale <- factor
+  current
+}
+
+search_collision <- function(current, movable, accepted, context, areas) {
+  node <- current$node
+  can_move <- node$collision %in% c("avoid", "avoid-and-shrink")
+  base <- if (can_move) movable else node
+  region <- if (can_move) areas$movable else areas$original
+  choices <- if (can_move) collision_anchors(node) else node$anchor
+  attempts <- list()
+  for (factor in shrink_factors(current, context)) {
+    for (anchor in choices) {
+      candidate <- collision_candidate(
+        current,
+        base,
+        anchor,
+        factor,
+        context,
+        region
+      )
+      found <- collision_viable(candidate, region, accepted)
+      attempts[[length(attempts) + 1L]] <- collision_attempt(
+        anchor,
+        factor,
+        candidate$box,
+        found
+      )
+      if (found) {
+        return(list(current = candidate, found = TRUE, attempts = attempts))
+      }
+    }
+  }
+  list(current = current, found = FALSE, attempts = attempts)
+}
+
+place_collision <- function(current, fixed, accepted, context, safe_area) {
+  node <- current$node
+  movable <- node
+  for (property in c("x", "y", "left", "right", "top", "bottom")) {
+    movable[property] <- list(NULL)
+  }
+  area <- placement_area(movable, context, safe_area)
+  areas <- list(
+    movable = area,
+    original = if (has_coordinates(node)) {
+      placement_area(node, context, safe_area)
+    } else {
+      area
+    }
+  )
+  found <- collision_viable(current, areas$original, accepted)
+  attempts <- list(collision_attempt(node$anchor, 1, current$box, found))
+  if (!found && !fixed) {
+    search <- search_collision(current, movable, accepted, context, areas)
+    current <- search$current
+    found <- search$found
+    attempts <- c(attempts, search$attempts)
+  }
+  current$collision_candidates <- attempts
+  if (!found) {
+    gc_warn(
+      "No permitted collision-free placement; keeping the preferred box.",
+      "collision",
+      current$id,
+      "collision"
+    )
+  }
+  current
+}
+
+resolve_collisions <- function(children, context, safe_area) {
+  fixed <- vapply(children, collision_fixed, logical(1))
   priority <- vapply(children, function(child) child$node$priority, numeric(1))
   indices <- order(!fixed, -priority, seq_along(children))
   accepted <- list()
   for (index in indices) {
     current <- children[[index]]
-    node <- current$node
-    if (node$collision != "none") {
-      movable <- node
-      for (property in c("x", "y", "left", "right", "top", "bottom")) {
-        movable[property] <- list(NULL)
-      }
-      area <- placement_area(movable, context, safe_area)
-      original_area <- if (has_coordinates(node)) {
-        placement_area(node, context, safe_area)
-      } else {
-        area
-      }
-      viable <- function(candidate, region) {
-        box <- collision_box(candidate)
-        fits_area(box, region) &&
-          !any(vapply(
-            accepted,
-            function(other) boxes_overlap(box, collision_box(other)),
-            logical(1)
-          ))
-      }
-      found <- viable(current, original_area)
-      attempts <- list(list(
-        anchor = node$anchor,
-        scale = 1,
-        box = current$box,
-        accepted = found
-      ))
-      if (!found && !fixed[[index]]) {
-        factors <- shrink_factors(current, context)
-        preferred <- collision_anchors(node)
-        can_move <- node$collision %in% c("avoid", "avoid-and-shrink")
-        for (factor in factors) {
-          if (found) {
-            break
-          }
-          candidates <- if (can_move) preferred else node$anchor
-          for (anchor in candidates) {
-            candidate <- current
-            inner <- content_box(current)
-            dimensions <- current$box[c("width", "height")] -
-              inner[c("width", "height")] * (1 - factor)
-            if (can_move) {
-              movable$anchor <- anchor
-              candidate$box <- resolve_position(
-                movable,
-                dimensions,
-                context,
-                current$margin,
-                area
-              )
-            } else {
-              candidate$box <- resolve_position(
-                node,
-                dimensions,
-                context,
-                current$margin,
-                original_area
-              )
-            }
-            candidate$scale <- factor
-            found <- viable(candidate, if (can_move) area else original_area)
-            attempts[[length(attempts) + 1L]] <- list(
-              anchor = anchor,
-              scale = factor,
-              box = candidate$box,
-              accepted = found
-            )
-            if (found) {
-              current <- candidate
-              break
-            }
-          }
-        }
-      }
-      current$collision_candidates <- attempts
-      if (!found) {
-        gc_warn(
-          "No permitted collision-free placement; keeping the preferred box.",
-          "collision",
-          current$id,
-          "collision"
-        )
-      }
+    if (current$node$collision != "none") {
+      current <- place_collision(
+        current,
+        fixed[[index]],
+        accepted,
+        context,
+        safe_area
+      )
     }
     children[[index]] <- current
     if (collision_obstacle(current)) {

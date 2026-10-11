@@ -44,7 +44,8 @@ positioning, padding, border and background. Use \code{\link[=gc_place]{gc_place
 the returned inset explicitly inside a main frame.}
 }
 \value{
-An \code{gc_inset} inheriting from \code{gc_frame}, \code{gc_viewport} and \code{gc_node}.
+An \code{gc_inset} inheriting from \code{gc_frame}, \code{gc_viewport} and
+\code{gc_node}.
 \code{reference_context} stores the main extent and CRS; \code{footprint} holds the
 transformed sf polygon when highlighting is enabled. Inputs are unchanged.
 }

@@ -9,7 +9,7 @@ north_transform <- function(points, crs) {
     }
   )
   coordinates <- sf::st_coordinates(transformed)
-  if (any(sf::st_is_empty(transformed)) || any(!is.finite(coordinates))) {
+  if (any(sf::st_is_empty(transformed)) || !all(is.finite(coordinates))) {
     gc_abort(
       "The north reference is outside the projection domain.",
       "north_projection"
@@ -75,25 +75,64 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
   if (step > 1) {
     gc_abort("step must be at most one degree.", property = "step")
   }
-  extent <- NULL
-  horizontal_scale <- 1
-  if (inherits(map, "gc_frame") || inherits(map, "ggplot")) {
-    context <- if (inherits(map, "gc_frame")) {
-      map$map_context
-    } else {
-      map_panel_context(map)
-    }
-    extent <- context$extent
-    crs <- context$crs
-    horizontal_scale <- context$aspect_ratio *
+  reference <- north_reference(map)
+  location <- north_location(at, reference$extent, reference$crs)
+  if (abs(location[[1L]]) > 180 || abs(location[[2L]]) + step >= 90) {
+    gc_abort(
+      paste0(
+        "Longitude must be within [-180, 180] and ",
+        "latitude samples must avoid the poles."
+      ),
+      property = "at"
+    )
+  }
+  north_meridian_angle(
+    location,
+    step,
+    reference$crs,
+    reference$horizontal_scale
+  )
+}
+
+north_reference <- function(map) {
+  reference <- if (inherits(map, c("gc_frame", "ggplot"))) {
+    north_map_reference(map)
+  } else {
+    north_crs_reference(map)
+  }
+  north_check_crs(reference$crs)
+  north_check_extent(reference$extent)
+  reference
+}
+
+north_map_reference <- function(map) {
+  context <- if (inherits(map, "gc_frame")) {
+    map$map_context
+  } else {
+    map_panel_context(map)
+  }
+  extent <- context$extent
+  list(
+    extent = extent,
+    crs = context$crs,
+    horizontal_scale = context$aspect_ratio *
       as.numeric(extent[["ymax"]] - extent[["ymin"]]) /
       as.numeric(extent[["xmax"]] - extent[["xmin"]])
-  } else {
-    crs <- tryCatch(sf::st_crs(map), error = function(error) {
-      gc_abort("map must provide a valid CRS.", property = "map")
-    })
-    if (inherits(map, "bbox")) extent <- map
-  }
+  )
+}
+
+north_crs_reference <- function(map) {
+  crs <- tryCatch(sf::st_crs(map), error = function(error) {
+    gc_abort("map must provide a valid CRS.", property = "map")
+  })
+  list(
+    extent = if (inherits(map, "bbox")) map else NULL,
+    crs = crs,
+    horizontal_scale = 1
+  )
+}
+
+north_check_crs <- function(crs) {
   if (
     is.na(crs) ||
       grepl("CS[Cartesian,3]", gsub("[[:space:]]", "", crs$wkt), fixed = TRUE)
@@ -103,9 +142,13 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
       property = "map"
     )
   }
+  invisible(crs)
+}
+
+north_check_extent <- function(extent) {
   if (
     !is.null(extent) &&
-      (any(!is.finite(extent)) ||
+      (!all(is.finite(extent)) ||
         extent[["xmin"]] >= extent[["xmax"]] ||
         extent[["ymin"]] >= extent[["ymax"]])
   ) {
@@ -114,6 +157,10 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
       property = "map"
     )
   }
+  invisible(extent)
+}
+
+north_location <- function(at, extent, crs) {
   if (is.null(at)) {
     if (is.null(extent)) {
       gc_abort("A CRS alone requires an explicit at location.", property = "at")
@@ -127,39 +174,39 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
     )
   }
   if (inherits(at, c("sf", "sfc"))) {
-    geometry <- sf::st_geometry(at)
-    if (
-      length(geometry) != 1L ||
-        is.na(sf::st_crs(geometry)) ||
-        !inherits(geometry[[1L]], "POINT") ||
-        sf::st_is_empty(geometry)
-    ) {
-      gc_abort(
-        "at must contain one nonempty POINT with a known CRS.",
-        property = "at"
-      )
-    }
-    location <- as.numeric(north_transform(geometry, "OGC:CRS84")[1L, ])
-  } else {
-    if (
-      !is.numeric(at) ||
-        !is.null(dim(at)) ||
-        length(at) != 2L ||
-        any(!is.finite(at))
-    ) {
-      gc_abort(
-        "at must be c(longitude, latitude) or one sf POINT.",
-        property = "at"
-      )
-    }
-    location <- unname(at)
+    return(north_point_location(at))
   }
-  if (abs(location[[1L]]) > 180 || abs(location[[2L]]) + step >= 90) {
+  if (
+    !is.numeric(at) ||
+      !is.null(dim(at)) ||
+      length(at) != 2L ||
+      !all(is.finite(at))
+  ) {
     gc_abort(
-      "Longitude must be within [-180, 180] and latitude samples must avoid the poles.",
+      "at must be c(longitude, latitude) or one sf POINT.",
       property = "at"
     )
   }
+  unname(at)
+}
+
+north_point_location <- function(at) {
+  geometry <- sf::st_geometry(at)
+  if (
+    length(geometry) != 1L ||
+      is.na(sf::st_crs(geometry)) ||
+      !inherits(geometry[[1L]], "POINT") ||
+      sf::st_is_empty(geometry)
+  ) {
+    gc_abort(
+      "at must contain one nonempty POINT with a known CRS.",
+      property = "at"
+    )
+  }
+  as.numeric(north_transform(geometry, "OGC:CRS84")[1L, ])
+}
+
+north_meridian_angle <- function(location, step, crs, horizontal_scale) {
   samples <- sf::st_sfc(
     lapply(c(-step, 0, step), function(offset) {
       sf::st_point(location + c(0, offset))
@@ -169,7 +216,7 @@ gc_north_angle <- function(map, at = NULL, step = 0.0001) {
   projected <- north_transform(samples, crs)
   south <- projected[2L, ] - projected[1L, ]
   north <- projected[3L, ] - projected[2L, ]
-  if (sum(south * north) <= 0 || any(!is.finite(c(south, north)))) {
+  if (sum(south * north) <= 0 || !all(is.finite(c(south, north)))) {
     gc_abort(
       "True north is undefined or discontinuous at this reference.",
       "north_projection"

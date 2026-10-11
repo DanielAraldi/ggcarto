@@ -38,7 +38,7 @@ export_scene <- function() {
   ))
 }
 
-test_that("gc_save writes decodable raster formats with correct orientation and density", {
+test_that("gc_save writes decodable rasters with correct orientation and dpi", {
   skip_if_not_installed("ragg")
   skip_if_not_installed("webp")
   skip_if_not_installed("png")
@@ -57,7 +57,7 @@ test_that("gc_save writes decodable raster formats with correct orientation and 
     ))
     expect_false(result$visible)
     expect_true(file.exists(result$value))
-    expect_equal(
+    expect_identical(
       normalizePath(dirname(result$value), winslash = "/"),
       normalizePath(directory, winslash = "/")
     )
@@ -69,7 +69,7 @@ test_that("gc_save writes decodable raster formats with correct orientation and 
       webp = webp::read_webp
     )
     image <- reader(result$value)
-    expect_equal(dim(image)[1:2], c(160L, 240L))
+    expect_identical(dim(image)[1:2], c(160L, 240L))
     expect_gt(image[20, 20, 1], 0.9)
     expect_lt(image[20, 20, 3], 0.1)
     expect_gt(image[140, 220, 3], 0.9)
@@ -78,7 +78,7 @@ test_that("gc_save writes decodable raster formats with correct orientation and 
   }
 })
 
-test_that("SVG preserves vector content and raster backgrounds can be transparent", {
+test_that("SVG keeps vector content; raster backgrounds can be transparent", {
   skip_if_not_installed("svglite")
   skip_if_not_installed("ragg")
   skip_if_not_installed("png")
@@ -108,13 +108,13 @@ test_that("SVG preserves vector content and raster backgrounds can be transparen
       background = "transparent"
     )
     image <- if (type == "png") png::readPNG(path) else webp::read_webp(path)
-    expect_equal(dim(image), c(80L, 120L, 4L))
-    expect_equal(image[10, 110, 4], 0)
-    expect_equal(image[10, 10, 4], 1)
+    expect_identical(dim(image), c(80L, 120L, 4L))
+    expect_identical(image[10, 110, 4], 0)
+    expect_identical(image[10, 10, 4], 1)
   }
 })
 
-test_that("exports preserve existing files and restore caller devices on success and failure", {
+test_that("exports keep existing files and restore caller devices on failure", {
   skip_if_not_installed("ragg")
   directory <- tempfile()
   on.exit(unlink(directory, recursive = TRUE))
@@ -133,8 +133,8 @@ test_that("exports preserve existing files and restore caller devices on success
     height = 60
   )
   digest <- unname(tools::md5sum(path))
-  expect_equal(grDevices::dev.cur(), caller)
-  expect_equal(grid::current.viewport()$name, "caller")
+  expect_identical(grDevices::dev.cur(), caller)
+  expect_identical(grid::current.viewport()$name, "caller")
   expect_error(
     gc_save(original, "png", directory, filename = "map.png"),
     class = "ggcarto_file_exists"
@@ -149,10 +149,13 @@ test_that("exports preserve existing files and restore caller devices on success
     gc_save(bad, "png", directory, filename = "map.png", overwrite = TRUE),
     class = "ggcarto_contradictory_constraints"
   )
-  expect_equal(unname(tools::md5sum(path)), digest)
-  expect_equal(grDevices::dev.cur(), caller)
-  expect_equal(grid::current.viewport()$name, "caller")
-  expect_equal(list.files(directory, all.files = TRUE, no.. = TRUE), "map.png")
+  expect_identical(unname(tools::md5sum(path)), digest)
+  expect_identical(grDevices::dev.cur(), caller)
+  expect_identical(grid::current.viewport()$name, "caller")
+  expect_identical(
+    list.files(directory, all.files = TRUE, no.. = TRUE),
+    "map.png"
+  )
   expect_no_warning(gc_save(
     original,
     "png",
@@ -221,8 +224,7 @@ test_that("export requires an explicit destination directory", {
   working <- tempfile()
   dir.create(working)
   on.exit(unlink(working, recursive = TRUE))
-  original <- setwd(working)
-  on.exit(setwd(original), add = TRUE, after = FALSE)
+  withr::local_dir(working)
   condition <- expect_error(
     gc_save(export_scene(), "png", filename = "map"),
     class = "ggcarto_error"
@@ -274,7 +276,7 @@ test_that("raw ggplots, grobs and extracted elements are exportable", {
   }
 })
 
-test_that("directory creation, JPEG aliases and headless exports do not leak devices", {
+test_that("directory creation, JPEG aliases and headless runs leak no device", {
   skip_if_not_installed("ragg")
   directory <- tempfile()
   on.exit(unlink(directory, recursive = TRUE))
@@ -290,7 +292,7 @@ test_that("directory creation, JPEG aliases and headless exports do not leak dev
     height = 60
   )
   expect_true(file.exists(path))
-  expect_equal(basename(path), "map.JPG")
+  expect_identical(basename(path), "map.JPG")
   expect_identical(grDevices::dev.cur(), caller)
   expect_identical(grDevices::dev.list(), devices)
   expect_error(gc_save(export_scene(), "png", path), class = "ggcarto_export")
@@ -305,7 +307,7 @@ test_that("directory creation, JPEG aliases and headless exports do not leak dev
     class = "ggcarto_error"
   )
   expect_identical(grDevices::dev.list(), devices)
-  expect_equal(
+  expect_identical(
     list.files(destination, all.files = TRUE, no.. = TRUE),
     "map.JPG"
   )
@@ -346,7 +348,7 @@ test_that("gc_save map exports match the approved files for every format", {
       comparator <- testthat::compare_file_text
     } else {
       image <- read_export_image(path)
-      expect_equal(dim(image)[1:2], c(600L, 900L))
+      expect_identical(dim(image)[1:2], c(600L, 900L))
       expect_gt(diff(range(image[,, 1:3])), 0.5)
       comparator <- compare_export_image
     }
@@ -358,7 +360,7 @@ test_that("gc_save map exports match the approved files for every format", {
   }
 })
 
-test_that("export snapshot comparisons reject blank, resized and changed images", {
+test_that("snapshot comparisons reject blank, resized and changed images", {
   for (package in c("ragg", "webp", "png", "jpeg")) {
     skip_if_not_installed(package)
   }
@@ -418,4 +420,32 @@ test_that("export snapshot comparisons reject blank, resized and changed images"
     expect_false(compare_export_image(reference, resized))
     expect_false(compare_export_image(reference, different_image))
   }
+})
+
+test_that("publishing fails explicitly when no exported image exists", {
+  condition <- expect_error(
+    publish_export(tempfile(), tempfile()),
+    "Could not publish",
+    class = "ggcarto_export"
+  )
+  expect_identical(condition$property, "dir")
+})
+
+test_that("exports restore a caller that is not the next open device", {
+  skip_if_not_installed("svglite")
+  directory <- tempfile()
+  on.exit(unlink(directory, recursive = TRUE), add = TRUE)
+  grDevices::pdf(NULL)
+  first <- grDevices::dev.cur()
+  on.exit(grDevices::dev.off(first), add = TRUE)
+  grDevices::pdf(NULL)
+  caller <- grDevices::dev.cur()
+  on.exit(grDevices::dev.off(caller), add = TRUE)
+  gc_save(
+    gc_viewport(list(gc_text("Label")), width = 50, height = 50),
+    "svg",
+    dir = directory,
+    filename = "label"
+  )
+  expect_identical(grDevices::dev.cur(), caller)
 })

@@ -20,7 +20,8 @@ gc_place(
 )
 }
 \arguments{
-\item{object}{A ggplot, grid grob, extracted \code{gc_element}, or existing ggcarto
+\item{object}{A ggplot, grid grob, extracted \code{gc_element}, or existing
+ggcarto
 scene node. A ggplot's effective theme is captured when it becomes a node.}
 
 \item{x, y}{Optional anchor coordinates measured from the top-left of the
@@ -48,7 +49,8 @@ A positioned \code{gc_node}, preserving subclasses when \code{object} was
 already a scene node. Child-local declarations are retained.
 }
 \description{
-Wrap a ggplot or grob as a scene node, or return an existing node with updated
+Wrap a ggplot or grob as a scene node, or return an existing node with
+updated
 logical placement properties. No drawing or device-dependent conversion
 occurs, and the input object is not modified.
 }

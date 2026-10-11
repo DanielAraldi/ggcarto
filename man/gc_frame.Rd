@@ -27,7 +27,8 @@ stretching its geographic proportions. Overlays share the displayed panel,
 rather than the surrounding page, as their positioning context.
 }
 \details{
-Requires the optional sf package. The source plot and its theme are preserved.
+Requires the optional sf package. The source plot and its theme are
+preserved.
 Titles, legends and axes are not included in the extracted panel; extract
 them separately with \code{\link[=gc_get_element]{gc_get_element()}}. The actual built panel ranges,
 including coord_sf expansion, define the extent, not the data bounding box.
@@ -48,5 +49,6 @@ if (requireNamespace("sf", quietly = TRUE)) {
 }
 }
 \seealso{
-\code{\link[=gc_scale_bar]{gc_scale_bar()}}, \code{\link[=gc_inset]{gc_inset()}}, \code{\link[=gc_viewport]{gc_viewport()}}, \code{\link[=gc_place]{gc_place()}}, \code{\link[=gc_get_element]{gc_get_element()}}
+\code{\link[=gc_scale_bar]{gc_scale_bar()}}, \code{\link[=gc_inset]{gc_inset()}}, \code{\link[=gc_viewport]{gc_viewport()}}, \code{\link[=gc_place]{gc_place()}},
+\code{\link[=gc_get_element]{gc_get_element()}}
 }

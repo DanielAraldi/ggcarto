@@ -35,7 +35,8 @@ particular size; keep the original scene for later rendering or export.
 The root content box accounts for padding and borders; child coordinates
 are local to their parent's content box. Implicit node IDs are assigned
 deterministically. Conflicting constraints raise errors. Unresolved box
-overflow and collision placement emit \code{ggcarto_overflow} and \code{ggcarto_collision}
+overflow and collision placement emit \code{ggcarto_overflow} and
+\code{ggcarto_collision}
 warnings rather than being silently repaired or clipped.
 
 Measurement uses the current graphics device's font metrics. If no device

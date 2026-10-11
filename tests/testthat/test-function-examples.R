@@ -14,7 +14,7 @@ run_function_example <- function(name) {
   environment
 }
 
-test_that("every exported function has a focused example with ggcarto helpers", {
+test_that("every export has a focused example with ggcarto helpers", {
   root <- system.file("examples", "functions", package = "ggcarto")
   paths <- list.files(root, pattern = "\\.R$", full.names = TRUE)
   public_functions <- getNamespaceExports("ggcarto")
@@ -65,27 +65,27 @@ test_that("every exported function has a focused example with ggcarto helpers", 
 
 test_that("length examples run without shared helpers or session objects", {
   unit <- run_function_example("gc_unit")$result
-  expect_true(grid::is.unit(unit))
+  expect_s3_class(unit, "unit")
   expect_identical(unit, grid::unit(5, "mm"))
 
   length <- run_function_example("gc_length")$result
   expect_s3_class(length, "gc_length")
-  expect_equal(length$value, 25)
+  expect_identical(length$value, 25)
   expect_identical(length$unit, "%")
 
   clamp <- run_function_example("gc_clamp")$result
   expect_s3_class(clamp, "gc_length")
   expect_identical(clamp$kind, "clamp")
-  expect_equal(resolve_length(clamp, new_layout_context(100, 100)), 80)
-  expect_equal(resolve_length(clamp, new_layout_context(300, 100)), 150)
-  expect_equal(resolve_length(clamp, new_layout_context(800, 100)), 240)
+  expect_identical(resolve_length(clamp, new_layout_context(100, 100)), 80)
+  expect_identical(resolve_length(clamp, new_layout_context(300, 100)), 150)
+  expect_identical(resolve_length(clamp, new_layout_context(800, 100)), 240)
 })
 
 test_that("constructor examples draw ggcarto grobs independently", {
   expect_no_warning(text <- run_function_example("gc_text")$result)
   expect_s3_class(text, "text")
   expect_identical(text$label, "Mapa de exemplo")
-  expect_equal(text$gp$fontsize, 20)
+  expect_identical(text$gp$fontsize, 20)
 
   expect_no_warning(rectangle <- run_function_example("gc_rect")$result)
   expect_s3_class(rectangle, "rect")
@@ -100,18 +100,18 @@ test_that("constructor examples draw ggcarto grobs independently", {
 
   expect_no_warning(example <- run_function_example("gc_north_arrow"))
   expect_s3_class(example$result, "gTree")
-  expect_equal(example$result$children$symbol$vp$angle, 0)
+  expect_identical(example$result$children$symbol$vp$angle, 0)
   expect_true(all(
     c("central-petal-west", "band-jewel", "west-petal", "label") %in%
       example$drawn_grobs
   ))
 })
 
-test_that("cartographic function examples draw independently with bundled sf data", {
+test_that("cartographic examples draw independently with bundled sf data", {
   skip_if_not_installed("sf")
   expect_no_warning(frame <- run_function_example("gc_frame"))
   expect_s3_class(frame$result, "gc_frame")
-  expect_equal(frame$result$map_context$crs$epsg, 32119)
+  expect_identical(frame$result$map_context$crs$epsg, 32119L)
   expect_true(any(grepl("pathgrob|polygon", frame$drawn_grobs)))
   expect_no_warning(scale <- run_function_example("gc_scale_bar"))
   expect_s3_class(scale$result, "gc_scale_bar")
@@ -121,17 +121,17 @@ test_that("cartographic function examples draw independently with bundled sf dat
   expect_true("inset-footprint" %in% inset$drawn_grobs)
 })
 
-test_that("the north angle example rotates both symbols using one computed angle", {
+test_that("the north angle example rotates both symbols by one angle", {
   skip_if_not_installed("sf")
   expect_no_warning(example <- run_function_example("gc_north_angle"))
   expect_identical(example$area$NAME, "Wake")
-  expect_equal(sf::st_crs(example$area)$epsg, 32119)
+  expect_identical(sf::st_crs(example$area)$epsg, 32119L)
   expect_gt(nrow(sf::st_coordinates(example$area)), 5)
-  expect_equal(example$result, gc_north_angle(example$scene))
+  expect_identical(example$result, gc_north_angle(example$scene))
   expect_true(is.finite(example$result))
   expect_lt(abs(example$result), 5)
-  expect_equal(example$arrow$children$symbol$vp$angle, example$result)
-  expect_equal(example$rose$children$rose$vp$angle, example$result)
+  expect_identical(example$arrow$children$symbol$vp$angle, example$result)
+  expect_identical(example$rose$children$rose$vp$angle, example$result)
   expect_true(all(
     c("true-north-arrow", "true-north-rose") %in% example$drawn_grobs
   ))
@@ -141,24 +141,24 @@ test_that("style and registry examples need no extracted elements", {
   expect_no_warning(example <- run_function_example("gc_style"))
   expect_s3_class(example$result, "gc_node")
   expect_identical(example$result$content, example$original)
-  expect_equal(example$original$gp$fontsize, 10)
-  expect_equal(example$result$style$font_size, gc_length("20pt"))
+  expect_identical(example$original$gp$fontsize, 10)
+  expect_identical(example$result$style$font_size, gc_length("20pt"))
 
   registry <- run_function_example("gc_registry")$result
   expect_s3_class(registry, "gc_registry")
   expect_true(all(c("title", "legend", "panel") %in% names(registry)))
-  expect_true(is.function(registry$title$extract))
+  expect_type(registry$title$extract, "closure")
 })
 
 test_that("the compass rose example draws one customized rose independently", {
   expect_no_warning(example <- run_function_example("gc_north_rose"))
   expect_s3_class(example$result, "gTree")
   expect_identical(example$result$name, "custom_rose")
-  expect_equal(example$result$children$rose$vp$angle, 0)
+  expect_identical(example$result$children$rose$vp$angle, 0)
   body <- example$result$children$rose$children$body
   expect_length(body$children, 16)
-  expect_equal(body$children[[1]]$gp$fill, "#197C80")
-  expect_equal(body$children[[2]]$gp$fill, "#F4CD68")
+  expect_identical(body$children[[1]]$gp$fill, "#197C80")
+  expect_identical(body$children[[2]]$gp$fill, "#F4CD68")
   expect_true(all(c("custom_rose", "body", "labels") %in% example$drawn_grobs))
 })
 
@@ -192,7 +192,7 @@ test_that("placement and composition examples work with ggcarto constructors", {
   expect_no_warning(placed <- run_function_example("gc_place")$result)
   expect_identical(placed$id, "positioned_rectangle")
   layout <- gc_resolve(placed, width = 600, height = 400)
-  expect_equal(
+  expect_identical(
     layout$root$children[[1]]$box,
     c(x = 60, y = 60, width = 300, height = 80)
   )
@@ -201,7 +201,7 @@ test_that("placement and composition examples work with ggcarto constructors", {
   expect_s3_class(viewport, "gc_viewport")
   expect_length(viewport$children, 2)
   children <- gc_resolve(viewport, width = 600, height = 400)$root$children
-  expect_equal(
+  expect_identical(
     children[[2]]$box[["y"]],
     children[[1]]$box[["y"]] + children[[1]]$box[["height"]] + 16
   )
@@ -211,7 +211,7 @@ test_that("placement and composition examples work with ggcarto constructors", {
   expect_identical(joined$result$children[[1]]$content, joined$first)
   expect_identical(joined$result$children[[2]]$content, joined$second)
   children <- gc_resolve(joined$result, width = 600, height = 400)$root$children
-  expect_equal(
+  expect_identical(
     children[[2]]$box[["x"]],
     children[[1]]$box[["x"]] + children[[1]]$box[["width"]] + 16
   )
@@ -220,13 +220,13 @@ test_that("placement and composition examples work with ggcarto constructors", {
 test_that("drawing examples return the documented grob and layout objects", {
   expect_no_warning(wrapped <- run_function_example("gc_as_grob"))
   expect_s3_class(wrapped$result, "gc_scene_grob")
-  expect_true(grid::is.grob(wrapped$result))
+  expect_s3_class(wrapped$result, "grob")
   expect_identical(wrapped$result$scene$content, wrapped$label)
   expect_true(wrapped$label$name %in% wrapped$drawn_grobs)
 
   expect_no_warning(rendered <- run_function_example("gc_render")$result)
   expect_s3_class(rendered, "gc_layout")
-  expect_equal(
+  expect_identical(
     rendered$root$box[c("width", "height")],
     c(width = 768, height = 576)
   )
@@ -240,10 +240,14 @@ test_that("measurement examples report sizes without shared scene setup", {
 
   expect_no_warning(resolved <- run_function_example("gc_resolve")$result)
   expect_s3_class(resolved, "gc_layout")
-  expect_equal(resolved$root$box, c(x = 0, y = 0, width = 600, height = 400))
+  expect_identical(
+    resolved$root$box,
+    c(x = 0, y = 0, width = 600, height = 400)
+  )
   expect_equal(
     resolved$root$children[[1]]$box,
-    c(x = 0, y = 0, width = 40 * 96 / 25.4, height = 20 * 96 / 25.4)
+    c(x = 0, y = 0, width = 40 * 96 / 25.4, height = 20 * 96 / 25.4),
+    tolerance = testthat::testthat_tolerance()
   )
 })
 
@@ -256,7 +260,7 @@ test_that("the export example writes an SVG to a fresh temporary directory", {
   expect_true(file.exists(example$result))
   expect_identical(
     normalizePath(dirname(example$result), winslash = "/"),
-    normalizePath(example$directory, winslash = "/"),
+    normalizePath(example$directory, winslash = "/")
   )
   expect_identical(basename(example$result), "title.svg")
   text <- paste(readLines(example$result, warn = FALSE), collapse = "\n")

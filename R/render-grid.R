@@ -10,32 +10,39 @@ box_viewport <- function(box, name, clip = "inherit") {
   )
 }
 
-scale_content <- function(grob, factor) {
-  if (factor == 1 || is.null(grob)) {
-    return(grob)
-  }
-  for (property in c(
-    "x",
-    "y",
-    "x0",
-    "x1",
-    "y0",
-    "y1",
-    "width",
-    "height",
-    "widths",
-    "heights",
-    "r"
-  )) {
+scaled_unit_properties <- c(
+  "x",
+  "y",
+  "x0",
+  "x1",
+  "y0",
+  "y1",
+  "width",
+  "height",
+  "widths",
+  "heights",
+  "r"
+)
+
+scale_units <- function(grob, factor) {
+  for (property in scaled_unit_properties) {
     value <- grob[[property]]
     if (grid::is.unit(value)) {
       relative <- grid::unitType(value) %in% c("npc", "native", "null", "snpc")
-      if (any(!relative)) {
+      if (!all(relative)) {
         value[!relative] <- value[!relative] * factor
       }
       grob[[property]] <- value
     }
   }
+  grob
+}
+
+scale_content <- function(grob, factor) {
+  if (factor == 1 || is.null(grob)) {
+    return(grob)
+  }
+  grob <- scale_units(grob, factor)
   for (property in c("fontsize", "lwd")) {
     if (!is.null(grob$gp[[property]])) {
       grob$gp[[property]] <- grob$gp[[property]] * factor
@@ -53,15 +60,18 @@ scale_content <- function(grob, factor) {
   grob
 }
 
-debug_grobs <- function(resolved) {
-  content <- content_box(resolved)
+debug_rect <- function(box, name, col) {
+  grid::rectGrob(
+    vp = box_viewport(box, name),
+    gp = grid::gpar(fill = NA, col = col, lty = 3)
+  )
+}
+
+debug_labels <- function(resolved, content) {
   fraction <- anchor_fraction(resolved$node$anchor)
-  grobs <- list(
+  list(
     grid::rectGrob(gp = grid::gpar(fill = NA, col = "#C62828", lty = 2)),
-    grid::rectGrob(
-      vp = box_viewport(content, paste0(resolved$id, "-debug-content")),
-      gp = grid::gpar(fill = NA, col = "#1565C0", lty = 3)
-    ),
+    debug_rect(content, paste0(resolved$id, "-debug-content"), "#1565C0"),
     grid::pointsGrob(
       x = fraction[["x"]],
       y = 1 - fraction[["y"]],
@@ -83,42 +93,99 @@ debug_grobs <- function(resolved) {
       gp = grid::gpar(fontsize = 6, col = "#C62828")
     )
   )
+}
+
+debug_grobs <- function(resolved) {
+  content <- content_box(resolved)
+  grobs <- debug_labels(resolved, content)
   intrinsic <- c(
     x = content[["x"]],
     y = content[["y"]],
     width = resolved$intrinsic[["width"]] * resolved$scale,
     height = resolved$intrinsic[["height"]] * resolved$scale
   )
-  grobs[[length(grobs) + 1L]] <- grid::rectGrob(
-    vp = box_viewport(intrinsic, paste0(resolved$id, "-intrinsic")),
-    gp = grid::gpar(fill = NA, col = "#2E7D32", lty = 3)
+  grobs[[length(grobs) + 1L]] <- debug_rect(
+    intrinsic,
+    paste0(resolved$id, "-intrinsic"),
+    "#2E7D32"
   )
   margin <- collision_box(resolved)
   margin[c("x", "y")] <- margin[c("x", "y")] - resolved$box[c("x", "y")]
-  grobs[[length(grobs) + 1L]] <- grid::rectGrob(
-    vp = box_viewport(margin, paste0(resolved$id, "-margin")),
-    gp = grid::gpar(fill = NA, col = "#A65F00", lty = 3)
+  grobs[[length(grobs) + 1L]] <- debug_rect(
+    margin,
+    paste0(resolved$id, "-margin"),
+    "#A65F00"
   )
   for (attempt in resolved$collision_candidates) {
     box <- attempt$box
     box[c("x", "y")] <- box[c("x", "y")] - resolved$box[c("x", "y")]
-    grobs[[length(grobs) + 1L]] <- grid::rectGrob(
-      vp = box_viewport(box, paste0(resolved$id, "-candidate")),
-      gp = grid::gpar(fill = NA, col = "#78909C", lty = 3)
+    grobs[[length(grobs) + 1L]] <- debug_rect(
+      box,
+      paste0(resolved$id, "-candidate"),
+      "#78909C"
     )
   }
   grobs
 }
 
+node_clip <- function(node, ancestor_clips) {
+  if (node$overflow == "hidden") {
+    return("on")
+  }
+  if (ancestor_clips || node$overflow == "inherit") {
+    return("inherit")
+  }
+  "off"
+}
+
+content_tree <- function(resolved, content, debug, clips) {
+  graphics <- list()
+  if (!is.null(resolved$content)) {
+    graphics[[1L]] <- scale_content(resolved$content, resolved$scale)
+  }
+  order <- order(
+    vapply(resolved$children, function(child) child$node$z_index, numeric(1)),
+    seq_along(resolved$children)
+  )
+  graphics <- c(
+    graphics,
+    lapply(
+      resolved$children[order],
+      compile_node,
+      debug = debug,
+      ancestor_clips = clips
+    )
+  )
+  grid::gTree(
+    children = do.call(grid::gList, graphics),
+    vp = box_viewport(content, paste0(resolved$id, "-content")),
+    name = paste0(resolved$id, "-content")
+  )
+}
+
+border_grob <- function(resolved) {
+  border <- resolved$border
+  grid::rectGrob(
+    width = gc_unit(
+      max(0, resolved$box[["width"]] - border$width) / 96,
+      "inches"
+    ),
+    height = gc_unit(
+      max(0, resolved$box[["height"]] - border$width) / 96,
+      "inches"
+    ),
+    gp = grid::gpar(
+      fill = NA,
+      col = border$color,
+      lwd = border$width,
+      lty = border$line_type
+    )
+  )
+}
+
 compile_node <- function(resolved, debug = FALSE, ancestor_clips = FALSE) {
   node <- resolved$node
-  clip <- if (node$overflow == "hidden") {
-    "on"
-  } else if (ancestor_clips || node$overflow == "inherit") {
-    "inherit"
-  } else {
-    "off"
-  }
+  clip <- node_clip(node, ancestor_clips)
   clips <- ancestor_clips || node$overflow == "hidden"
   children <- list()
   if (!is.null(node$background)) {
@@ -128,47 +195,15 @@ compile_node <- function(resolved, debug = FALSE, ancestor_clips = FALSE) {
   }
   content <- content_box(resolved)
   if (all(content[c("width", "height")] > 0)) {
-    graphics <- list()
-    if (!is.null(resolved$content)) {
-      graphics[[1L]] <- scale_content(resolved$content, resolved$scale)
-    }
-    order <- order(
-      vapply(resolved$children, function(child) child$node$z_index, numeric(1)),
-      seq_along(resolved$children)
-    )
-    graphics <- c(
-      graphics,
-      lapply(
-        resolved$children[order],
-        compile_node,
-        debug = debug,
-        ancestor_clips = clips
-      )
-    )
-    children[[length(children) + 1L]] <- grid::gTree(
-      children = do.call(grid::gList, graphics),
-      vp = box_viewport(content, paste0(resolved$id, "-content")),
-      name = paste0(resolved$id, "-content")
+    children[[length(children) + 1L]] <- content_tree(
+      resolved,
+      content,
+      debug,
+      clips
     )
   }
-  border <- resolved$border
-  if (border$width > 0) {
-    children[[length(children) + 1L]] <- grid::rectGrob(
-      width = gc_unit(
-        max(0, resolved$box[["width"]] - border$width) / 96,
-        "inches"
-      ),
-      height = gc_unit(
-        max(0, resolved$box[["height"]] - border$width) / 96,
-        "inches"
-      ),
-      gp = grid::gpar(
-        fill = NA,
-        col = border$color,
-        lwd = border$width,
-        lty = border$line_type
-      )
-    )
+  if (resolved$border$width > 0) {
+    children[[length(children) + 1L]] <- border_grob(resolved)
   }
   if (debug) {
     children <- c(children, debug_grobs(resolved))
@@ -188,7 +223,8 @@ compile_node <- function(resolved, debug = FALSE, ancestor_clips = FALSE) {
 #' @param object An ggcarto scene, viewport, element, ggplot or grid grob.
 #' @param dpi Positive output-density metadata; logical pixels remain 1/96 inch.
 #' @param debug Logical; whether drawing should add layout diagnostic overlays
-#'   for boxes, content areas, margins, intrinsic bounds, anchors and candidates.
+#'   for boxes, content areas, margins, intrinsic bounds, anchors and
+#'   candidates.
 #'
 #' @details
 #' This is an interoperability wrapper, not a frozen image or precomputed
@@ -198,14 +234,18 @@ compile_node <- function(resolved, debug = FALSE, ancestor_clips = FALSE) {
 #'
 #' The wrapper does not implement custom `widthDetails` or `heightDetails`
 #' methods. External systems that request intrinsic dimensions may therefore
-#' need an explicit viewport. Use [gc_measure()] or [gc_resolve()] for ggcarto size
+#' need an explicit viewport. Use [gc_measure()] or [gc_resolve()] for ggcarto
+#' size
 #' inspection; do not assume automatic sizing in every third-party grob layout.
 #'
-#' @returns A `gc_scene_grob`, also a grid `gTree` and `grob`, storing the logical
+#' @returns A `gc_scene_grob`, also a grid `gTree` and `grob`, storing the
+#'   logical
 #'   scene and drawing options. Its children are prepared at drawing time.
 #' @seealso [gc_render()], [grid::grid.draw()], [grid::makeContent()]
 #' @examples
-#' scene <- gc_viewport(list(gc_place(gc_text("Deferred layout"), left = 10, top = 10)))
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_text("Deferred layout"), left = 10, top = 10)
+#' ))
 #' grob <- gc_as_grob(scene)
 #' grid::is.grob(grob)
 #' grid::grid.newpage()
@@ -239,7 +279,9 @@ gc_as_grob <- function(object, dpi = 96, debug = FALSE) {
 #'   and logical scene are not mutated.
 #' @seealso [gc_as_grob()], [gc_resolve()], [grid::makeContent()]
 #' @examples
-#' scene <- gc_viewport(list(gc_place(gc_text("Prepared by grid"), left = 10, top = 10)))
+#' scene <- gc_viewport(list(
+#'   gc_place(gc_text("Prepared by grid"), left = 10, top = 10)
+#' ))
 #' grid::grid.newpage()
 #' grob <- gc_as_grob(scene)
 #' prepared <- grid::makeContent(grob)

@@ -66,7 +66,8 @@ typography, as a \code{\link[grid:gpar]{grid::gpar()}} or uniquely named list.}
 \item{vp}{Optional outer grid viewport, viewport name or viewport path.}
 }
 \value{
-A native grid \code{gTree}, usable with \code{\link[grid:grid.draw]{grid::grid.draw()}}, \code{\link[=gc_template]{gc_template()}},
+A native grid \code{gTree}, usable with \code{\link[grid:grid.draw]{grid::grid.draw()}},
+\code{\link[=gc_template]{gc_template()}},
 \code{\link[=gc_place]{gc_place()}}, \code{\link[=gc_get_element]{gc_get_element()}} and \code{\link[=gc_save]{gc_save()}}.
 }
 \description{
@@ -90,7 +91,8 @@ detached diamonds; \code{"ornamental"} adds beads, petals and a central jewel;
 \code{"asymmetric"} combines broad cardinal tips with smaller intercardinal
 diamonds and an emphasized north tip.
 
-Supply explicit sizes with \code{\link[=gc_place]{gc_place()}} or \code{\link[=gc_get_element]{gc_get_element()}}: a generic gTree
+Supply explicit sizes with \code{\link[=gc_place]{gc_place()}} or \code{\link[=gc_get_element]{gc_get_element()}}: a generic
+gTree
 has no automatic child bounding-box measurement. Start with a 120 by 120
 logical-pixel box and enlarge it for dense or long labels. Text is not
 automatically shrunk, wrapped or collision-checked, and parent clipping is
@@ -99,7 +101,8 @@ the center. Leave additional room for long labels and rotation.
 
 This is graphical content, not a geographic calculation. It does not inspect
 a map, calculate true north or apply magnetic declination. Supply an angle
-computed by \code{\link[=gc_north_angle]{gc_north_angle()}} for the map and reference location when required.
+computed by \code{\link[=gc_north_angle]{gc_north_angle()}} for the map and reference location when
+required.
 No spatial packages are needed to construct or render the rose.
 }
 \examples{
@@ -112,5 +115,6 @@ gc_north_rose("stellar", points = 32, labels = FALSE)
 gc_north_rose("classic", labels = c("N", "L", "S", "O"), angle = 15)
 }
 \seealso{
-\code{\link[=gc_north_angle]{gc_north_angle()}}, \code{\link[=gc_template]{gc_template()}}, \code{\link[=gc_unit]{gc_unit()}}, \code{\link[=gc_place]{gc_place()}}, \code{\link[=gc_get_element]{gc_get_element()}}
+\code{\link[=gc_north_angle]{gc_north_angle()}}, \code{\link[=gc_template]{gc_template()}}, \code{\link[=gc_unit]{gc_unit()}}, \code{\link[=gc_place]{gc_place()}},
+\code{\link[=gc_get_element]{gc_get_element()}}
 }
