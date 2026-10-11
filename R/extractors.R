@@ -44,20 +44,40 @@ find_grobs <- function(grob, pattern) {
 
 is_empty_grob <- function(grob) inherits(grob, c("zeroGrob", "null"))
 
+nonempty_grobs <- function(table) {
+  !vapply(table$grobs, is_empty_grob, logical(1))
+}
+
+panel_backgrounds <- function(table, matches) {
+  for (index in which(matches)) {
+    backgrounds <- find_grobs(table$grobs[[index]], "^panel\\.background")
+    table$grobs[[index]] <- if (length(backgrounds)) {
+      backgrounds[[1L]]
+    } else {
+      grid::nullGrob()
+    }
+  }
+  table
+}
+
+is_whole_number <- function(value) {
+  is.numeric(value) &&
+    length(value) == 1L &&
+    !is.na(value) &&
+    value == as.integer(value)
+}
+
+is_selection <- function(which, count) {
+  is_whole_number(which) && which >= 1 && which <= count
+}
+
 extract_native <- function(plot, type, which = NULL) {
   table <- ggplot2::ggplotGrob(plot)
-  matches <- grepl(native_patterns[[type]], table$layout$name)
-  matches <- matches & !vapply(table$grobs, is_empty_grob, logical(1))
+  matches <- grepl(native_patterns[[type]], table$layout$name) &
+    nonempty_grobs(table)
   if (type == "panel_background") {
-    for (index in which(matches)) {
-      backgrounds <- find_grobs(table$grobs[[index]], "^panel\\.background")
-      table$grobs[[index]] <- if (length(backgrounds)) {
-        backgrounds[[1L]]
-      } else {
-        grid::nullGrob()
-      }
-    }
-    matches <- matches & !vapply(table$grobs, is_empty_grob, logical(1))
+    table <- panel_backgrounds(table, matches)
+    matches <- matches & nonempty_grobs(table)
   }
   indices <- base::which(matches)
   if (!length(indices)) {
@@ -68,14 +88,7 @@ extract_native <- function(plot, type, which = NULL) {
     )
   }
   if (!is.null(which)) {
-    if (
-      !is.numeric(which) ||
-        length(which) != 1L ||
-        is.na(which) ||
-        which != as.integer(which) ||
-        which < 1 ||
-        which > length(indices)
-    ) {
+    if (!is_selection(which, length(indices))) {
       gc_abort("which must select an existing element.", property = "which")
     }
     return(table$grobs[[indices[[which]]]])
@@ -228,9 +241,7 @@ gc_register_element <- function(
   extractor = NULL,
   measurer = NULL
 ) {
-  if (
-    !is.character(type) || length(type) != 1L || is.na(type) || !nzchar(type)
-  ) {
+  if (!is_nonempty_string(type)) {
     gc_abort("type must be a nonempty string.")
   }
   if (!inherits(registry, "gc_registry")) {
@@ -239,16 +250,7 @@ gc_register_element <- function(
   extract <- extract %||% extractor
   measure <- measure %||% measurer
   can_extract <- can_extract %||% function(plot, ...) TRUE
-  for (callback in list(extract, can_extract)) {
-    if (!is.function(callback)) {
-      gc_abort("Extraction callbacks must be functions.")
-    }
-  }
-  for (callback in list(measure, style)) {
-    if (!is.null(callback) && !is.function(callback)) {
-      gc_abort("Optional callbacks must be functions.")
-    }
-  }
+  check_callbacks(list(extract, can_extract), list(measure, style))
   registry[[type]] <- list(
     can_extract = can_extract,
     extract = extract,
@@ -259,7 +261,63 @@ gc_register_element <- function(
   registry
 }
 
-#' Extract and normalize a semantic graphical element
+check_callbacks <- function(required, optional) {
+  for (callback in required) {
+    if (!is.function(callback)) {
+      gc_abort("Extraction callbacks must be functions.")
+    }
+  }
+  for (callback in optional) {
+    if (!is.null(callback) && !is.function(callback)) {
+      gc_abort("Optional callbacks must be functions.")
+    }
+  }
+  invisible(NULL)
+}
+
+element_adapter <- function(plot, type, registry) {
+  if (!inherits(registry, "gc_registry")) {
+    gc_abort("registry must be an gc_registry.")
+  }
+  if (!is_single_string(type)) {
+    gc_abort("type must be a string.")
+  }
+  adapter <- registry[[type]]
+  if (is.null(adapter)) {
+    gc_abort(
+      paste0("No extractor registered for '", type, "'."),
+      "missing_extractor"
+    )
+  }
+  if (!isTRUE(adapter$can_extract(plot))) {
+    gc_abort(
+      paste0("Unsupported source for '", type, "'."),
+      "unsupported_source"
+    )
+  }
+  adapter
+}
+
+extract_content <- function(adapter, source, which, missing) {
+  arguments <- list(source)
+  if (!is.null(which)) {
+    arguments$which <- which
+  }
+  tryCatch(
+    with_grid_context(
+      new_layout_context(800, 600),
+      do.call(adapter$extract, arguments)
+    ),
+    ggcarto_missing_element = function(condition) {
+      if (missing == "null") {
+        return(NULL)
+      }
+      stop(condition)
+    }
+  )
+}
+
+#' Extract and normalize#' Extract and normalize a semantic graphical element
 #'
 #' Extract a component from an explicit ggplot source or wrap a supplied grob
 #' as a semantic element. The source and unrelated components are preserved;
@@ -352,42 +410,9 @@ gc_get_element <- function(
       "unsupported_source"
     )
   }
-  if (!inherits(registry, "gc_registry")) {
-    gc_abort("registry must be an gc_registry.")
-  }
-  if (!is.character(type) || length(type) != 1L || is.na(type)) {
-    gc_abort("type must be a string.")
-  }
-  adapter <- registry[[type]]
-  if (is.null(adapter)) {
-    gc_abort(
-      paste0("No extractor registered for '", type, "'."),
-      "missing_extractor"
-    )
-  }
-  if (!isTRUE(adapter$can_extract(plot))) {
-    gc_abort(
-      paste0("Unsupported source for '", type, "'."),
-      "unsupported_source"
-    )
-  }
+  adapter <- element_adapter(plot, type, registry)
   source <- if (inherits(plot, "ggplot")) capture_plot(plot) else plot
-  arguments <- list(source)
-  if (!is.null(which)) {
-    arguments$which <- which
-  }
-  content <- tryCatch(
-    with_grid_context(
-      new_layout_context(800, 600),
-      do.call(adapter$extract, arguments)
-    ),
-    ggcarto_missing_element = function(condition) {
-      if (missing == "null") {
-        return(NULL)
-      }
-      stop(condition)
-    }
-  )
+  content <- extract_content(adapter, source, which, missing)
   if (is.null(content) && missing == "null") {
     return(NULL)
   }

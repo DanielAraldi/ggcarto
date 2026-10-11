@@ -188,6 +188,15 @@ test_that("styles reject ambiguous names and invalid opacity or lengths", {
     gc_style(legend, legend.direction = "diagonal"),
     class = "ggcarto_error"
   )
+  panel <- gc_get_element(example_plot(), "panel")
+  styled_panel <- gc_style(panel, background = "white", opacity = 0.5)
+  expect_identical(styled_panel$background, "white")
+  expect_identical(styled_panel$style$opacity, 0.5)
+  expect_error(
+    gc_style(panel, font_size = "10pt"),
+    "Unsupported style for panel: font_size",
+    class = "ggcarto_error"
+  )
 })
 
 test_that("style callbacks receive overrides without changing the registry", {

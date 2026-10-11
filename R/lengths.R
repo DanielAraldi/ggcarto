@@ -44,29 +44,10 @@ gc_length <- function(value = "auto", unit = "px") {
   if (inherits(value, "gc_length")) {
     return(value)
   }
-  valid_units <- c(
-    "px",
-    "%",
-    "pt",
-    "mm",
-    "cm",
-    "in",
-    "vw",
-    "vh",
-    "vmin",
-    "vmax"
-  )
   if (is.numeric(value)) {
-    value <- scalar_number(value, "length")
-    if (length(unit) != 1L || !unit %in% valid_units) {
-      gc_abort("Unsupported length unit.", property = "unit")
-    }
-    return(structure(
-      list(kind = "value", value = value, unit = unit),
-      class = "gc_length"
-    ))
+    return(numeric_length(value, unit))
   }
-  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+  if (!is_single_string(value)) {
     gc_abort(
       "A length must be a number, a length string or an gc_length.",
       property = "length"
@@ -80,25 +61,51 @@ gc_length <- function(value = "auto", unit = "px") {
     1L
   ]]
   if (length(matched)) {
-    arguments <- split_length_arguments(matched[[3L]])
-    if (
-      (matched[[2L]] == "clamp" && length(arguments) != 3L) ||
-        !length(arguments)
-    ) {
-      gc_abort(
-        "clamp() needs three lengths; min()/max() need at least one.",
-        property = "length"
-      )
-    }
-    arguments <- lapply(arguments, gc_length)
-    if (any(vapply(arguments, length_has_auto, logical(1)))) {
-      gc_abort("auto is not valid inside a length expression.")
-    }
-    return(structure(
-      list(kind = matched[[2L]], arguments = arguments),
-      class = "gc_length"
-    ))
+    return(expression_length(matched[[2L]], matched[[3L]]))
   }
+  parse_length_value(value)
+}
+
+length_units <- c(
+  "px",
+  "%",
+  "pt",
+  "mm",
+  "cm",
+  "in",
+  "vw",
+  "vh",
+  "vmin",
+  "vmax"
+)
+
+numeric_length <- function(value, unit) {
+  value <- scalar_number(value, "length")
+  if (length(unit) != 1L || !unit %in% length_units) {
+    gc_abort("Unsupported length unit.", property = "unit")
+  }
+  structure(
+    list(kind = "value", value = value, unit = unit),
+    class = "gc_length"
+  )
+}
+
+expression_length <- function(kind, text) {
+  arguments <- split_length_arguments(text)
+  if ((kind == "clamp" && length(arguments) != 3L) || !length(arguments)) {
+    gc_abort(
+      "clamp() needs three lengths; min()/max() need at least one.",
+      property = "length"
+    )
+  }
+  arguments <- lapply(arguments, gc_length)
+  if (any(vapply(arguments, length_has_auto, logical(1)))) {
+    gc_abort("auto is not valid inside a length expression.")
+  }
+  structure(list(kind = kind, arguments = arguments), class = "gc_length")
+}
+
+parse_length_value <- function(value) {
   matched <- regmatches(
     value,
     regexec(

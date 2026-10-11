@@ -138,15 +138,7 @@ gc_inset <- function(
   height = "auto",
   ...
 ) {
-  if (length(mode) != 1L || is.na(mode) || !mode %in% c("locator", "detail")) {
-    gc_abort("mode must be locator or detail.", property = "mode")
-  }
-  if (!is.logical(highlight) || length(highlight) != 1L || is.na(highlight)) {
-    gc_abort("highlight must be TRUE or FALSE.", property = "highlight")
-  }
-  scalar_number(highlight_lwd, "highlight_lwd", positive = TRUE)
-  cartographic_colour(highlight_col, "highlight_col")
-  cartographic_colour(highlight_fill, "highlight_fill")
+  check_inset(mode, highlight, highlight_col, highlight_fill, highlight_lwd)
   reference_context <- if (inherits(reference, "gc_frame")) {
     reference$map_context
   } else {
@@ -172,13 +164,32 @@ gc_inset <- function(
       parent_highlight <- highlight_node
     }
   }
-  inset <- gc_frame(
-    plot,
-    overlays = overlays,
-    width = width,
-    height = height,
-    ...
+  inset <- inset_limits(
+    gc_frame(plot, overlays = overlays, width = width, height = height, ...),
+    context
   )
+  inset$reference_context <- reference_context
+  inset$footprint <- footprint
+  inset$parent_highlight <- parent_highlight
+  inset$inset_mode <- mode
+  class(inset) <- c("gc_inset", class(inset))
+  inset
+}
+
+check_inset <- function(mode, highlight, col, fill, lwd) {
+  if (!is_choice(mode, c("locator", "detail"))) {
+    gc_abort("mode must be locator or detail.", property = "mode")
+  }
+  if (!is_flag(highlight)) {
+    gc_abort("highlight must be TRUE or FALSE.", property = "highlight")
+  }
+  scalar_number(lwd, "highlight_lwd", positive = TRUE)
+  cartographic_colour(col, "highlight_col")
+  cartographic_colour(fill, "highlight_fill")
+  invisible(NULL)
+}
+
+inset_limits <- function(inset, context) {
   if (inset$height$kind == "auto" && is.null(inset$aspect_ratio)) {
     inset$aspect_ratio <- context$aspect_ratio
   }
@@ -188,10 +199,5 @@ gc_inset <- function(
   if (is.null(inset$max_width)) {
     inset$max_width <- gc_length("100%")
   }
-  inset$reference_context <- reference_context
-  inset$footprint <- footprint
-  inset$parent_highlight <- parent_highlight
-  inset$inset_mode <- mode
-  class(inset) <- c("gc_inset", class(inset))
   inset
 }

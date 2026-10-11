@@ -79,62 +79,8 @@ gc_style <- function(object, ...) {
   if (!length(style)) {
     return(node)
   }
-  if (
-    is.null(names(style)) ||
-      !all(nzchar(names(style))) ||
-      anyDuplicated(names(style))
-  ) {
-    gc_abort("Styles must be uniquely named.")
-  }
-  if (!is.null(style$colour)) {
-    if (!is.null(style$color)) {
-      gc_abort("Use color or colour, not both.")
-    }
-    style$color <- style$colour
-    style$colour <- NULL
-  }
-  presentation <- c(
-    "background",
-    "border",
-    "padding",
-    "margin",
-    "alpha",
-    "opacity"
-  )
-  typography <- c(
-    "color",
-    "font_family",
-    "font_size",
-    "font_face",
-    "line_height"
-  )
-  generic <- c(typography, "fill", "line_width", "line_type")
-  allowed <- if (type %in% text_types) {
-    c(presentation, typography)
-  } else {
-    presentation
-  }
-  if (type == "legend") {
-    allowed <- c(
-      allowed,
-      "legend.direction",
-      "legend.key_width",
-      "legend.key_height"
-    )
-  }
-  if (!type %in% native_types || grid::is.grob(node$source)) {
-    allowed <- c(presentation, generic)
-  }
-  if (type %in% c("plot_background", "panel_background")) {
-    allowed <- c(presentation, "fill", "color", "line_width", "line_type")
-  }
-  if (node$kind %in% c("plot", "viewport")) {
-    allowed <- c("background", "border", "padding", "margin")
-  }
-  if (is.function(node$adapter$style)) {
-    allowed <- union(allowed, names(style))
-  }
-  invalid <- setdiff(names(style), allowed)
+  style <- normalize_style_names(style)
+  invalid <- setdiff(names(style), allowed_styles(node, type, names(style)))
   if (length(invalid)) {
     gc_abort(
       paste0(
@@ -146,6 +92,92 @@ gc_style <- function(object, ...) {
       property = "style"
     )
   }
+  style <- check_style_values(style)
+  for (property in intersect(
+    names(style),
+    c("background", "border", "padding", "margin")
+  )) {
+    node <- update_node(
+      node,
+      stats::setNames(list(style[[property]]), property)
+    )
+  }
+  node$style <- utils::modifyList(node$style %||% list(), style)
+  node
+}
+
+presentation_styles <- c(
+  "background",
+  "border",
+  "padding",
+  "margin",
+  "alpha",
+  "opacity"
+)
+
+typography_styles <- c(
+  "color",
+  "font_family",
+  "font_size",
+  "font_face",
+  "line_height"
+)
+
+normalize_style_names <- function(style) {
+  if (!has_unique_names(style)) {
+    gc_abort("Styles must be uniquely named.")
+  }
+  if (!is.null(style$colour)) {
+    if (!is.null(style$color)) {
+      gc_abort("Use color or colour, not both.")
+    }
+    style$color <- style$colour
+    style$colour <- NULL
+  }
+  style
+}
+
+allowed_styles <- function(node, type, requested) {
+  allowed <- builtin_styles(node, type)
+  if (is.function(node$adapter$style)) {
+    allowed <- union(allowed, requested)
+  }
+  allowed
+}
+
+builtin_styles <- function(node, type) {
+  if (node$kind %in% c("plot", "viewport")) {
+    return(c("background", "border", "padding", "margin"))
+  }
+  if (type %in% c("plot_background", "panel_background")) {
+    return(c(presentation_styles, "fill", "color", "line_width", "line_type"))
+  }
+  if (!type %in% native_types || grid::is.grob(node$source)) {
+    return(c(
+      presentation_styles,
+      typography_styles,
+      "fill",
+      "line_width",
+      "line_type"
+    ))
+  }
+  allowed <- if (type %in% text_types) {
+    c(presentation_styles, typography_styles)
+  } else {
+    presentation_styles
+  }
+  if (type == "legend") {
+    allowed <- c(
+      allowed,
+      "legend.direction",
+      "legend.key_width",
+      "legend.key_height"
+    )
+  }
+  allowed
+}
+
+check_style_values <- function(style) {
   for (property in intersect(
     names(style),
     c("font_size", "line_width", "legend.key_width", "legend.key_height")
@@ -167,17 +199,7 @@ gc_style <- function(object, ...) {
   ) {
     gc_abort("legend.direction must be horizontal or vertical.")
   }
-  for (property in intersect(
-    names(style),
-    c("background", "border", "padding", "margin")
-  )) {
-    node <- update_node(
-      node,
-      stats::setNames(list(style[[property]]), property)
-    )
-  }
-  node$style <- utils::modifyList(node$style %||% list(), style)
-  node
+  style
 }
 
 theme_keys <- function(type) {
@@ -224,7 +246,7 @@ resolved_style <- function(style, context) {
   style
 }
 
-style_source <- function(source, type, style) {
+text_overrides <- function(style) {
   text <- list()
   mapping <- c(
     color = "colour",
@@ -238,37 +260,41 @@ style_source <- function(source, type, style) {
   if (!is.null(style$font_size)) {
     text$size <- style$font_size * 72 / 96
   }
+  text
+}
+
+rectangle_overrides <- function(style) {
   rectangle <- list()
-  for (property in intersect(names(style), c("color", "fill", "line_type"))) {
-    key <- switch(
-      property,
-      color = "colour",
-      fill = "fill",
-      line_type = "linetype"
-    )
-    rectangle[[key]] <- style[[property]]
+  mapping <- c(color = "colour", fill = "fill", line_type = "linetype")
+  for (property in intersect(names(style), names(mapping))) {
+    rectangle[[mapping[[property]]]] <- style[[property]]
   }
   if (!is.null(style$line_width)) {
     rectangle$linewidth <- style$line_width * 25.4 / 96
   }
+  rectangle
+}
+
+theme_overrides <- function(source, type, style) {
+  text <- type %in% text_types
+  overrides <- if (text) text_overrides(style) else rectangle_overrides(style)
   properties <- list()
-  overrides <- if (type %in% text_types) text else rectangle
-  if (length(overrides)) {
-    for (key in theme_keys(type)) {
-      inherited <- ggplot2::calc_element(key, source$theme)
-      override <- do.call(
-        if (type %in% text_types) {
-          ggplot2::element_text
-        } else {
-          ggplot2::element_rect
-        },
-        overrides
-      )
-      single <- do.call(ggplot2::theme, stats::setNames(list(inherited), key)) +
-        do.call(ggplot2::theme, stats::setNames(list(override), key))
-      properties[[key]] <- single[[key]]
-    }
+  if (!length(overrides)) {
+    return(properties)
   }
+  element <- if (text) ggplot2::element_text else ggplot2::element_rect
+  for (key in theme_keys(type)) {
+    inherited <- ggplot2::calc_element(key, source$theme)
+    override <- do.call(element, overrides)
+    single <- do.call(ggplot2::theme, stats::setNames(list(inherited), key)) +
+      do.call(ggplot2::theme, stats::setNames(list(override), key))
+    properties[[key]] <- single[[key]]
+  }
+  properties
+}
+
+style_source <- function(source, type, style) {
+  properties <- theme_overrides(source, type, style)
   if (!is.null(style$legend.direction)) {
     properties$legend.direction <- style$legend.direction
   }

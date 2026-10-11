@@ -1,16 +1,12 @@
+is_gpar_list <- function(parameters) {
+  is.list(parameters) &&
+    (!length(parameters) ||
+      (has_unique_names(parameters) && !anyNA(names(parameters))))
+}
+
 template_gpar <- function(gp = NULL, overrides = list()) {
   for (parameters in list(gp, overrides)) {
-    if (is.null(parameters)) {
-      next
-    }
-    if (
-      !is.list(parameters) ||
-        (length(parameters) &&
-          (is.null(names(parameters)) ||
-            anyNA(names(parameters)) ||
-            !all(nzchar(names(parameters))) ||
-            anyDuplicated(names(parameters))))
-    ) {
+    if (!is.null(parameters) && !is_gpar_list(parameters)) {
       gc_abort(
         "Graphical parameters must be a gpar or a uniquely named list.",
         property = "gp"
