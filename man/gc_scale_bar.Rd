@@ -2,7 +2,7 @@
 % Please edit documentation in R/cartography.R
 \name{gc_scale_bar}
 \alias{gc_scale_bar}
-\title{Construct a map-bound projected-distance scale bar}
+\title{Construct a map-bound geodesic scale bar}
 \usage{
 gc_scale_bar(
   distance = NULL,
@@ -30,7 +30,8 @@ times a power of ten automatically.}
 
 \item{max_fraction}{Maximum fraction of the panel width for automatic
 distance selection, greater than zero and at most one. Explicit distances
-ignore this preference but cannot exceed the displayed map width.}
+ignore this preference but cannot exceed the ground length across the
+displayed map.}
 
 \item{segments}{Number of labeled main intervals, from 1 to 20.}
 
@@ -56,8 +57,10 @@ bottom-left. Width is determined geographically and cannot be overridden.}
 \value{
 An \code{gc_scale_bar} inheriting from \code{gc_element} and \code{gc_node}.
 Resolved scale nodes expose a \code{scale_bar} list with distance, units,
-distance in metres, displayed extent width in metres and bar width in
-logical pixels. The original declaration is not modified.
+distance in metres, ground length of the reference line across the
+displayed extent in metres (\code{NA} when part of it lies outside the
+projection domain), the WGS 84 \code{reference} longitude and latitude, and bar
+width in logical pixels. The original declaration is not modified.
 }
 \description{
 Declare a scale whose physical width is resolved from its containing map
@@ -65,10 +68,18 @@ panel on every draw. Use it directly in the overlays of \code{\link[=gc_frame]{g
 \code{\link[=gc_inset]{gc_inset()}}, optionally positioned with \code{\link[=gc_place]{gc_place()}}.
 }
 \details{
-Measures projected distance, not geodesic ground distance. The containing
-frame must use a projected CRS in metres, kilometres, international feet
-or US survey feet. Angular, missing and unsupported CRS units are rejected;
-projection distortion is not corrected. sf remains an optional dependency.
+Measures geodesic ground distance on the WGS 84 ellipsoid, not projected
+grid distance. The reference line is the horizontal line through the centre
+of the displayed extent, the direction in which the bar is drawn. Points on
+that line are transformed to WGS 84 longitude and latitude, and the bar
+spans the segment centered on the map whose ground length, accumulated from
+short geodesic pieces (Vincenty's inverse formula), equals the requested
+distance. The bar is therefore true at the centre of the map; projection
+scale varies elsewhere, so it is a local measure on small-scale maps.
+Geographic (longitude/latitude) and projected CRSs with any linear unit are
+supported, because CRS units are not used for calibration. Maps whose centre
+cannot be transformed raise \code{ggcarto_scale_projection}. sf remains an
+optional dependency.
 Text and stroke sizes remain physical; geometry follows the map panel.
 Labels that do not fit produce an \code{ggcarto_scale_labels} warning without
 falsifying the distance. Width constraints, aspect ratios and collision

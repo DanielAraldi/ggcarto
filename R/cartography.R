@@ -171,41 +171,6 @@ gc_frame <- function(
   frame
 }
 
-map_metres_per_unit <- function(context) {
-  if (isTRUE(sf::st_is_longlat(context$crs))) {
-    gc_abort(
-      paste0(
-        "Scale bars require a projected CRS; angular ",
-        "coordinates are not distances."
-      ),
-      "unsupported_crs"
-    )
-  }
-  unit <- tolower(context$crs$units_gdal %||% "")
-  factor <- switch(
-    unit,
-    metre = 1,
-    meter = 1,
-    m = 1,
-    kilometre = 1000,
-    kilometer = 1000,
-    km = 1000,
-    foot = 0.3048,
-    feet = 0.3048,
-    ft = 0.3048,
-    "us survey foot" = 1200 / 3937,
-    "us-ft" = 1200 / 3937,
-    NULL
-  )
-  if (is.null(factor)) {
-    gc_abort(
-      paste0("Unsupported projected CRS unit: ", unit, "."),
-      "unsupported_crs"
-    )
-  }
-  factor
-}
-
 scale_bar_labels <- function(specification, distance, width, context) {
   positions <- seq(0, 1, length.out = specification$segments + 1L)
   values <- positions * distance
@@ -348,24 +313,49 @@ check_scale_binding <- function(node, map) {
 
 scale_bar_distance <- function(specification, map, node) {
   unit_metres <- scale_unit_metres[[specification$unit]]
-  extent_metres <- as.numeric(map$extent[["xmax"]] - map$extent[["xmin"]]) *
-    map_metres_per_unit(map)
-  maximum <- extent_metres * specification$max_fraction / unit_metres
+  profile <- scale_ground_profile(map)
+  half_widths <- profile$half_widths
+  lengths <- profile$lengths
   distance <- specification$distance
   if (is.null(distance)) {
+    preferred <- min(
+      specification$max_fraction * profile$extent_half_width,
+      half_widths[[length(half_widths)]]
+    )
+    maximum <- scale_interpolate(half_widths, lengths, preferred) / unit_metres
+    if (!is.finite(maximum) || maximum <= 0) {
+      gc_abort(
+        "No positive ground distance can be measured across the map.",
+        "scale_distance",
+        node$id
+      )
+    }
     magnitude <- 10^floor(log10(maximum))
     candidates <- c(1, 2, 5, 10) * magnitude
     distance <- max(candidates[candidates <= maximum * (1 + 1e-12)])
   }
-  fraction <- distance * unit_metres / extent_metres
-  if (!is.finite(fraction) || fraction <= 0 || fraction > 1) {
+  metres <- distance * unit_metres
+  if (
+    !is.finite(metres) ||
+      metres <= 0 ||
+      metres > lengths[[length(lengths)]] * (1 + 1e-12)
+  ) {
     gc_abort(
-      "The scale distance must be positive and no wider than the map extent.",
+      paste0(
+        "The scale distance must be positive and no longer than the ",
+        "ground length across the displayed map."
+      ),
       "scale_distance",
       node$id
     )
   }
-  list(distance = distance, extent_metres = extent_metres, fraction = fraction)
+  half_width <- scale_interpolate(lengths, half_widths, metres)
+  list(
+    distance = distance,
+    extent_metres = profile$extent_length,
+    fraction = min(half_width / profile$extent_half_width, 1),
+    reference = profile$reference
+  )
 }
 
 bind_scale_bar <- function(node, context) {
@@ -386,6 +376,10 @@ bind_scale_bar <- function(node, context) {
     unit = specification$unit,
     distance_m = distance * scale_unit_metres[[specification$unit]],
     extent_width_m = scale$extent_metres,
+    reference = c(
+      longitude = scale$reference[[1L]],
+      latitude = scale$reference[[2L]]
+    ),
     width = width
   )
   node
@@ -433,7 +427,7 @@ check_scale_bar <- function(
   invisible(NULL)
 }
 
-#' Construct a map-bound projected-distance scale bar
+#' Construct a map-bound geodesic scale bar
 #'
 #' Declare a scale whose physical width is resolved from its containing map
 #' panel on every draw. Use it directly in the overlays of [gc_frame()] or
@@ -445,7 +439,8 @@ check_scale_bar <- function(
 #'   `"mi"`.
 #' @param max_fraction Maximum fraction of the panel width for automatic
 #'   distance selection, greater than zero and at most one. Explicit distances
-#'   ignore this preference but cannot exceed the displayed map width.
+#'   ignore this preference but cannot exceed the ground length across the
+#'   displayed map.
 #' @param segments Number of labeled main intervals, from 1 to 20.
 #' @param subdivisions Number of tick subdivisions per interval, from 1 to 20.
 #' @param design `"bar"` for alternating filled segments or `"ticks"` for a
@@ -460,10 +455,18 @@ check_scale_bar <- function(
 #'   bottom-left. Width is determined geographically and cannot be overridden.
 #'
 #' @details
-#' Measures projected distance, not geodesic ground distance. The containing
-#' frame must use a projected CRS in metres, kilometres, international feet
-#' or US survey feet. Angular, missing and unsupported CRS units are rejected;
-#' projection distortion is not corrected. sf remains an optional dependency.
+#' Measures geodesic ground distance on the WGS 84 ellipsoid, not projected
+#' grid distance. The reference line is the horizontal line through the centre
+#' of the displayed extent, the direction in which the bar is drawn. Points on
+#' that line are transformed to WGS 84 longitude and latitude, and the bar
+#' spans the segment centered on the map whose ground length, accumulated from
+#' short geodesic pieces (Vincenty's inverse formula), equals the requested
+#' distance. The bar is therefore true at the centre of the map; projection
+#' scale varies elsewhere, so it is a local measure on small-scale maps.
+#' Geographic (longitude/latitude) and projected CRSs with any linear unit are
+#' supported, because CRS units are not used for calibration. Maps whose centre
+#' cannot be transformed raise `ggcarto_scale_projection`. sf remains an
+#' optional dependency.
 #' Text and stroke sizes remain physical; geometry follows the map panel.
 #' Labels that do not fit produce an `ggcarto_scale_labels` warning without
 #' falsifying the distance. Width constraints, aspect ratios and collision
@@ -473,8 +476,10 @@ check_scale_bar <- function(
 #'
 #' @returns An `gc_scale_bar` inheriting from `gc_element` and `gc_node`.
 #'   Resolved scale nodes expose a `scale_bar` list with distance, units,
-#'   distance in metres, displayed extent width in metres and bar width in
-#'   logical pixels. The original declaration is not modified.
+#'   distance in metres, ground length of the reference line across the
+#'   displayed extent in metres (`NA` when part of it lies outside the
+#'   projection domain), the WGS 84 `reference` longitude and latitude, and bar
+#'   width in logical pixels. The original declaration is not modified.
 #' @seealso [gc_frame()], [gc_inset()], [gc_place()], [gc_resolve()]
 #' @examples
 #' if (requireNamespace("sf", quietly = TRUE)) {

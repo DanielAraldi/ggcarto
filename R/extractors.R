@@ -317,7 +317,7 @@ extract_content <- function(adapter, source, which, missing) {
   )
 }
 
-#' Extract and normalize#' Extract and normalize a semantic graphical element
+#' Extract and normalize a semantic graphical element
 #'
 #' Extract a component from an explicit ggplot source or wrap a supplied grob
 #' as a semantic element. The source and unrelated components are preserved;

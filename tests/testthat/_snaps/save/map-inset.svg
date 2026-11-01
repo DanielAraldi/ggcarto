@@ -143,12 +143,12 @@
 <path d='M 227.18 567.80 L 154.27 493.51 L 160.10 490.44 L 162.09 484.57 L 166.09 480.62 L 166.81 476.07 L 171.47 473.74 L 175.73 463.24 L 181.14 462.35 L 190.65 457.42 L 195.53 461.17 L 199.77 461.97 L 224.59 459.86 L 226.10 462.82 L 229.87 462.76 L 264.62 479.18 L 283.51 480.61 L 295.16 474.18 L 306.84 483.23 L 308.57 483.82 L 313.71 480.84 L 295.52 511.70 L 276.00 514.54 L 278.18 517.79 L 267.07 528.03 L 255.35 523.82 L 249.36 524.61 L 246.41 528.95 L 243.15 544.69 L 238.94 550.63 L 231.56 554.93 L 230.81 561.67 L 227.18 567.80 Z' style='fill-rule: evenodd; fill: #D8EACB; stroke-width: 0.64; stroke: #FFFFFF; stroke-linecap: butt;' />
 <path d='M 347.73 516.68 L 346.72 505.60 L 345.08 505.39 L 343.68 501.58 L 340.70 500.31 L 341.51 497.18 L 339.49 496.78 L 338.69 490.98 L 336.12 487.63 L 342.90 485.23 L 341.50 480.56 L 344.14 477.74 L 349.23 479.69 L 350.27 481.70 L 354.08 478.13 L 359.94 480.00 L 370.23 474.88 L 373.63 480.81 L 383.94 492.05 L 364.46 515.76 L 359.53 541.65 L 353.92 543.20 L 347.73 516.68 Z' style='fill-rule: evenodd; fill: #CAE4C9; stroke-width: 0.64; stroke: #FFFFFF; stroke-linecap: butt;' />
 <path d='M 227.18 567.80 L 230.81 561.67 L 231.56 554.93 L 238.94 550.63 L 243.15 544.69 L 246.41 528.95 L 249.36 524.61 L 255.35 523.82 L 267.07 528.03 L 278.18 517.79 L 276.00 514.54 L 295.52 511.70 L 313.71 480.84 L 317.96 480.41 L 336.12 487.63 L 338.69 490.98 L 339.49 496.78 L 341.51 497.18 L 340.70 500.31 L 343.68 501.58 L 345.08 505.39 L 346.72 505.60 L 347.73 516.68 L 348.54 557.78 L 335.42 574.28 L 240.48 581.69 L 227.18 567.80 Z' style='fill-rule: evenodd; fill: #E0EDCD; stroke-width: 0.64; stroke: #FFFFFF; stroke-linecap: butt;' />
-<line x1='120.38' y1='352.20' x2='214.59' y2='352.20' style='stroke-width: 0.75; stroke: #203C43;' />
+<line x1='120.38' y1='352.20' x2='214.58' y2='352.20' style='stroke-width: 0.75; stroke: #203C43;' />
 <line x1='120.38' y1='354.90' x2='120.38' y2='349.50' style='stroke-width: 0.75; stroke: #203C43;' />
 <line x1='167.48' y1='354.90' x2='167.48' y2='352.20' style='stroke-width: 0.75; stroke: #203C43;' />
-<line x1='214.59' y1='354.90' x2='214.59' y2='349.50' style='stroke-width: 0.75; stroke: #203C43;' />
+<line x1='214.58' y1='354.90' x2='214.58' y2='349.50' style='stroke-width: 0.75; stroke: #203C43;' />
 <text x='120.38' y='343.91' style='font-size: 7.00px;fill: #203C43; font-family: "Arial";' textLength='3.89px' lengthAdjust='spacingAndGlyphs'>0</text>
-<text x='214.59' y='343.91' text-anchor='end' style='font-size: 7.00px;fill: #203C43; font-family: "Arial";' textLength='19.05px' lengthAdjust='spacingAndGlyphs'>50 km</text>
+<text x='214.58' y='343.91' text-anchor='end' style='font-size: 7.00px;fill: #203C43; font-family: "Arial";' textLength='19.05px' lengthAdjust='spacingAndGlyphs'>50 km</text>
 <rect x='118.88' y='70.50' width='153.76' height='57.85' style='stroke-width: 0.75; stroke: none; fill: #FFFFFF;' />
 </g>
 <defs>

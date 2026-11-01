@@ -197,9 +197,10 @@ test_that("map compositions render without overlaps in their layout bands", {
             panel <- frame$children[[1]]
             scale <- panel$children[[2]]
             expect_identical(scale$scale_bar$distance_m, 50000)
-            expect_identical(
+            expect_equal(
               scale$box[["width"]] / panel$box[["width"]],
-              scale$scale_bar$distance_m / scale$scale_bar$extent_width_m
+              scale$scale_bar$distance_m / scale$scale_bar$extent_width_m,
+              tolerance = 1e-3
             )
           } else {
             expect_lte(
@@ -258,7 +259,7 @@ test_that("map examples resolve and render with a metrically aligned scale", {
         expect_equal(
           scale$box[["width"]] / panel$box[["width"]],
           scale$scale_bar$distance_m / scale$scale_bar$extent_width_m,
-          tolerance = testthat::testthat_tolerance()
+          tolerance = 1e-3
         )
       }
     }
