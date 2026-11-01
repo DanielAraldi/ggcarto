@@ -56,20 +56,23 @@ test_that("frames use coord_sf limits and expansion, not the data bounds", {
   expect_error(gc_frame(plot, overlays = gc_text("invalid")), "overlays")
 })
 
-test_that("scale bars bind projected distances to the panel at every size", {
+test_that("scale bars bind geodesic distances to the panel at every size", {
   skip_if_not_installed("sf")
   scale <- gc_scale_bar(50, "km", segments = 2, left = 8, bottom = 8)
   frame <- gc_frame(cartographic_plot(), overlays = list(scale), padding = 10)
   original <- frame
+  fractions <- numeric()
   for (size in list(c(800, 400), c(400, 800))) {
     expect_no_warning(layout <- gc_resolve(frame, size[[1]], size[[2]]))
     panel <- layout$root$children[[1]]
     bar <- panel$children[[2]]
-    expect_identical(bar$box[["width"]] / panel$box[["width"]], 0.5)
+    fractions <- c(fractions, bar$box[["width"]] / panel$box[["width"]])
+    expect_equal(fractions[[length(fractions)]], 0.5, tolerance = 1e-3)
     expect_identical(bar$scale_bar$distance_m, 50000)
     expect_identical(bar$content$children[[4]]$label, "25")
     expect_identical(bar$content$children[[5]]$label, "50 km")
   }
+  expect_identical(fractions[[1]], fractions[[2]])
   expect_identical(frame, original)
 })
 
@@ -78,11 +81,15 @@ test_that("scale bars convert CRS units and select automatic distances", {
   plot <- cartographic_plot(2264, 100000 * 3937 / 1200, 50000 * 3937 / 1200)
   frame <- gc_frame(plot, overlays = list(gc_scale_bar(50, "km", segments = 2)))
   panel <- gc_resolve(frame, 800, 400)$root$children[[1]]
-  expect_equal(panel$children[[2]]$box[["width"]] / panel$box[["width"]], 0.5)
+  expect_equal(
+    panel$children[[2]]$box[["width"]] / panel$box[["width"]],
+    0.5,
+    tolerance = 1e-3
+  )
   expect_equal(
     panel$children[[2]]$scale_bar$extent_width_m,
     100000,
-    tolerance = testthat::testthat_tolerance()
+    tolerance = 1e-3
   )
   frame <- gc_frame(
     cartographic_plot(),
@@ -97,7 +104,7 @@ test_that("scale bars convert CRS units and select automatic distances", {
   )
   bar <- gc_resolve(frame, 800, 400)$root$children[[1]]$children[[2]]
   expect_identical(bar$scale_bar$distance, 20)
-  expect_identical(bar$scale_bar$width, 160)
+  expect_equal(bar$scale_bar$width, 160, tolerance = 1e-3)
   expect_length(bar$content$children$`scale-ticks`$x0, 5)
   frame <- gc_frame(
     cartographic_plot(),
@@ -107,14 +114,9 @@ test_that("scale bars convert CRS units and select automatic distances", {
   expect_identical(bar$scale_bar$distance_m, 16093.44)
 })
 
-test_that("scale bars reject unbound, geographic and unsafe metric layouts", {
+test_that("scale bars reject unbound and unsafe metric layouts", {
   skip_if_not_installed("sf")
   expect_error(gc_resolve(gc_scale_bar()), class = "ggcarto_unbound_scale")
-  plot <- cartographic_plot(4326, 1, 1)
-  expect_error(
-    gc_resolve(gc_frame(plot, overlays = list(gc_scale_bar()))),
-    class = "ggcarto_unsupported_crs"
-  )
   for (scale in list(
     gc_place(gc_scale_bar(), width = 100),
     gc_place(gc_scale_bar(), max_width = 50),
@@ -191,8 +193,16 @@ test_that("detail insets highlight their footprint and own their scale", {
   expect_identical(children[[2]]$content$name, "inset-footprint")
   expect_false(collision_obstacle(children[[2]]))
   secondary <- children[[3]]$children[[1]]
-  expect_identical(secondary$children[[2]]$scale_bar$extent_width_m, 20000)
-  expect_identical(children[[4]]$scale_bar$extent_width_m, 100000)
+  expect_equal(
+    secondary$children[[2]]$scale_bar$extent_width_m,
+    20000,
+    tolerance = 1e-3
+  )
+  expect_equal(
+    children[[4]]$scale_bar$extent_width_m,
+    100000,
+    tolerance = 1e-3
+  )
 })
 
 test_that("inset footprints transform between CRSs without retraining", {
@@ -236,8 +246,12 @@ test_that("scale decoration and auto height keep the calibrated distance", {
   frame <- gc_frame(cartographic_plot(), overlays = list(scale))
   expect_no_warning(layout <- gc_resolve(frame, 800, 400))
   bar <- layout$root$children[[1]]$children[[2]]
-  expect_identical(content_box(bar)[["width"]], 400)
-  expect_identical(bar$box[["width"]], 412)
+  expect_equal(content_box(bar)[["width"]], 400, tolerance = 1e-3)
+  expect_equal(
+    bar$box[["width"]] - content_box(bar)[["width"]],
+    12,
+    tolerance = 1e-12
+  )
   expect_gt(bar$box[["height"]], 30)
   expect_error(gc_scale_bar(col = "not-a-colour"), class = "ggcarto_error")
   expect_error(gc_scale_bar(fill = Inf), class = "ggcarto_error")
@@ -263,7 +277,7 @@ test_that("scale avoidance moves the bar without changing its metric length", {
   expect_no_warning(layout <- gc_resolve(frame, 800, 400))
   bar <- layout$root$children[[1]]$children[[3]]
   expect_identical(bar$scale, 1)
-  expect_identical(bar$box[["width"]], 400)
+  expect_equal(bar$box[["width"]], 400, tolerance = 1e-3)
   expect_identical(bar$box[["y"]], 0)
 })
 
@@ -400,13 +414,15 @@ test_that("frames reject faceted maps and maps without a known CRS", {
   expect_error(gc_frame(unknown), "known CRS", class = "ggcarto_error")
 })
 
-test_that("scale bars reject unsupported CRS units and designs", {
+test_that("scale bars ignore CRS units and reject unknown designs", {
   skip_if_not_installed("sf")
-  expect_error(
-    map_metres_per_unit(list(crs = sf::st_crs(2314))),
-    "clarke's foot",
-    class = "ggcarto_unsupported_crs"
+  frame <- gc_frame(
+    cartographic_plot(2314, 300000, 150000),
+    overlays = list(gc_scale_bar(segments = 2))
   )
+  bar <- gc_resolve(frame, 800, 400)$root$children[[1]]$children[[2]]
+  expect_true(is.finite(bar$scale_bar$extent_width_m))
+  expect_gt(bar$scale_bar$width, 0)
   condition <- expect_error(
     gc_scale_bar(design = "dots"),
     class = "ggcarto_error"
@@ -457,4 +473,203 @@ test_that("insets require a logical highlight flag", {
     class = "ggcarto_error"
   )
   expect_identical(condition$property, "highlight")
+})
+
+test_that("geodesic distances follow the WGS 84 ellipsoid", {
+  degrees <- function(d, m, s) d + m / 60 + s / 3600
+  expect_equal(
+    geodesic_distance(
+      degrees(144, 25, 29.52440),
+      -degrees(37, 57, 3.72030),
+      degrees(143, 55, 35.38390),
+      -degrees(37, 39, 10.15610)
+    ),
+    54972.271,
+    tolerance = 1e-8
+  )
+  expect_equal(
+    geodesic_distance(0, 0, 1, 0),
+    6378137 * pi / 180,
+    tolerance = 1e-12
+  )
+  expect_identical(geodesic_distance(10, 20, 10, 20), 0)
+  expect_identical(
+    geodesic_distance(179.9, 0, -179.9, 0),
+    geodesic_distance(0, 0, 0.2, 0)
+  )
+  expect_identical(geodesic_distance(NA, 0, 1, 0), NA_real_)
+  expect_identical(geodesic_distance(0, 0, 179.9, 0.1), NA_real_)
+})
+
+parallel_length <- function(latitude, longitudes) {
+  eccentricity2 <- wgs84_flattening * (2 - wgs84_flattening)
+  latitude <- latitude * pi / 180
+  wgs84_semi_major *
+    cos(latitude) /
+    sqrt(1 - eccentricity2 * sin(latitude)^2) *
+    longitudes *
+    pi /
+    180
+}
+
+geographic_scale <- function(ylim, distance = 100) {
+  plot <- cartographic_plot(4326, 10, 2)
+  plot$coordinates <- ggplot2::coord_sf(
+    xlim = c(0, 10),
+    ylim = ylim,
+    expand = FALSE,
+    datum = NA
+  )
+  frame <- gc_frame(
+    plot,
+    overlays = list(gc_scale_bar(distance, "km", segments = 1))
+  )
+  panel <- gc_resolve(frame, 800, 400)$root$children[[1]]
+  list(
+    fraction = panel$children[[2]]$box[["width"]] / panel$box[["width"]],
+    scale_bar = panel$children[[2]]$scale_bar
+  )
+}
+
+test_that("scale bars measure ground distance on geographic maps", {
+  skip_if_not_installed("sf")
+  equator <- geographic_scale(c(-1, 1))
+  expect_equal(
+    equator$scale_bar$extent_width_m,
+    6378137 * 10 * pi / 180,
+    tolerance = 1e-9
+  )
+  expect_equal(
+    equator$fraction,
+    100000 / (6378137 * 10 * pi / 180),
+    tolerance = 1e-9
+  )
+  expect_equal(
+    equator$scale_bar$reference,
+    c(longitude = 5, latitude = 0),
+    tolerance = 1e-12
+  )
+  for (latitude in c(1, 60)) {
+    scale <- geographic_scale(latitude + c(-1, 1))
+    parallel <- parallel_length(latitude, 10)
+    expect_equal(scale$scale_bar$extent_width_m, parallel, tolerance = 1e-6)
+    expect_equal(scale$fraction, 100000 / parallel, tolerance = 1e-6)
+  }
+})
+
+test_that("scale bars correct projection distortion in Web Mercator", {
+  skip_if_not_installed("sf")
+  centre <- sf::sf_project("OGC:CRS84", "EPSG:3857", cbind(0, 60))[1, ]
+  extent <- sf::st_bbox(
+    c(
+      xmin = centre[[1]] - 250000,
+      ymin = centre[[2]] - 100000,
+      xmax = centre[[1]] + 250000,
+      ymax = centre[[2]] + 100000
+    ),
+    crs = sf::st_crs(3857)
+  )
+  plot <- ggplot2::ggplot() +
+    ggplot2::geom_sf(data = sf::st_as_sfc(extent)) +
+    ggplot2::coord_sf(expand = FALSE, datum = NA)
+  layout <- gc_resolve(
+    gc_frame(plot, overlays = list(gc_scale_bar(50, "km", segments = 1))),
+    800,
+    400
+  )
+  panel <- layout$root$children[[1]]
+  bar <- panel$children[[2]]
+  projected_fraction <- 50000 / 500000
+  expect_equal(
+    bar$box[["width"]] / panel$box[["width"]],
+    projected_fraction / cos(60 * pi / 180),
+    tolerance = 5e-3
+  )
+  expect_equal(bar$scale_bar$extent_width_m, 250000, tolerance = 5e-3)
+})
+
+test_that("scale bars measure within the projection domain", {
+  skip_if_not_installed("sf")
+  world <- list(
+    extent = sf::st_bbox(
+      c(xmin = -1.8e7, ymin = -9e6, xmax = 1.8e7, ymax = 9e6)
+    ),
+    crs = sf::st_crs("ESRI:54030")
+  )
+  profile <- scale_ground_profile(world)
+  expect_identical(profile$extent_length, NA_real_)
+  expect_lt(max(profile$half_widths), 1.8e7)
+  expect_gt(max(profile$lengths), 3.5e7)
+  scale <- scale_bar_distance(
+    list(distance = NULL, unit = "km", max_fraction = 0.25),
+    world,
+    list(id = "scale")
+  )
+  expect_identical(scale$distance, 10000)
+  expect_error(
+    scale_bar_distance(
+      list(distance = 45000, unit = "km", max_fraction = 0.25),
+      world,
+      list(id = "scale")
+    ),
+    class = "ggcarto_scale_distance"
+  )
+  outside <- list(
+    extent = sf::st_bbox(c(xmin = 7e6, ymin = 0, xmax = 8e6, ymax = 1e6)),
+    crs = sf::st_crs("+proj=ortho +lat_0=0 +lon_0=0")
+  )
+  expect_error(
+    scale_ground_profile(outside),
+    "outside the projection domain",
+    class = "ggcarto_scale_projection"
+  )
+  edge <- list(
+    extent = sf::st_bbox(
+      c(xmin = 5378000, ymin = -1e5, xmax = 7378000, ymax = 1e5)
+    ),
+    crs = outside$crs
+  )
+  expect_error(
+    scale_ground_profile(edge),
+    "cannot be measured",
+    class = "ggcarto_scale_projection"
+  )
+  expect_error(
+    suppressWarnings(scale_geographic(cbind(0, 0), sf::NA_crs_)),
+    "cannot be transformed",
+    class = "ggcarto_scale_projection"
+  )
+})
+
+test_that("scale profiles interpolate within their bounds", {
+  from <- c(0, 1, 2)
+  to <- c(0, 10, 20)
+  expect_identical(scale_interpolate(from, to, -1), 0)
+  expect_identical(scale_interpolate(from, to, 5), 20)
+  expect_identical(scale_interpolate(from, to, 1.5), 15)
+  expect_identical(scale_interpolate(c(0, 1, 1), to, 1), 10)
+})
+
+test_that("automatic scales reject maps without measurable ground length", {
+  skip_if_not_installed("sf")
+  local_mocked_bindings(
+    scale_ground_profile = function(map) {
+      list(
+        half_widths = c(0, 1),
+        lengths = c(0, 0),
+        extent_half_width = 1,
+        extent_length = 0,
+        reference = c(0, 0)
+      )
+    }
+  )
+  expect_error(
+    scale_bar_distance(
+      list(distance = NULL, unit = "km", max_fraction = 0.25),
+      list(),
+      list(id = "scale")
+    ),
+    "No positive ground distance",
+    class = "ggcarto_scale_distance"
+  )
 })

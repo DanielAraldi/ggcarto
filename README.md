@@ -199,10 +199,12 @@ not the surrounding page. Outer padding and borders do not alter map scale.
 `gc_scale_bar()` belongs directly in a frame's `overlays`. It recalculates its
 width on every draw, with explicit or automatic distance, `m`/`km`/`ft`/`mi`
 labels, alternating bars or ticks, and configurable subdivisions. It measures
-**projected distance**, not geodesic ground distance. Metres, kilometres,
-international feet and US survey feet are supported as projection units;
-angular and unsupported units are rejected. Arbitrary width overrides and
-collision shrinking are rejected so the distance label cannot become misleading.
+**geodesic ground distance** on the WGS 84 ellipsoid, not projected grid
+distance: the bar spans the stretch of the horizontal line through the map
+centre whose length on the ground equals its label, so projection distortion is
+corrected at the centre of the map. Geographic and projected CRSs are supported
+regardless of their units. Arbitrary width overrides and collision shrinking
+are rejected so the distance label cannot become misleading.
 
 `gc_inset()` creates an independent secondary frame. In `mode = "locator"`, it
 highlights the main extent inside the secondary map; in `mode = "detail"`, it
@@ -374,7 +376,7 @@ which reuse `map_simple_scene()`.
    1974 births per 100 square kilometres. This is an area-normalized count, not a
    population birth rate. An `sf` county object in another CRS can be supplied.
 4. **Complex map:** `map_complex_scene()` combines a regional map, locator inset,
-   georeferenced north arrow, 50 km projected scale, legend, reusable heading,
+   georeferenced north arrow, 50 km geodesic scale, legend, reusable heading,
    summary labels, top-five bar chart and source note in nested viewports.
    Indicators and ranking include the **whole count** of every county intersecting
    the displayed extent; counts are not estimated for clipped polygon fragments.
@@ -455,9 +457,9 @@ examples. The minimal `simple` example and the generic terrain composition remai
 unchanged; `template` and `sf` continue building on the minimal example.
 
 Coordinates use EPSG:32119 (NAD83 / North Carolina), in metres. Scale-bar width is
-the requested projected distance divided by the displayed extent width, not a
-fixed decorative width; it remains aligned when resized. These are projected grid
-distances, not geodesic measurements. The north arrow follows geographic north
+derived from the geodesic ground length of the horizontal line through the map
+centre, not from a fixed decorative width or from projected grid distance; it
+remains aligned when resized. The north arrow follows geographic north
 evaluated at the centre of the main map, accounting for the projection's local
 orientation. The inset frame does not change the panel's coordinate proportions.
 
@@ -809,8 +811,8 @@ one resolution. Optimize further only against measured workloads.
 ## Deliberate Boundaries
 
 This release does not implement breakpoint/media-query syntax, automatic text wrapping,
-a browser CSS engine, geodesic scale bars or magnetic declination. `gc_scale_bar()`
-measures projected distance, and `gc_north_angle()` calculates local true north;
+a browser CSS engine or magnetic declination. `gc_scale_bar()` measures geodesic
+ground distance at the map centre, and `gc_north_angle()` calculates local true north;
 `gc_north_arrow()` and `gc_north_rose()` draw symbols using the supplied angle.
 Custom symbols can still be supplied as grobs or extraction adapters.
 Content that cannot fit produces diagnostics; clipping is controlled by overflow
