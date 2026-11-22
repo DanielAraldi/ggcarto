@@ -383,3 +383,21 @@ test_that("panels without a background grob have no panel background", {
     gc_get_element(example_plot(), "panel_background", missing = "null")
   )
 })
+
+test_that("resolved styles use the vertical axis for legend key heights", {
+  context <- new_layout_context(200, 100)
+  style <- resolved_style(
+    list(
+      legend.key_width = gc_length("10%"),
+      legend.key_height = gc_length("10%")
+    ),
+    context
+  )
+  expect_identical(style$legend.key_width, 20)
+  expect_identical(style$legend.key_height, 10)
+  expect_error(
+    resolved_style(list(line_width = gc_length(-1)), context),
+    "Invalid resolved style: line_width",
+    class = "ggcarto_error"
+  )
+})

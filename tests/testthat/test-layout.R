@@ -41,6 +41,11 @@ test_that("anchors and opposing insets have deterministic geometry", {
     box_in(gc_place(inset, x = 20)),
     class = "ggcarto_contradictory_constraints"
   )
+  expect_error(
+    box_in(gc_place(inset, y = 20)),
+    "y cannot be combined with top/bottom",
+    class = "ggcarto_contradictory_constraints"
+  )
 })
 
 test_that("constraints, aspect ratio and overflow produce useful diagnostics", {

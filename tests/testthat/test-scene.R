@@ -68,6 +68,16 @@ test_that("edges accept single lengths and reject invalid declarations", {
     class = "ggcarto_error"
   )
   expect_error(normalize_edges(1:5), "one to four", class = "ggcarto_error")
+  three <- normalize_edges(c(1, 2, 3))
+  expect_identical(
+    vapply(three, format_length, character(1)),
+    c(top = "1px", right = "2px", bottom = "3px", left = "2px")
+  )
+  four <- normalize_edges(c(1, 2, 3, 4))
+  expect_identical(
+    vapply(four, format_length, character(1)),
+    c(top = "1px", right = "2px", bottom = "3px", left = "4px")
+  )
 })
 
 test_that("node properties, IDs and candidates are validated", {

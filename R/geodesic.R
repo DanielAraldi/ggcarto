@@ -156,7 +156,7 @@ scale_interpolate <- function(from, to, value) {
   if (index >= length(from)) {
     return(to[[length(to)]])
   }
-  span <- from[[index + 1L]] - from[[index]]
-  weight <- if (span > 0) (value - from[[index]]) / span else 0
+  # left.open intervals guarantee from[index] < value <= from[index + 1].
+  weight <- (value - from[[index]]) / (from[[index + 1L]] - from[[index]])
   to[[index]] + weight * (to[[index + 1L]] - to[[index]])
 }
