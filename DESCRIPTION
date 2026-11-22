@@ -1,8 +1,12 @@
 Package: ggcarto
 Title: Flexible and Responsive Cartographic
 Version: 0.1.0
-Authors@R: c(person("Daniel", "Araldi", role = c("aut", "cre", "cph"), email = "daniel.araldi@edu.univali.br"),
-             person("Rodrigo", "Sant'Ana", role = c("aut", "cph"), email = "rsantana@univali.br")
+Authors@R: c(
+    person("Daniel", "Araldi", role = c("aut", "cre", "cph"),
+           email = "daniel.araldi@edu.univali.br"),
+    person("Rodrigo", "Sant'Ana", role = c("aut", "cph"),
+           email = "rsantana@univali.br")
+    )
 Description: Flexible and responsive cartographic composition for R. Extract, 
     position, compose, and export cartographic and 'ggplot2' elements using a 
     responsive scene graph built on native 'grid'.
