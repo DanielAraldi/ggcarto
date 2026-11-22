@@ -37,7 +37,7 @@ From the package directory:
 
 ```sh
 Rscript -e 'install.packages(c("ggplot2", "gtable", "sf"))'
-R CMD INSTALL .
+R CMD INSTALL.
 ```
 
 ```r
@@ -806,7 +806,7 @@ fail instead of replacing approved references.
 
 Visual snapshots use optional test dependencies `vdiffr` and `svglite`. There is no persisted
 cross-device measurement cache; prepared content is reused by the renderer within
-one resolution. Optimize further only against measured workloads.
+one resolution. Optimise further only against measured workloads.
 
 ## Deliberate Boundaries
 
