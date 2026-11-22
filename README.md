@@ -33,7 +33,7 @@ See [Layout Contract](#layout-contract) for positioning rules,
 
 ## Install and Try
 
-From the package directory:
+From the package directory
 
 ```sh
 Rscript -e 'install.packages(c("ggplot2", "gtable", "sf"))'
