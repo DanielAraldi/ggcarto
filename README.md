@@ -818,3 +818,5 @@ Custom symbols can still be supplied as grobs or extraction adapters.
 Content that cannot fit produces diagnostics; clipping is controlled by overflow
 settings, and cartographic frames clip overlays to their fitted map panel.
 Package maintainer metadata currently uses a placeholder address; replace it before publication.
+
+## Teste
