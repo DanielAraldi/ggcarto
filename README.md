@@ -33,7 +33,7 @@ See [Layout Contract](#layout-contract) for positioning rules,
 
 ## Install and Try
 
-From the package directory
+From the package directory:
 
 ```sh
 Rscript -e 'install.packages(c("ggplot2", "gtable", "sf"))'
@@ -268,7 +268,7 @@ current device; inspection examples print their results to the console. Each
 script stores its main return value in `result`, even when a subsequent
 `gc_render()` call draws it. Run the scripts separately, in any order.
 
-The table summarizes the main arguments, not every option. Click a function name
+The table summarises the main arguments, not every option. Click a function name
 to open its runnable script; use `?gc_place` (or another function name) in R for
 complete parameters, defaults and examples. A **grob** is a native grid graphics
 object; a **node** adds ggcarto layout rules; a **layout** contains resolved boxes.
